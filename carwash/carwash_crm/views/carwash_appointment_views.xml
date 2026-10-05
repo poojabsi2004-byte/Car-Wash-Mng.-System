@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_appointment_form_crm" model="ir.ui.view">
+        <field name="name">carwash.appointment.form.crm</field>
+        <field name="model">carwash.appointment</field>
+        <field name="inherit_id" ref="carwash_base.view_carwash_appointment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="lead_id" invisible="1"/>
+                <button name="action_view_lead" type="object" class="oe_stat_button" icon="fa-handshake-o"
+                        invisible="not lead_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Lead</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

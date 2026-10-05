@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Process checklists loaded automatically on each step; edit or untick
+         "Apply Automatically" under Configuration > Checklist Templates. -->
+    <record id="checklist_template_booking_checkin" model="carwash.checklist.template">
+        <field name="name">Vehicle Check-in</field>
+        <field name="checklist_type">booking</field>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">10</field>
+        <field name="description">Done at the counter when the vehicle arrives - mandatory tasks must be ticked before the service can start.</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Customer identity and booking confirmed', 'sequence': 10, 'is_required': True}),
+            (0, 0, {'name': 'Services and price explained to the customer', 'sequence': 20, 'is_required': True}),
+            (0, 0, {'name': 'Keys received and tagged with the token', 'sequence': 30, 'is_required': True}),
+            (0, 0, {'name': 'Valuables removed from the vehicle', 'sequence': 40, 'is_required': True}),
+            (0, 0, {'name': 'Fuel level and odometer noted', 'sequence': 50, 'is_required': False}),
+        ]"/>
+    </record>
+
+    <record id="checklist_template_inspection_pre" model="carwash.checklist.template">
+        <field name="name">Pre-Wash Inspection</field>
+        <field name="checklist_type">inspection</field>
+        <field name="inspection_type_id" ref="inspection_type_pre"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">20</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Body panels checked for scratches and dents', 'sequence': 10, 'is_required': True}),
+            (0, 0, {'name': 'Windshield, windows and mirrors checked', 'sequence': 20, 'is_required': True}),
+            (0, 0, {'name': 'Wheels, rims and tyres checked', 'sequence': 30, 'is_required': True}),
+            (0, 0, {'name': 'Interior condition noted', 'sequence': 40, 'is_required': True}),
+            (0, 0, {'name': 'Photos of existing damage taken', 'sequence': 50, 'is_required': False}),
+        ]"/>
+    </record>
+
+    <record id="checklist_template_inspection_post" model="carwash.checklist.template">
+        <field name="name">Post-Wash Inspection</field>
+        <field name="checklist_type">inspection</field>
+        <field name="inspection_type_id" ref="inspection_type_post"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">30</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Exterior clean and dry, no soap residue', 'sequence': 10, 'is_required': True}),
+            (0, 0, {'name': 'Glass and mirrors streak-free', 'sequence': 20, 'is_required': True}),
+            (0, 0, {'name': 'Interior vacuumed and wiped', 'sequence': 30, 'is_required': True}),
+            (0, 0, {'name': 'No new damage compared with the pre-wash inspection', 'sequence': 40, 'is_required': True}),
+            (0, 0, {'name': 'Customer walk-around done', 'sequence': 50, 'is_required': False}),
+        ]"/>
+    </record>
+</odoo>

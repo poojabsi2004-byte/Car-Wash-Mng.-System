@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_carwash_owner" model="res.groups">
+        <field name="name">Owner</field>
+        <field name="privilege_id" ref="carwash_base.res_groups_privilege_carwash"/>
+        <field name="implied_ids" eval="[(4, ref('carwash_base.group_carwash_manager')), (4, ref('base.group_multi_company'))]"/>
+    </record>
+</odoo>

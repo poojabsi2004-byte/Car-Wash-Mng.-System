@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="demo_employee_washer_1" model="hr.employee">
+        <field name="name">Ali Hassan</field>
+        <field name="job_title">Washer/Detailer</field>
+    </record>
+    <record id="demo_employee_washer_2" model="hr.employee">
+        <field name="name">Ravi Kumar</field>
+        <field name="job_title">Washer/Detailer</field>
+    </record>
+    <record id="demo_employee_washer_3" model="hr.employee">
+        <field name="name">Farah Ismail</field>
+        <field name="job_title">Washer/Detailer</field>
+    </record>
+    <record id="demo_employee_qc" model="hr.employee">
+        <field name="name">Mei Lin</field>
+        <field name="job_title">QC Inspector</field>
+    </record>
+
+    <record id="demo_checklist_template_standard" model="carwash.checklist.template">
+        <field name="name">Standard Wash Checklist</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Exterior rinse', 'sequence': 10}),
+            (0, 0, {'name': 'Soap and foam application', 'sequence': 20}),
+            (0, 0, {'name': 'Scrub and rinse', 'sequence': 30}),
+            (0, 0, {'name': 'Dry and wipe exterior', 'sequence': 40}),
+            (0, 0, {'name': 'Interior vacuum', 'sequence': 50}),
+            (0, 0, {'name': 'Dashboard and console wipe', 'sequence': 60}),
+            (0, 0, {'name': 'Tire shine', 'sequence': 70}),
+        ]"/>
+    </record>
+
+    <record id="demo_checklist_template_quick" model="carwash.checklist.template">
+        <field name="name">Quick Wash Checklist</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Exterior rinse', 'sequence': 10}),
+            (0, 0, {'name': 'Soap and foam application', 'sequence': 20}),
+            (0, 0, {'name': 'Rinse and dry', 'sequence': 30}),
+            (0, 0, {'name': 'Tire shine', 'sequence': 40}),
+        ]"/>
+    </record>
+
+    <record id="demo_checklist_template_premium" model="carwash.checklist.template">
+        <field name="name">Premium Detailing Checklist</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Exterior pre-rinse', 'sequence': 10}),
+            (0, 0, {'name': 'Foam cannon wash', 'sequence': 20}),
+            (0, 0, {'name': 'Wheel and rim scrub', 'sequence': 30}),
+            (0, 0, {'name': 'Hand wax application', 'sequence': 40}),
+            (0, 0, {'name': 'Interior vacuum', 'sequence': 50}),
+            (0, 0, {'name': 'Dashboard and console detailing', 'sequence': 60}),
+            (0, 0, {'name': 'Engine bay wipe-down', 'sequence': 70}),
+            (0, 0, {'name': 'Headlight polish', 'sequence': 80}),
+            (0, 0, {'name': 'Tire dressing', 'sequence': 90}),
+        ]"/>
+    </record>
+
+    <record id="demo_service_package_basic" model="carwash.service.package">
+        <field name="name">Basic Package</field>
+        <field name="description">Basic wash with a wax finish.</field>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id, 'quantity': 1, 'sequence': 10}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id, 'quantity': 1, 'sequence': 20}),
+        ]"/>
+        <field name="website_highlights"><![CDATA[
+            <h5>Exterior Wash &amp; Wax</h5>
+            <ul>
+                <li>High-glow foam wash of the whole exterior body</li>
+                <li>Hand dry with microfiber towels - no water spots</li>
+                <li>Wax finish for a fresh, glossy shine</li>
+            </ul>
+        ]]></field>
+    </record>
+
+    <record id="demo_service_package_full" model="carwash.service.package">
+        <field name="name">Full Wash Package</field>
+        <field name="description">Basic wash plus full interior detailing, bundled at a better rate.</field>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id, 'quantity': 1, 'sequence': 10}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_detailing').product_variant_id.id, 'quantity': 1, 'sequence': 20}),
+        ]"/>
+        <field name="website_highlights"><![CDATA[
+            <h5>Exterior Foam Wash</h5>
+            <ul>
+                <li>High-glow foam wash of the whole exterior body</li>
+                <li>High-pressure underbody wash</li>
+                <li>Hand dry with microfiber towels</li>
+            </ul>
+            <h5>Interior Detailing</h5>
+            <ul>
+                <li>Vacuuming of all interior including boot</li>
+                <li>Wipe-down of dashboard, door panels and AC vents</li>
+                <li>Conditioning of all seats</li>
+            </ul>
+        ]]></field>
+    </record>
+
+    <record id="demo_service_package_premium" model="carwash.service.package">
+        <field name="name">Premium Package</field>
+        <field name="description">"Bringing back that new car feeling" - premium wash, wax and tire detailing for that showroom finish.</field>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id, 'quantity': 1, 'sequence': 10}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id, 'quantity': 1, 'sequence': 20}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_tire_detail').product_variant_id.id, 'quantity': 1, 'sequence': 30}),
+        ]"/>
+        <field name="website_highlights"><![CDATA[
+            <h5>Intensive Interior Cleaning &amp; Detailing</h5>
+            <ul>
+                <li>Foam cleaning and washing of all interior parts like seat covers, dashboard, door panels, carpet, roof, AC vents etc.</li>
+                <li>Vacuuming of all interior including boot</li>
+                <li>Polishing of all fiber parts like dashboard and door panels</li>
+                <li>Conditioning of all seats</li>
+            </ul>
+            <h5>Exterior Foam Wash With Wax Finish</h5>
+            <ul>
+                <li>High-glow foam wash of the whole exterior body and high-pressure underbody wash</li>
+                <li>Wax application and polishing for a showroom shine</li>
+                <li>Tire dressing</li>
+            </ul>
+        ]]></field>
+    </record>
+
+    <record id="demo_service_package_vip" model="carwash.service.package">
+        <field name="name">VIP Detailing Package</field>
+        <field name="description">The full treatment: premium wash, interior detailing, engine bay, headlights and tires.</field>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id, 'quantity': 1, 'sequence': 10}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_detailing').product_variant_id.id, 'quantity': 1, 'sequence': 20}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_engine_bay').product_variant_id.id, 'quantity': 1, 'sequence': 30}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_headlight').product_variant_id.id, 'quantity': 1, 'sequence': 40}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_tire_detail').product_variant_id.id, 'quantity': 1, 'sequence': 50}),
+        ]"/>
+        <field name="website_highlights"><![CDATA[
+            <h5>Intensive Interior Cleaning &amp; Detailing</h5>
+            <ul>
+                <li>Foam cleaning and washing of all interior parts, dashboard, door panels, carpet, roof, AC vents etc.</li>
+                <li>Ozone air-purification treatment for a germ-free, odor-free interior</li>
+                <li>Conditioning of all seats</li>
+            </ul>
+            <h5>Exterior Foam Wash With Engine Degreasing</h5>
+            <ul>
+                <li>High-glow foam wash of the whole exterior body and high-pressure underbody wash</li>
+                <li>Engine degreasing and polishing</li>
+                <li>Polishing of all black fiber and rubber parts of the body</li>
+                <li>Tire dressing</li>
+            </ul>
+            <h5>Headlight Restoration</h5>
+            <ul>
+                <li>Polishing and restoration of both headlights for clear, bright output</li>
+            </ul>
+        ]]></field>
+    </record>
+
+    <!-- Appointment 1: fresh walk-in, still a draft -->
+    <record id="demo_appointment_1" model="carwash.appointment">
+        <field name="customer_id" ref="carwash_base.demo_customer_1"/>
+        <field name="vehicle_id" ref="carwash_base.demo_vehicle_1"/>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id, 'quantity': 1}),
+        ]"/>
+    </record>
+
+    <!-- Appointment 2: confirmed, waiting for the customer to arrive -->
+    <record id="demo_appointment_2" model="carwash.appointment">
+        <field name="customer_id" ref="carwash_base.demo_customer_2"/>
+        <field name="vehicle_id" ref="carwash_base.demo_vehicle_2"/>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id, 'quantity': 1}),
+        ]"/>
+    </record>
+    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_2')]]"/>
+
+    <!-- Appointment 3: vehicle has arrived, waiting in queue -->
+    <record id="demo_appointment_3" model="carwash.appointment">
+        <field name="customer_id" ref="carwash_base.demo_customer_3"/>
+        <field name="vehicle_id" ref="carwash_base.demo_vehicle_3"/>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id, 'quantity': 1}),
+        ]"/>
+    </record>
+    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_3')]]"/>
+    <function model="carwash.appointment" name="action_arrive" eval="[[ref('demo_appointment_3')]]"/>
+
+    <!-- Appointment 4: Premium Package applied, in service with an active job card -->
+    <record id="demo_appointment_4" model="carwash.appointment">
+        <field name="customer_id" ref="carwash_base.demo_customer_4"/>
+        <field name="vehicle_id" ref="carwash_base.demo_vehicle_4"/>
+        <field name="bay_id" ref="carwash_base.demo_bay_2"/>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id, 'quantity': 1}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id, 'quantity': 1}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_tire_detail').product_variant_id.id, 'quantity': 1}),
+        ]"/>
+    </record>
+    <record id="demo_jobcard_4" model="carwash.jobcard">
+        <field name="appointment_id" ref="demo_appointment_4"/>
+        <field name="assigned_employee_ids" eval="[(6, 0, [ref('demo_employee_washer_2')])]"/>
+        <field name="checklist_template_id" ref="demo_checklist_template_standard"/>
+        <field name="checklist_line_ids" eval="[
+            (0, 0, {'name': 'Exterior rinse', 'sequence': 10, 'is_check': True}),
+            (0, 0, {'name': 'Soap and foam application', 'sequence': 20, 'is_check': True}),
+            (0, 0, {'name': 'Scrub and rinse', 'sequence': 30, 'is_check': False}),
+            (0, 0, {'name': 'Dry and wipe exterior', 'sequence': 40, 'is_check': False}),
+            (0, 0, {'name': 'Interior vacuum', 'sequence': 50, 'is_check': False}),
+            (0, 0, {'name': 'Dashboard and console wipe', 'sequence': 60, 'is_check': False}),
+            (0, 0, {'name': 'Tire shine', 'sequence': 70, 'is_check': False}),
+        ]"/>
+        <field name="stages">in_progress</field>
+        <field name="start_time" eval="datetime.now() - timedelta(minutes=20)"/>
+    </record>
+    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_4')]]"/>
+    <function model="carwash.appointment" name="action_arrive" eval="[[ref('demo_appointment_4')]]"/>
+    <function model="carwash.appointment" name="action_start_service" eval="[[ref('demo_appointment_4')]]"/>
+
+    <!-- Appointment 5: VIP Detailing Package, full flow through to done with QC and inspections -->
+    <record id="demo_appointment_5" model="carwash.appointment">
+        <field name="customer_id" ref="carwash_base.demo_customer_5"/>
+        <field name="vehicle_id" ref="carwash_base.demo_vehicle_5"/>
+        <field name="bay_id" ref="carwash_base.demo_bay_3"/>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id, 'quantity': 1}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_detailing').product_variant_id.id, 'quantity': 1}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_engine_bay').product_variant_id.id, 'quantity': 1}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_headlight').product_variant_id.id, 'quantity': 1}),
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_tire_detail').product_variant_id.id, 'quantity': 1}),
+        ]"/>
+    </record>
+    <record id="demo_jobcard_5" model="carwash.jobcard">
+        <field name="appointment_id" ref="demo_appointment_5"/>
+        <field name="assigned_employee_ids" eval="[(6, 0, [ref('demo_employee_washer_1'), ref('demo_employee_washer_3')])]"/>
+        <field name="checklist_template_id" ref="demo_checklist_template_premium"/>
+        <field name="checklist_line_ids" eval="[
+            (0, 0, {'name': 'Exterior pre-rinse', 'sequence': 10, 'is_check': True}),
+            (0, 0, {'name': 'Foam cannon wash', 'sequence': 20, 'is_check': True}),
+            (0, 0, {'name': 'Wheel and rim scrub', 'sequence': 30, 'is_check': True}),
+            (0, 0, {'name': 'Hand wax application', 'sequence': 40, 'is_check': True}),
+            (0, 0, {'name': 'Interior vacuum', 'sequence': 50, 'is_check': True}),
+            (0, 0, {'name': 'Dashboard and console detailing', 'sequence': 60, 'is_check': True}),
+            (0, 0, {'name': 'Engine bay wipe-down', 'sequence': 70, 'is_check': True}),
+            (0, 0, {'name': 'Headlight polish', 'sequence': 80, 'is_check': True}),
+            (0, 0, {'name': 'Tire dressing', 'sequence': 90, 'is_check': True}),
+        ]"/>
+        <field name="stages">done</field>
+        <field name="start_time" eval="datetime.now() - timedelta(hours=2)"/>
+        <field name="end_time" eval="datetime.now() - timedelta(hours=1)"/>
+        <field name="qc_inspector_id" ref="demo_employee_qc"/>
+        <field name="qc_notes">All checks passed. Excellent finish, customer notified.</field>
+    </record>
+    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_5')]]"/>
+    <function model="carwash.appointment" name="action_arrive" eval="[[ref('demo_appointment_5')]]"/>
+    <function model="carwash.appointment" name="action_start_service" eval="[[ref('demo_appointment_5')]]"/>
+    <function model="carwash.appointment" name="action_ready" eval="[[ref('demo_appointment_5')]]"/>
+    <function model="carwash.appointment" name="action_done" eval="[[ref('demo_appointment_5')]]"/>
+
+    <record id="demo_inspection_5_pre" model="carwash.inspection">
+        <field name="appointment_id" ref="demo_appointment_5"/>
+        <field name="inspection_type_id" ref="inspection_type_pre"/>
+        <field name="inspector_id" ref="demo_employee_qc"/>
+        <field name="condition_notes">Minor scratch on rear bumper noted before wash.</field>
+        <field name="has_damage">True</field>
+    </record>
+    <record id="demo_inspection_5_post" model="carwash.inspection">
+        <field name="appointment_id" ref="demo_appointment_5"/>
+        <field name="inspection_type_id" ref="inspection_type_post"/>
+        <field name="inspector_id" ref="demo_employee_qc"/>
+        <field name="condition_notes">Vehicle clean, no new damage. Pre-existing rear bumper scratch unchanged.</field>
+        <field name="has_damage">False</field>
+    </record>
+
+    <!-- Appointment 6: second visit for John Tan, cancelled after confirmation -->
+    <record id="demo_appointment_6" model="carwash.appointment">
+        <field name="customer_id" ref="carwash_base.demo_customer_1"/>
+        <field name="vehicle_id" ref="carwash_base.demo_vehicle_1"/>
+        <field name="cancel_reason">Customer rescheduled to next week.</field>
+        <field name="line_ids" model="product.product" eval="[
+            (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id, 'quantity': 1}),
+        ]"/>
+    </record>
+    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_6')]]"/>
+    <function model="carwash.appointment" name="action_cancel" eval="[[ref('demo_appointment_6')]]"/>
+
+</odoo>

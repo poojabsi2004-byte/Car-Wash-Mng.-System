@@ -1,0 +1,312 @@
+// Car Wash appointment workflow - same ocean palette as the Wash Control Deck dashboard.
+$cw-aqua: #0096c7;
+$cw-ocean: #0077b6;
+$cw-sky: #00b4d8;
+$cw-teal: #0fa896;
+$cw-deep: #0a2540;
+$cw-gradient: linear-gradient(135deg, $cw-ocean 0%, $cw-sky 100%);
+// Brand colour for buttons, the current stage and the app header
+$cw-primary: #084b76;
+$cw-primary-hover: darken($cw-primary, 6%);
+$cw-primary-active: darken($cw-primary, 10%);
+
+// Workflow buttons (form header + kanban footer)
+.btn.o_cw_btn_primary {
+    --btn-color: #ffffff;
+    --btn-hover-color: #ffffff;
+    --btn-active-color: #ffffff;
+    --btn-bg: #{$cw-primary};
+    --btn-border-color: #{$cw-primary};
+    --btn-hover-bg: #{$cw-primary-hover};
+    --btn-hover-border-color: #{$cw-primary-hover};
+    --btn-active-bg: #{$cw-primary-active};
+    --btn-active-border-color: #{$cw-primary-active};
+    background: $cw-primary;
+    border-color: $cw-primary;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 6px 16px -8px rgba($cw-primary, 0.9);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+        color: #ffffff;
+        background: $cw-primary-hover;
+        border-color: $cw-primary-hover;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px -10px rgba($cw-primary, 1);
+    }
+
+    &:active {
+        background: $cw-primary-active;
+        border-color: $cw-primary-active;
+        transform: none;
+    }
+
+    .fa {
+        margin-right: 2px;
+    }
+}
+
+.o_cw_appointment_form {
+    // current stage in the status bar
+    .o_statusbar_status .o_arrow_button_current {
+        background-color: $cw-primary !important;
+        border-color: $cw-primary !important;
+        color: #ffffff !important;
+    }
+
+    // "service running" banner with live progress
+    .o_cw_service_banner {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 4px 0 16px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba($cw-aqua, 0.25);
+        background: linear-gradient(90deg, rgba($cw-sky, 0.12), rgba($cw-teal, 0.06));
+
+        .o_cw_service_banner_text {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            > .fa {
+                width: 30px;
+                height: 30px;
+                border-radius: 9px;
+                display: inline-grid;
+                place-items: center;
+                color: #ffffff;
+                background: $cw-gradient;
+                animation: o_cw_drip 1.8s ease-in-out infinite;
+            }
+        }
+
+        .o_cw_inline {
+            display: inline;
+            font-weight: 700;
+            color: $cw-aqua;
+        }
+
+        .o_cw_service_progress {
+            width: 100%;
+
+            .o_progressbar {
+                width: 100%;
+            }
+
+            .o_progress {
+                height: 8px;
+                border-radius: 99px;
+                background-color: rgba($cw-aqua, 0.15);
+            }
+
+            .bg-primary {
+                background: linear-gradient(90deg, $cw-aqua, $cw-teal) !important;
+                border-radius: 99px;
+            }
+        }
+    }
+
+    // per-service Start / End buttons
+    .o_cw_service_lines {
+        .o_cw_line_btn {
+            padding: 2px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+            &:hover {
+                transform: translateY(-1px);
+            }
+        }
+
+        .o_cw_line_btn_start {
+            color: $cw-primary;
+            background: rgba($cw-primary, 0.08);
+            border: 1px solid rgba($cw-primary, 0.55);
+
+            &:hover {
+                color: #ffffff;
+                background: $cw-primary;
+                border-color: $cw-primary;
+                box-shadow: 0 6px 14px -8px rgba($cw-primary, 0.9);
+            }
+        }
+
+        .o_cw_line_btn_end {
+            color: #ffffff;
+            background: $cw-primary;
+            border: 1px solid $cw-primary;
+            box-shadow: 0 6px 14px -8px rgba($cw-primary, 0.9);
+
+            &:hover {
+                background: $cw-primary-hover;
+                border-color: $cw-primary-hover;
+            }
+            animation: o_cw_running 1.6s ease-in-out infinite;
+        }
+
+        .o_field_badge .text-bg-info,
+        .o_field_badge .badge.text-bg-info {
+            background-color: rgba($cw-aqua, 0.15) !important;
+            color: $cw-aqua !important;
+        }
+
+        .o_field_badge .text-bg-success,
+        .o_field_badge .badge.text-bg-success {
+            background-color: rgba($cw-teal, 0.15) !important;
+            color: $cw-teal !important;
+        }
+    }
+}
+
+@keyframes o_cw_drip {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+
+@keyframes o_cw_running {
+    0%, 100% { box-shadow: 0 0 0 0 rgba($cw-primary, 0.45); }
+    50% { box-shadow: 0 0 0 5px rgba($cw-primary, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .o_cw_appointment_form *,
+    .btn.o_cw_btn_primary {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+// Car Wash app navbar - same brand colour as the workflow buttons
+body.o_cw_app .o_main_navbar {
+    --NavBar-entry-backgroundColor: transparent;
+    --NavBar-entry-backgroundColor--hover: rgba(255, 255, 255, 0.14);
+    --NavBar-entry-backgroundColor--focus: rgba(255, 255, 255, 0.14);
+    --NavBar-entry-backgroundColor--active: rgba(255, 255, 255, 0.22);
+    background: $cw-primary;
+    border-bottom-color: $cw-primary-active;
+}
+
+// Package summary card on the booking's Services tab
+.o_cw_appointment_form .o_cw_package_card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 4px 0 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba($cw-primary, 0.2);
+    background: linear-gradient(90deg, rgba($cw-primary, 0.08), rgba($cw-primary, 0.02));
+
+    .o_cw_package_card_icon {
+        width: 40px;
+        height: 40px;
+        flex: none;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        color: #ffffff;
+        background: $cw-primary;
+    }
+
+    .o_cw_package_card_body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .o_cw_package_card_title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.05rem;
+        font-weight: 700;
+
+        .o_field_widget {
+            width: auto;
+        }
+    }
+
+    .o_cw_package_badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 99px;
+        color: $cw-primary;
+        background: rgba($cw-primary, 0.12);
+    }
+
+    .o_cw_package_card_meta {
+        color: $o-gray-600;
+        font-size: 0.88rem;
+
+        .o_cw_inline {
+            display: inline;
+            color: $cw-primary;
+        }
+    }
+
+    .o_cw_package_card_actions {
+        display: flex;
+        gap: 4px;
+        flex: none;
+    }
+}
+
+// Membership banner on the booking form
+.o_cw_appointment_form .o_cw_member_banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 4px 0 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba($cw-primary, 0.22);
+    background: linear-gradient(90deg, rgba($cw-primary, 0.1), rgba($cw-primary, 0.02));
+
+    .o_cw_member_banner_icon {
+        width: 38px;
+        height: 38px;
+        flex: none;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        background: $cw-primary;
+    }
+
+    .o_cw_member_banner_body {
+        flex: 1;
+        min-width: 0;
+
+        .o_cw_inline {
+            display: inline;
+            font-weight: 600;
+            color: $cw-primary;
+        }
+    }
+
+    .o_cw_member_state {
+        margin-left: 6px;
+        padding: 1px 8px;
+        border-radius: 99px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #0f7b52;
+        background: rgba(15, 123, 82, 0.12);
+    }
+
+    .o_cw_member_banner_actions {
+        display: flex;
+        gap: 4px;
+        flex: none;
+    }
+}

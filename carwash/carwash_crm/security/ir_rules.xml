@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Front Desk (without Sales rights) only sees car wash booking requests, not the sales pipeline -->
+    <record id="crm_rule_carwash_booking_leads" model="ir.rule">
+        <field name="name">Car Wash: Booking Request Leads Only</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="domain_force">[('is_carwash_booking', '=', True)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+</odoo>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_carwash" model="ir.ui.view">
+        <field name="name">res.partner.form.carwash</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_carwash_vehicles" type="object"
+                        class="oe_stat_button" icon="fa-car"
+                        invisible="carwash_vehicle_count == 0">
+                    <field name="carwash_vehicle_count" widget="statinfo" string="Vehicles"/>
+                </button>
+                <button name="action_view_carwash_appointments" type="object"
+                        class="oe_stat_button" icon="fa-wrench"
+                        invisible="carwash_appointment_count == 0">
+                    <field name="carwash_appointment_count" widget="statinfo" string="Bookings"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

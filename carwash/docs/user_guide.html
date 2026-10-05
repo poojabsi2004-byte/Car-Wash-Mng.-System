@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Car Wash Management System — User Guide</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2430; line-height: 1.55; font-size: 13px; margin: 0;
+  }
+  .cover {
+    height: 245mm; display: flex; flex-direction: column; justify-content: center;
+  }
+  .cover .kicker { color: #20c997; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
+  .cover h1 { font-size: 40px; margin: 12px 0 4px; }
+  .cover .sub { color: #555; font-size: 15px; margin-bottom: 40px; }
+  .cover table { border-collapse: collapse; font-size: 12px; }
+  .cover td { padding: 4px 12px 4px 0; color: #555; }
+  .cover td.v { color: #1f2430; font-weight: 600; }
+
+  h1 { font-size: 22px; border-bottom: 3px solid #20c997; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 16px; color: #147a56; margin-top: 24px; border-left: 4px solid #20c997; padding-left: 8px; }
+  h3 { font-size: 13px; margin-top: 16px; color: #333; }
+  section { page-break-before: always; }
+  p { margin: 6px 0; }
+  code, .mono { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 11.5px; background: #eafaf3; padding: 1px 5px; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 12px; }
+  th, td { border: 1px solid #ddd; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #eafaf3; color: #147a56; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .role-card { border: 2px solid #20c997; border-radius: 8px; padding: 14px 18px; margin: 14px 0; background: #fbfffd; }
+  .role-card h3 { margin-top: 0; color: #147a56; font-size: 15px; }
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps li { counter-increment: step; margin: 8px 0; padding-left: 32px; position: relative; }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -1px;
+    background: #20c997; color: #fff; width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+  }
+  .note { background: #eafaf3; border-left: 4px solid #20c997; padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .warn { background: #fff8e6; border-left: 4px solid #ffc107; padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .menu-path { font-family: monospace; background: #f4f4f4; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; }
+  .toc a { text-decoration: none; color: #1f2430; }
+  .toc li { margin: 4px 0; }
+  .small { font-size: 11px; color: #666; }
+  footer { margin-top: 30px; font-size: 10px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">User Guide</div>
+  <h1>Car Wash Management System</h1>
+  <div class="sub">A role-by-role walkthrough — what each person can do and where to find it</div>
+  <table>
+    <tr><td>Roles covered</td><td class="v">Front Desk, Washer/Detailer, QC Inspector, Manager, Owner, Portal Customer</td></tr>
+    <tr><td>Platform</td><td class="v">Odoo 19 Community Edition, backend app "Car Wash"</td></tr>
+  </table>
+</div>
+
+<section id="toc">
+<h1>Table of Contents</h1>
+<ol class="toc">
+  <li><a href="#intro">Roles at a Glance</a></li>
+  <li><a href="#frontdesk">Front Desk</a></li>
+  <li><a href="#washer">Washer / Detailer</a></li>
+  <li><a href="#qc">QC Inspector</a></li>
+  <li><a href="#manager">Manager</a></li>
+  <li><a href="#owner">Owner</a></li>
+  <li><a href="#portal">Portal Customer (Online Booking)</a></li>
+</ol>
+</section>
+
+<section id="intro">
+<h1>1. Roles at a Glance</h1>
+<p>Every person who uses the system is assigned to one Car Wash security group by an administrator, under <span class="menu-path">Settings → Users &amp; Companies → Users</span>. What menus and buttons a person sees is driven entirely by that group — there's nothing to configure per-screen.</p>
+<table>
+<tr><th>Role</th><th>What they mainly do</th></tr>
+<tr><td><strong>Front Desk</strong></td><td>Register customers/vehicles, book and manage appointments, run the live queue</td></tr>
+<tr><td><strong>Washer / Detailer</strong></td><td>Work their assigned job cards, check off tasks, submit for QC</td></tr>
+<tr><td><strong>QC Inspector</strong></td><td>Pass or fail completed job cards</td></tr>
+<tr><td><strong>Manager</strong></td><td>Everything Front Desk can do, plus configuration, memberships, productivity/revenue reporting</td></tr>
+<tr><td><strong>Owner</strong></td><td>Everything Manager can do, across every branch at once, plus cross-branch reporting</td></tr>
+<tr><td><strong>Portal Customer</strong></td><td>Books a wash online and views their own booking history — no backend access</td></tr>
+</table>
+<div class="note">A person can be more than one role at once (e.g. a Manager who also washes cars) — just tick both groups on their user record.</div>
+</section>
+
+<section id="frontdesk">
+<h1>2. Front Desk</h1>
+<div class="role-card">
+<h3>Registering a walk-in customer and vehicle</h3>
+<ol class="steps">
+<li>Go to <span class="menu-path">Car Wash → Customers &amp; Vehicles → Vehicles</span> → New.</li>
+<li>Pick or create the customer, enter the license plate, make, model and type.</li>
+</ol>
+</div>
+<div class="role-card">
+<h3>Creating an appointment</h3>
+<ol class="steps">
+<li><span class="menu-path">Car Wash → Appointments → New Appointment</span>.</li>
+<li>Select the customer, their vehicle, and add one or more services.</li>
+<li>Click <strong>Confirm</strong> once the services are set.</li>
+</ol>
+</div>
+<div class="role-card">
+<h3>Running the live queue</h3>
+<p><span class="menu-path">Car Wash → Queue</span> shows every appointment for today that isn't finished yet, as a kanban board grouped by status — each card's left border and header icon match its status color. Walk it through with the buttons on each card:</p>
+<table>
+<tr><th>Button</th><th>When it appears</th><th>What it does</th></tr>
+<tr><td>Vehicle Arrived</td><td>Confirmed</td><td>Stamps arrival time (starts the "waiting time" clock shown on the card)</td></tr>
+<tr><td>Start Service</td><td>Arrived</td><td>Assigns the bay; the bay must be free</td></tr>
+<tr><td>Ready</td><td>In Service</td><td>Only available once the job card has passed QC</td></tr>
+<tr><td>Complete</td><td>Ready</td><td>Frees the bay, records material usage, and creates the customer's Sales Order</td></tr>
+</table>
+<p class="small">A card turning red with a warning icon means No-Show or Cancelled; a green check means Done.</p>
+</div>
+</section>
+
+<section id="washer">
+<h1>3. Washer / Detailer</h1>
+<div class="role-card">
+<h3>Working your job cards</h3>
+<p><span class="menu-path">Car Wash → Job Cards</span> is filtered to open cards. You'll only ever be offered for assignment if you're in the Washer or Manager group — Front Desk staff can't accidentally assign a non-wash-team person to a job.</p>
+<ol class="steps">
+<li>Open a job card assigned to you (or ask Front Desk/a Manager to assign it).</li>
+<li>Click <strong>Start</strong> — this begins time tracking automatically; you don't need to do anything else for that.</li>
+<li>Under the <em>Tasks</em> tab, tick off each checklist item as you complete it.</li>
+<li>Once every task is checked, click <strong>Submit for QC</strong>.</li>
+</ol>
+</div>
+<div class="note">You only see job cards you're assigned to — this is enforced automatically, not something you need to filter yourself.</div>
+</section>
+
+<section id="qc">
+<h1>4. QC Inspector</h1>
+<div class="role-card">
+<h3>Passing or failing a job card</h3>
+<ol class="steps">
+<li><span class="menu-path">Car Wash → Job Cards</span>, filter/group by status to find cards in <strong>Quality Check</strong>.</li>
+<li>Inspect the vehicle, add QC notes if useful.</li>
+<li>Click <strong>QC Pass</strong> to finish it (this also logs the staff member's time spent, and unblocks Front Desk's "Ready" button on the appointment) — or <strong>QC Fail (Rework)</strong> to send it back to the washer with every checklist item reset to unchecked.</li>
+</ol>
+</div>
+</section>
+
+<section id="manager">
+<h1>5. Manager</h1>
+<p>A Manager sees everything Front Desk, Washer and QC see, plus:</p>
+<div class="role-card">
+<h3>Memberships</h3>
+<p><span class="menu-path">Car Wash → Memberships</span> — enroll a customer on a plan, renew early, or cancel. Billing itself runs automatically on a schedule; <strong>Renew Now</strong> triggers an out-of-cycle billing run on demand.</p>
+</div>
+<div class="role-card">
+<h3>Configuration</h3>
+<p><span class="menu-path">Car Wash → Configuration → Services</span> — the service catalogue, including each service's consumables recipe and estimated duration (this duration is what drives online booking slot lengths).</p>
+</div>
+<div class="role-card">
+<h3>Reporting</h3>
+<p><span class="menu-path">Car Wash → Dashboard</span> — an interactive dashboard with weekly/monthly/quarterly/yearly/custom date filters, revenue and wash-count trends, top products by material usage, and productivity/revenue drill-downs restricted to Managers and above.</p>
+</div>
+</section>
+
+<section id="owner">
+<h1>6. Owner</h1>
+<p>Everything a Manager can do, but across every branch simultaneously (Odoo's company switcher, top-right, controls which branches are "active" at any moment). The Owner's dashboard adds:</p>
+<ul>
+<li><strong>Branch Breakdown</strong> — revenue and wash counts side-by-side per branch.</li>
+<li><strong>Staff Leaderboard</strong> — cross-branch productivity ranking.</li>
+<li><strong>Membership &amp; Loyalty Totals</strong> and <strong>Billing Overdue</strong> — company-wide, not per-branch.</li>
+</ul>
+<div class="note">Switching which companies are active in the company switcher changes what the dashboard and queue show — this is standard Odoo multi-company behavior, not something specific to this app.</div>
+</section>
+
+<section id="portal">
+<h1>7. Portal Customer (Online Booking)</h1>
+<p>Customers book from the public website — no backend/internal-user access is granted or needed.</p>
+<div class="role-card">
+<h3>Booking a wash</h3>
+<ol class="steps">
+<li>Click <strong>Book a Car Wash</strong> in the website's top menu (or go to <span class="mono">/car-wash/book</span>). Logging in (or creating a portal account) is required — this is by design.</li>
+<li>Choose a branch, a service, and a date.</li>
+<li>Pick one of the real-time available slots shown — each one lists how many bays are free at that time.</li>
+<li>Choose an existing vehicle, or register a new one inline (plate, make, model, type).</li>
+<li>Confirm — you'll land on a confirmation page, and the booking immediately appears on the branch's live queue for staff.</li>
+</ol>
+</div>
+<div class="role-card">
+<h3>Viewing booking history</h3>
+<p>Once logged into the portal, <span class="menu-path">My Account → Car Wash Bookings</span> (or <span class="mono">/my/bookings</span>) lists every booking made under that account with its status; click into one for the full detail including the services on it.</p>
+</div>
+<div class="warn">A customer only ever sees their own bookings and vehicles, even if they've booked at more than one branch — never another customer's, and never anyone else's data at any branch.</div>
+</section>
+
+<footer>Car Wash Management System — User Guide — Odoo 19 Community Edition</footer>
+</body>
+</html>

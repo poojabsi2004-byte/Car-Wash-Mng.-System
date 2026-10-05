@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_carwash" model="ir.ui.view">
+        <field name="name">crm.lead.form.carwash</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="before">
+                <field name="is_carwash_booking" invisible="1"/>
+                <field name="carwash_appointment_id" invisible="1"/>
+                <button name="action_confirm_carwash_booking" type="object" string="Confirm Booking" icon="fa-check"
+                        class="btn-primary o_cw_btn_primary" data-hotkey="b"
+                        invisible="not is_carwash_booking or carwash_appointment_id or not active"/>
+            </xpath>
+            <!-- A booking request is "won" by confirming it into a booking, not by the generic Won button -->
+            <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="attributes">
+                <attribute name="invisible">won_status == 'won' or type == 'lead' or not active or is_carwash_booking</attribute>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_carwash_booking" type="object" class="oe_stat_button" icon="fa-car"
+                        invisible="not carwash_appointment_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="carwash_appointment_state" readonly="1"/></span>
+                        <span class="o_stat_text">Booking</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//notebook/page[@name='internal_notes']" position="before">
+                <page string="Car Wash Booking" name="carwash_booking" invisible="not is_carwash_booking">
+                    <group>
+                        <group string="Booking Request">
+                            <field name="carwash_booking_date" required="is_carwash_booking"
+                                   readonly="carwash_appointment_id"/>
+                            <field name="carwash_package_id" readonly="carwash_appointment_id"
+                                   placeholder="Select a package (optional)" options="{'no_create': True}"/>
+                            <field name="carwash_package_service_ids" widget="many2many_tags" invisible="not carwash_package_id"/>
+                            <field name="carwash_package_amount" invisible="not carwash_package_id"/>
+                            <field name="carwash_package_saving" invisible="not carwash_package_saving"/>
+                            <field name="carwash_service_ids" widget="many2many_tags"
+                                   required="is_carwash_booking and not carwash_package_id"
+                                   readonly="carwash_appointment_id" options="{'no_create': True}"/>
+                            <field name="carwash_membership_id" invisible="1"/>
+                            <field name="carwash_use_membership" invisible="not carwash_membership_id"
+                                   readonly="carwash_appointment_id"/>
+                            <field name="carwash_membership_benefit" invisible="not carwash_membership_id"
+                                   string="Member Benefit"/>
+                            <field name="carwash_normal_amount" invisible="not carwash_member_saving"/>
+                            <field name="carwash_member_amount" invisible="not carwash_member_saving"/>
+                            <field name="carwash_member_saving" invisible="not carwash_member_saving"
+                                   decoration-success="1"/>
+                            <field name="company_id" string="Branch" readonly="carwash_appointment_id"
+                                   options="{'no_create': True}"/>
+                            <field name="carwash_bay_id" readonly="carwash_appointment_id" options="{'no_create': True}"
+                                   placeholder="Auto-assign a free bay"/>
+                            <field name="carwash_appointment_id" readonly="1" invisible="not carwash_appointment_id"/>
+                        </group>
+                        <group string="Vehicle">
+                            <field name="carwash_vehicle_id" readonly="carwash_appointment_id"
+                                   placeholder="Existing vehicle of this customer" options="{'no_create': True}"/>
+                            <field name="carwash_license_plate" readonly="carwash_vehicle_id or carwash_appointment_id"/>
+                            <field name="carwash_vehicle_make" readonly="carwash_vehicle_id or carwash_appointment_id"/>
+                            <field name="carwash_vehicle_model" readonly="carwash_vehicle_id or carwash_appointment_id"/>
+                            <field name="carwash_vehicle_type" readonly="carwash_vehicle_id or carwash_appointment_id"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Checklist" name="carwash_checklist" invisible="not is_carwash_booking">
+                    <group>
+                        <group>
+                            <field name="checklist_template_id" options="{'no_create': True}"
+                                   placeholder="Pick a checklist" readonly="carwash_appointment_id"/>
+                        </group>
+                        <group>
+                            <field name="checklist_progress" widget="progressbar" invisible="not checklist_line_ids"/>
+                            <field name="checklist_complete" invisible="1"/>
+                            <field name="checklist_pending_count" invisible="checklist_complete" decoration-danger="1"/>
+                        </group>
+                    </group>
+                    <field name="checklist_line_ids" readonly="carwash_appointment_id"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_list_carwash_booking" model="ir.ui.view">
+        <field name="name">crm.lead.list.carwash.booking</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list string="Booking Requests" decoration-muted="carwash_appointment_id" decoration-bf="not carwash_appointment_id">
+                <field name="create_date" string="Received" widget="date"/>
+                <field name="name"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="phone" optional="show"/>
+                <field name="carwash_license_plate" string="Plate"/>
+                <field name="carwash_package_id" optional="show"/>
+                <field name="carwash_service_ids" widget="many2many_tags" string="Extra Services"/>
+                <field name="carwash_booking_date"/>
+                <field name="company_id" string="Branch" optional="show" groups="base.group_multi_company"/>
+                <field name="stage_id"/>
+                <field name="checklist_progress" widget="progressbar" string="Checklist" optional="show"/>
+                <field name="expected_revenue" sum="Total"/>
+                <field name="carwash_appointment_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_search_carwash_booking" model="ir.ui.view">
+        <field name="name">crm.lead.search.carwash.booking</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="carwash_license_plate" string="Licence Plate"/>
+                <filter string="Car Wash Bookings" name="carwash_bookings" domain="[('is_carwash_booking', '=', True)]"/>
+                <filter string="To Confirm" name="carwash_to_confirm"
+                        domain="[('is_carwash_booking', '=', True), ('carwash_appointment_id', '=', False)]"/>
+                <filter string="Confirmed" name="carwash_confirmed" domain="[('carwash_appointment_id', '!=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_carwash_booking_requests" model="ir.actions.act_window">
+        <field name="name">Booking Requests</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form,activity</field>
+        <field name="domain">[('is_carwash_booking', '=', True), ('type', '=', 'opportunity')]</field>
+        <field name="context" eval="{'default_is_carwash_booking': True, 'default_type': 'opportunity', 'default_team_id': ref('carwash_crm.crm_team_carwash_bookings'), 'search_default_carwash_to_confirm': 1}"/>
+        <field name="search_view_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('crm.crm_case_kanban_view_leads')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('crm_lead_view_list_carwash_booking')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('crm.crm_lead_view_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No booking requests waiting</p>
+            <p>Website bookings land here as leads. You can also add phone or walk-in requests here, then click <b>Confirm Booking</b> to create the booking.</p>
+        </field>
+    </record>
+</odoo>

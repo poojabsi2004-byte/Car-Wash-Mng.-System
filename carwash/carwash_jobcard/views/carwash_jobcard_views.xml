@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_jobcard_form" model="ir.ui.view">
+        <field name="name">carwash.jobcard.form</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="arch" type="xml">
+            <form string="Job Card">
+                <header>
+                    <button name="action_start" type="object" string="Start"
+                            class="btn-primary" invisible="stages != 'draft'"
+                            groups="carwash_jobcard.group_carwash_washer,carwash_base.group_carwash_manager"/>
+                    <button name="action_submit_qc" type="object" string="Submit for QC"
+                            class="btn-primary" invisible="stages != 'in_progress'"
+                            groups="carwash_jobcard.group_carwash_washer,carwash_base.group_carwash_manager"/>
+                    <button name="action_qc_pass" type="object" string="QC Pass"
+                            class="btn-primary" invisible="stages != 'qc'"
+                            groups="carwash_jobcard.group_carwash_qc,carwash_base.group_carwash_manager"/>
+                    <button name="action_qc_fail" type="object" string="QC Fail (Rework)"
+                            invisible="stages != 'qc'"
+                            groups="carwash_jobcard.group_carwash_qc,carwash_base.group_carwash_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="stages not in ('draft', 'in_progress')"
+                            groups="carwash_base.group_carwash_manager"/>
+                    <field name="stages" widget="statusbar" statusbar_visible="draft,in_progress,qc,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_task" type="object" class="oe_stat_button" icon="fa-tasks"
+                                invisible="not task_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Time Tracking</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="appointment_id"/>
+                            <field name="customer_id" readonly="1"/>
+                            <field name="vehicle_id" readonly="1"/>
+                            <field name="bay_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="assigned_employee_ids" widget="many2many_avatar_employee"/>
+                            <field name="start_time" readonly="1"/>
+                            <field name="end_time" readonly="1"/>
+                            <field name="qc_inspector_id" readonly="1" widget="many2one_avatar_employee"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Tasks" name="tasks">
+                            <field name="checklist_template_id"/>
+                            <label for="checklist_progress" string="Progress"/>
+                            <field name="checklist_progress" widget="progressbar"/>
+                            <field name="checklist_line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="is_check"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Quality Check" name="qc">
+                            <field name="qc_notes" placeholder="QC notes / rework reason..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_jobcard_list" model="ir.ui.view">
+        <field name="name">carwash.jobcard.list</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="arch" type="xml">
+            <list string="Job Cards">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="vehicle_id"/>
+                <field name="assigned_employee_ids" widget="many2many_avatar_employee"/>
+                <field name="checklist_progress" widget="progressbar"/>
+                <field name="stages" widget="badge"
+                       decoration-success="stages == 'done'"
+                       decoration-danger="stages == 'cancel'"
+                       decoration-info="stages in ('in_progress', 'qc')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_jobcard_kanban" model="ir.ui.view">
+        <field name="name">carwash.jobcard.kanban</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stages" class="o_kanban_small_column">
+                <field name="stages"/>
+                <field name="checklist_progress"/>
+                <templates>
+                    <t t-name="card">
+                        <main t-att-class="'border-start border-4 ps-2 ' + (stages == 'cancel' ? 'opacity-50 border-danger' :
+                            stages == 'in_progress' ? 'border-info' :
+                            stages == 'qc' ? 'border-warning' :
+                            stages == 'done' ? 'border-success' :
+                            'border-secondary'
+                        )">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong><field name="name"/></strong>
+                                <div class="d-flex align-items-center gap-1">
+                                    <i t-att-class="'fa fa-fw text-muted ' + (
+                                        stages == 'in_progress' ? 'fa-wrench' :
+                                        stages == 'qc' ? 'fa-search' :
+                                        stages == 'done' ? 'fa-check' :
+                                        stages == 'cancel' ? 'fa-ban' :
+                                        'fa-file-o'
+                                    )" t-att-title="stages"/>
+                                    <field name="stages" widget="label_selection"
+                                           options="{'classes': {'draft': 'default', 'in_progress': 'info', 'qc': 'warning', 'done': 'success', 'cancel': 'danger'}}"/>
+                                </div>
+                            </div>
+                            <field name="vehicle_id"/>
+                            <field name="customer_id"/>
+                            <field name="assigned_employee_ids" widget="many2many_avatar_employee"/>
+                            <field name="checklist_progress" widget="progressbar"
+                                   invisible="stages in ('draft', 'cancel')"/>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_jobcard_search" model="ir.ui.view">
+        <field name="name">carwash.jobcard.search</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="arch" type="xml">
+            <search string="Job Cards">
+                <field name="name"/>
+                <field name="vehicle_id"/>
+                <field name="customer_id"/>
+                <field name="assigned_employee_ids"/>
+                <filter string="Open" name="open" domain="[('stages', 'not in', ('done', 'cancel'))]"/>
+                <group>
+                    <filter string="Status" name="group_stages" context="{'group_by': 'stages'}"/>
+                    <filter string="Staff" name="group_employee" context="{'group_by': 'assigned_employee_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_jobcard" model="ir.actions.act_window">
+        <field name="name">Job Cards</field>
+        <field name="res_model">carwash.jobcard</field>
+        <field name="view_mode">kanban,list,form,graph,pivot</field>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+</odoo>

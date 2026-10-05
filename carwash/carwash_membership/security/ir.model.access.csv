@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_carwash_membership_plan_manager,carwash.membership.plan.manager,model_carwash_membership_plan,carwash_base.group_carwash_manager,1,1,1,1
+access_carwash_membership_plan_user,carwash.membership.plan.user,model_carwash_membership_plan,carwash_base.group_carwash_user,1,0,0,0
+access_carwash_membership_manager,carwash.membership.manager,model_carwash_membership,carwash_base.group_carwash_manager,1,1,1,1
+access_carwash_membership_user,carwash.membership.user,model_carwash_membership,carwash_base.group_carwash_user,1,1,1,0

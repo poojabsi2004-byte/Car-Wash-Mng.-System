@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_appointment_form_jobcard" model="ir.ui.view">
+        <field name="name">carwash.appointment.form.jobcard</field>
+        <field name="model">carwash.appointment</field>
+        <field name="inherit_id" ref="carwash_base.view_carwash_appointment_form"/>
+        <field name="arch" type="xml">
+            <!-- Vehicle arrived: pre-wash inspection comes before starting the service -->
+            <xpath expr="//button[@name='action_start_service']" position="before">
+                <field name="has_pre_inspection" invisible="1"/>
+                <button name="action_open_inspection" type="object" string="Inspection" icon="fa-search"
+                        class="btn-primary o_cw_btn_primary" invisible="state != 'arrived' or has_pre_inspection"
+                        groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
+                <button name="action_open_inspection" type="object" string="View Inspection" icon="fa-eye"
+                        class="btn-secondary" invisible="state != 'arrived' or not has_pre_inspection"
+                        groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
+            </xpath>
+            <!-- Once the main service has ended (all services done), the post-wash inspection is next -->
+            <xpath expr="//button[@name='action_done']" position="before">
+                <field name="has_post_inspection" invisible="1"/>
+                <button name="action_open_inspection" type="object" string="Inspection" icon="fa-search"
+                        class="btn-primary o_cw_btn_primary" invisible="state != 'ready' or has_post_inspection"
+                        groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
+                <button name="action_open_inspection" type="object" string="View Inspection" icon="fa-eye"
+                        class="btn-secondary" invisible="state != 'ready' or not has_post_inspection"
+                        groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_jobcards" type="object" class="oe_stat_button" icon="fa-wrench"
+                        invisible="jobcard_count == 0">
+                    <field name="jobcard_count" widget="statinfo" string="Job Cards"/>
+                </button>
+                <button name="action_view_inspections" type="object" class="oe_stat_button" icon="fa-search"
+                        invisible="inspection_count == 0">
+                    <field name="inspection_count" widget="statinfo" string="Inspections"/>
+                </button>
+            </xpath>
+            <!-- Package: picked up front, fills the Services list at the package price -->
+            <xpath expr="//field[@name='vehicle_id']" position="after">
+                <field name="service_package_id" placeholder="Select a package (optional)"
+                       options="{'no_create': True}"
+                       readonly="state not in ('draft', 'confirmed', 'arrived') or not can_manage_details"/>
+            </xpath>
+            <xpath expr="//page[@name='services']/field[@name='line_ids']" position="before">
+                <div class="o_cw_package_card" invisible="not service_package_id">
+                    <div class="o_cw_package_card_icon"><i class="fa fa-gift"/></div>
+                    <div class="o_cw_package_card_body">
+                        <div class="o_cw_package_card_title">
+                            <field name="service_package_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                            <span class="o_cw_package_badge">Package</span>
+                        </div>
+                        <div class="o_cw_package_card_meta">
+                            Package amount <strong><field name="package_amount" class="o_cw_inline"/></strong>
+                            <span invisible="not package_saving"> · customer saves
+                                <strong><field name="package_saving" class="o_cw_inline"/></strong></span>
+                        </div>
+                    </div>
+                    <div class="o_cw_package_card_actions" invisible="state not in ('draft', 'confirmed', 'arrived')"
+                         groups="carwash_base.group_carwash_user">
+                        <button name="action_apply_service_package" type="object" string="Reset Package"
+                                icon="fa-refresh" class="btn btn-link" title="Re-apply the package's current services and price"/>
+                        <button name="action_remove_service_package" type="object" string="Remove"
+                                icon="fa-times" class="btn btn-link text-danger"/>
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//page[@name='services']/field[@name='line_ids']/list/field[@name='product_id']" position="attributes">
+                <attribute name="readonly">service_state != 'pending' or package_id</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='services']/field[@name='line_ids']/list/field[@name='quantity']" position="attributes">
+                <attribute name="readonly">service_state != 'pending' or package_id</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='services']/field[@name='line_ids']/list/field[@name='price_unit']" position="attributes">
+                <attribute name="readonly">package_id</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='services']/field[@name='line_ids']/list/field[@name='product_id']" position="after">
+                <field name="package_id" widget="badge" optional="show" decoration-info="package_id" force_save="1"/>
+            </xpath>
+            <xpath expr="//page[@name='services']/field[@name='line_ids']" position="after">
+                <group class="oe_subtotal_footer" invisible="not line_ids">
+                    <field name="package_amount" string="Package" invisible="not service_package_id"/>
+                    <field name="extra_services_amount" string="Extra Services" invisible="not service_package_id"/>
+                    <field name="amount_total" string="Total" class="oe_subtotal_footer_separator"/>
+                </group>
+            </xpath>
+            <!-- Check-in checklist: mandatory tasks must be ticked before the service can start -->
+            <xpath expr="//page[@name='services']" position="after">
+                <page string="Check-in Checklist" name="checklist">
+                    <group>
+                        <group>
+                            <field name="checklist_template_id" options="{'no_create': True}" placeholder="Pick a checklist"
+                                   readonly="state not in ('draft', 'confirmed', 'arrived')"/>
+                        </group>
+                        <group>
+                            <field name="checklist_progress" widget="progressbar" invisible="not checklist_line_ids"/>
+                            <field name="checklist_pending_count" invisible="checklist_complete" decoration-danger="1"/>
+                        </group>
+                    </group>
+                    <field name="checklist_line_ids" readonly="state not in ('draft', 'confirmed', 'arrived')"/>
+                </page>
+            </xpath>
+            <xpath expr="//div[hasclass('o_cw_service_banner')]" position="before">
+                <field name="checklist_complete" invisible="1"/>
+                <field name="open_inspection_count" invisible="1"/>
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert"
+                     invisible="state != 'arrived' or (checklist_complete and not open_inspection_count)">
+                    <i class="fa fa-list-ul"/>
+                    <span invisible="checklist_complete">
+                        <strong>Check-in pending:</strong>&#160;<field name="checklist_pending_count" class="o_cw_inline"/> mandatory task(s) left on the
+                        <em>Check-in Checklist</em> tab.
+                    </span>
+                    <span invisible="not open_inspection_count">
+                        <strong>Inspection in progress</strong> - complete it before starting the service.
+                    </span>
+                </div>
+            </xpath>
+            <!-- Starting service is the washer's own action (matches the Job Card "Start" button),
+                 not Front Desk's - Front Desk assigns the bay, the washer starts the work in it. -->
+            <xpath expr="//button[@name='action_start_service']" position="attributes">
+                <attribute name="groups">carwash_jobcard.group_carwash_washer,carwash_base.group_carwash_manager</attribute>
+            </xpath>
+            <!-- Washer now has write access to carwash.appointment so that button works, but should
+                 only ever touch the workflow buttons - lock the customer/vehicle/bay/services/notes
+                 fields to Front Desk/Manager so that broadened access doesn't also let them edit
+                 unrelated appointment details. -->
+            <xpath expr="//field[@name='customer_id']" position="before">
+                <field name="can_manage_details" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='customer_id']" position="attributes">
+                <attribute name="readonly">not can_manage_details</attribute>
+            </xpath>
+            <xpath expr="//field[@name='vehicle_id']" position="attributes">
+                <attribute name="readonly">not can_manage_details</attribute>
+            </xpath>
+            <xpath expr="//field[@name='bay_id']" position="attributes">
+                <attribute name="readonly">not can_manage_details</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="attributes">
+                <attribute name="readonly">not can_manage_details</attribute>
+            </xpath>
+            <xpath expr="//page[@name='notes']/field[@name='notes']" position="attributes">
+                <attribute name="readonly">not can_manage_details</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_carwash_appointment_kanban_jobcard" model="ir.ui.view">
+        <field name="name">carwash.appointment.kanban.jobcard</field>
+        <field name="model">carwash.appointment</field>
+        <field name="inherit_id" ref="carwash_base.view_carwash_appointment_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//a[@name='action_start_service']" position="attributes">
+                <attribute name="groups">carwash_jobcard.group_carwash_washer,carwash_base.group_carwash_manager</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

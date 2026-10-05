@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_appointment_graph" model="ir.ui.view">
+        <field name="name">carwash.appointment.graph</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <graph string="Wash Volume" type="bar">
+                <field name="appointment_date" interval="day"/>
+                <field name="state"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_carwash_appointment_pivot" model="ir.ui.view">
+        <field name="name">carwash.appointment.pivot</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <pivot string="Wash Analysis">
+                <field name="appointment_date" type="row" interval="day"/>
+                <field name="state" type="col"/>
+                <field name="amount_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_carwash_dashboard" model="ir.actions.act_window">
+        <field name="name">Wash Analysis</field>
+        <field name="res_model">carwash.appointment</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'search_default_active_queue': 0}</field>
+    </record>
+
+    <record id="view_carwash_jobcard_graph" model="ir.ui.view">
+        <field name="name">carwash.jobcard.graph</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="arch" type="xml">
+            <graph string="Employee Productivity" type="bar">
+                <field name="assigned_employee_ids"/>
+                <field name="stages"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_carwash_jobcard_pivot" model="ir.ui.view">
+        <field name="name">carwash.jobcard.pivot</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="arch" type="xml">
+            <pivot string="Employee Productivity">
+                <field name="assigned_employee_ids" type="row"/>
+                <field name="stages" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_carwash_jobcard_dashboard" model="ir.actions.act_window">
+        <field name="name">Employee Productivity</field>
+        <field name="res_model">carwash.jobcard</field>
+        <field name="view_mode">graph,pivot,kanban,list</field>
+    </record>
+
+    <record id="view_carwash_appointment_line_graph" model="ir.ui.view">
+        <field name="name">carwash.appointment.line.graph</field>
+        <field name="model">carwash.appointment.line</field>
+        <field name="arch" type="xml">
+            <graph string="Revenue by Service" type="bar">
+                <field name="product_id"/>
+                <field name="price_subtotal" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_carwash_appointment_line_pivot" model="ir.ui.view">
+        <field name="name">carwash.appointment.line.pivot</field>
+        <field name="model">carwash.appointment.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Revenue by Service">
+                <field name="product_id" type="row"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_carwash_revenue_by_service" model="ir.actions.act_window">
+        <field name="name">Revenue by Service</field>
+        <field name="res_model">carwash.appointment.line</field>
+        <field name="view_mode">graph,pivot</field>
+        <field name="domain">[('appointment_id.state', '=', 'done')]</field>
+    </record>
+</odoo>

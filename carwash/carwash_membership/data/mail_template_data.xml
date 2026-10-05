@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_appointment_confirmed" model="mail.template">
+            <field name="name">Car Wash: Booking Confirmed</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Your car wash booking {{ object.name }} is confirmed</field>
+            <field name="email_to">{{ object.customer_id.email }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Hi <t t-out="object.customer_id.name or ''"/>,</p>
+    <p>
+        Your booking <t t-out="object.name or ''"/> for
+        <span style="font-weight: bold;" t-out="object.vehicle_id.license_plate or ''"/>
+        is confirmed for <t t-out="format_datetime(object.appointment_date) or ''"/>. Token number:
+        <span style="font-weight: bold;" t-out="object.token_no or ''"/>.
+    </p>
+    <p>See you soon!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_appointment_ready" model="mail.template">
+            <field name="name">Car Wash: Vehicle Ready for Pickup</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Your vehicle is ready for pickup - {{ object.name }}</field>
+            <field name="email_to">{{ object.customer_id.email }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Hi <t t-out="object.customer_id.name or ''"/>,</p>
+    <p>
+        Great news! Your vehicle <span style="font-weight: bold;" t-out="object.vehicle_id.license_plate or ''"/>
+        is clean and ready for pickup.
+    </p>
+    <p>Thank you for choosing us!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_payment_request" model="mail.template">
+            <field name="name">Car Wash: Membership Payment Request</field>
+            <field name="model_id" ref="model_carwash_membership"/>
+            <field name="subject">Complete your {{ object.plan_id.name }} membership payment</field>
+            <field name="email_to">{{ object.partner_id.email }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Hi <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>
+        Your <t t-out="object.plan_id.name or ''"/> membership
+        (<t t-out="object.plan_id._benefit_summary() or ''"/>) is ready - it activates as soon as your payment
+        <t t-if="object.pending_order_id">of <strong t-out="format_amount(object.pending_order_id.amount_total, object.pending_order_id.currency_id)"/></t>
+        is received.
+    </p>
+    <p t-if="object.pending_order_id">
+        <a t-att-href="object.pending_order_id.get_base_url() + object.pending_order_id.get_portal_url()"
+           style="background-color: #084b76; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">
+            Pay now
+        </a>
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_renewed" model="mail.template">
+            <field name="name">Car Wash: Membership Active</field>
+            <field name="model_id" ref="model_carwash_membership"/>
+            <field name="subject">Your car wash membership {{ object.name }} is active</field>
+            <field name="email_to">{{ object.partner_id.email }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Hi <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>
+        Thanks for your payment - your <t t-out="object.plan_id.name or ''"/> membership is active until
+        <t t-out="format_date(object.paid_until) or ''"/>.
+    </p>
+    <p>Thank you for being a member!</p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

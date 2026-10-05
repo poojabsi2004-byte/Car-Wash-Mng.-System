@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_my_home_carwash" name="My Bookings" customize_show="True" inherit_id="portal.portal_my_home" priority="20">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="portal_client_category_enable" t-value="True"/>
+        </xpath>
+        <div id="portal_client_category" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Car Wash Bookings</t>
+                <t t-set="url" t-value="'/my/bookings'"/>
+                <t t-set="text">Book a wash or view your bookings</t>
+                <t t-set="placeholder_count" t-value="'booking_count'"/>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_my_bookings" name="My Bookings">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Bookings</t>
+            </t>
+            <div t-if="membership" class="alert alert-success d-flex align-items-center gap-2 mt-3" role="alert">
+                <i class="fa fa-id-card"/>
+                <span><strong t-esc="membership.plan_id.name"/> member
+                    <t t-if="membership.washes_remaining &gt;= 0"> · <t t-esc="membership.washes_remaining"/> free wash(es) left</t>
+                    - open a booking below to apply your membership before the service starts.</span>
+            </div>
+            <div id="carwash_booking_requests"/>
+            <div t-if="not appointments" class="alert alert-warning" role="alert">
+                You have no bookings yet. <a href="/car-wash/book">Book a car wash</a>.
+            </div>
+            <t t-if="appointments" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>Booking #</th>
+                        <th>Vehicle</th>
+                        <th class="text-end">Date</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">Status</th>
+                    </tr>
+                </thead>
+                <t t-foreach="appointments" t-as="appointment">
+                    <tr>
+                        <td><a t-attf-href="/my/bookings/#{appointment.id}"><t t-out="appointment.name"/></a></td>
+                        <td><t t-out="appointment.vehicle_id.license_plate"/></td>
+                        <td class="text-end"><span t-field="appointment.appointment_date"/></td>
+                        <td class="text-end">
+                            <t t-esc="'%.2f' % appointment.amount_total"/>
+                            <span t-if="appointment.membership_id" class="badge text-bg-success ms-1" title="Membership applied">
+                                <i class="fa fa-id-card"/></span>
+                        </td>
+                        <td class="text-end"><span t-field="appointment.state"/></td>
+                    </tr>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_booking_page" name="Booking Detail">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title" t-value="object.name"/>
+            <div class="card p-4">
+                <h3><t t-out="object.name"/></h3>
+                <div t-if="message == 'applied'" class="alert alert-success">
+                    Membership applied - you save <strong t-esc="'%.2f' % object.membership_saving"/> on this booking.</div>
+                <div t-if="message == 'removed'" class="alert alert-info">Membership removed - normal prices apply.</div>
+                <div t-if="error == 'no_benefit'" class="alert alert-warning">
+                    Your membership gives no benefit on these services (or your free washes for this cycle are used up).</div>
+                <div t-if="error == 'no_membership'" class="alert alert-warning">
+                    You don't have an active membership. <a href="/car-wash/membership">See the plans</a>.</div>
+                <div t-if="error == 'locked'" class="alert alert-warning">
+                    The service has already started - the membership can't be changed any more.</div>
+                <p>
+                    <strong>Branch:</strong> <t t-out="object.company_id.name"/><br/>
+                    <strong>Vehicle:</strong> <t t-out="object.vehicle_id.license_plate"/><br/>
+                    <strong>Date:</strong> <span t-field="object.appointment_date"/><br/>
+                    <strong>Status:</strong> <span t-field="object.state"/>
+                </p>
+                <table class="table" t-if="object.line_ids">
+                    <thead>
+                        <tr><th>Service</th><th class="text-end">Qty</th><th class="text-end">Price</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="object.line_ids" t-as="line">
+                            <td>
+                                <t t-out="line.product_id.display_name"/>
+                                <span t-if="line.membership_covered" class="badge text-bg-success ms-1">Free with membership</span>
+                                <span t-elif="line.is_discount_line" class="badge text-bg-info ms-1">Membership</span>
+                                <div t-if="line.is_discount_line" class="small text-muted" t-esc="line.description"/>
+                            </td>
+                            <td class="text-end"><t t-if="not line.is_discount_line" t-out="line.quantity"/></td>
+                            <td class="text-end">
+                                <small t-if="line.membership_covered" class="text-muted text-decoration-line-through me-1"
+                                       t-esc="'%.2f' % (line.price_before_membership * line.quantity)"/>
+                                <span t-field="line.price_subtotal"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr t-if="object.membership_id and object.membership_saving">
+                            <td colspan="3" class="text-end text-success small">
+                                You save <t t-esc="'%.2f' % object.membership_saving"/> with your membership</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end fw-bold">Total</td>
+                            <td class="text-end fw-bold" t-esc="'%.2f' % object.amount_total"/>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div t-if="object.membership_id or membership" class="o_cw_member_option rounded p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <i class="fa fa-id-card me-1"/>
+                        <t t-if="object.membership_id">
+                            <strong t-esc="object.membership_id.plan_id.name"/> membership applied to this booking.
+                        </t>
+                        <t t-elif="can_apply_membership">
+                            You're a <strong t-esc="membership.plan_id.name"/> member - apply it to pay
+                            <strong t-esc="'%.2f' % membership_preview['member']"/>
+                            instead of <t t-esc="'%.2f' % membership_preview['normal']"/>
+                            (save <t t-esc="'%.2f' % membership_preview['saving']"/><t t-if="membership_preview['free_wash']">, uses 1 free wash</t>).
+                        </t>
+                        <t t-else="">
+                            You're a <strong t-esc="membership.plan_id.name"/> member, but the plan gives no benefit
+                            on these services<t t-if="membership.washes_remaining == 0"> (free washes for this cycle are used up)</t>.
+                        </t>
+                    </div>
+                    <form t-if="can_apply_membership or can_remove_membership"
+                          t-attf-action="/my/bookings/#{object.id}/membership" method="post" class="m-0">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="apply" t-att-value="'1' if can_apply_membership else '0'"/>
+                        <button t-if="can_apply_membership" type="submit" class="btn btn-primary btn-sm">
+                            <i class="fa fa-check me-1"/>Apply my membership</button>
+                        <button t-else="" type="submit" class="btn btn-link btn-sm text-danger">Remove membership</button>
+                    </form>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

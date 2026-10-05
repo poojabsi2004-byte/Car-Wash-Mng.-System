@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_product_template_form_carwash" model="ir.ui.view">
+        <field name="name">product.template.form.carwash</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Car Wash" name="carwash" groups="carwash_base.group_carwash_manager">
+                    <group>
+                        <group>
+                            <field name="is_carwash_service"/>
+                            <field name="carwash_duration" invisible="not is_carwash_service"/>
+                            <field name="carwash_bay_type" invisible="not is_carwash_service"/>
+                        </group>
+                    </group>
+                    <field name="carwash_material_line_ids" invisible="not is_carwash_service">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="uom_id"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <record id="action_carwash_service" model="ir.actions.act_window">
+        <field name="name">Services</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_carwash_service', '=', True)]</field>
+        <field name="context">{'default_is_carwash_service': 1, 'default_type': 'service'}</field>
+    </record>
+</odoo>

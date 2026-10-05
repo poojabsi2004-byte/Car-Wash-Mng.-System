@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="carwash_loyalty_program" model="loyalty.program">
+        <field name="name">Car Wash Loyalty Points</field>
+        <field name="program_type">loyalty</field>
+        <field name="applies_on">both</field>
+        <field name="trigger">auto</field>
+        <field name="rule_ids" eval="[(0, 0, {
+            'reward_point_mode': 'money',
+            'reward_point_amount': 1,
+        })]"/>
+        <field name="reward_ids" eval="[(0, 0, {
+            'reward_type': 'discount',
+            'discount': 10,
+            'discount_mode': 'percent',
+            'required_points': 100,
+        })]"/>
+    </record>
+</odoo>

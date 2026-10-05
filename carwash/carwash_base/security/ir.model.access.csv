@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_carwash_vehicle_user,carwash.vehicle.user,model_carwash_vehicle,group_carwash_user,1,1,1,0
+access_carwash_vehicle_manager,carwash.vehicle.manager,model_carwash_vehicle,group_carwash_manager,1,1,1,1
+access_carwash_appointment_user,carwash.appointment.user,model_carwash_appointment,group_carwash_user,1,1,1,0
+access_carwash_appointment_manager,carwash.appointment.manager,model_carwash_appointment,group_carwash_manager,1,1,1,1
+access_carwash_appointment_line_user,carwash.appointment.line.user,model_carwash_appointment_line,group_carwash_user,1,1,1,1
+access_carwash_appointment_line_manager,carwash.appointment.line.manager,model_carwash_appointment_line,group_carwash_manager,1,1,1,1
+access_carwash_bay_user,carwash.bay.user,model_carwash_bay,group_carwash_user,1,1,0,0
+access_carwash_bay_manager,carwash.bay.manager,model_carwash_bay,group_carwash_manager,1,1,1,1
+access_carwash_service_material_line_manager,carwash.service.material.line.manager,model_carwash_service_material_line,group_carwash_manager,1,1,1,1

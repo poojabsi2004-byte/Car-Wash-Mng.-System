@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_carwash_membership" model="ir.ui.view">
+        <field name="name">res.partner.form.carwash.membership</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="carwash_base.view_partner_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_carwash_memberships" type="object"
+                        class="oe_stat_button" icon="fa-id-card"
+                        invisible="not carwash_membership_ids">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text" invisible="not carwash_active_membership_id">Member</span>
+                        <span class="o_stat_text" invisible="carwash_active_membership_id">Memberships</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

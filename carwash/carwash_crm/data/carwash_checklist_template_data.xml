@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Loaded on every booking request; mandatory tasks must be ticked before "Confirm Booking". -->
+    <record id="checklist_template_lead_verification" model="carwash.checklist.template">
+        <field name="name">Booking Request Verification</field>
+        <field name="checklist_type">lead</field>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">5</field>
+        <field name="description">Front Desk verifies the request with the customer before it becomes a booking.</field>
+        <field name="item_ids" eval="[
+            (0, 0, {'name': 'Customer contacted and request confirmed', 'sequence': 10, 'is_required': True}),
+            (0, 0, {'name': 'Vehicle details verified', 'sequence': 20, 'is_required': True}),
+            (0, 0, {'name': 'Date, time and branch confirmed with the customer', 'sequence': 30, 'is_required': True}),
+            (0, 0, {'name': 'Membership / package benefit explained', 'sequence': 40, 'is_required': False}),
+            (0, 0, {'name': 'Special instructions noted', 'sequence': 50, 'is_required': False}),
+        ]"/>
+    </record>
+</odoo>

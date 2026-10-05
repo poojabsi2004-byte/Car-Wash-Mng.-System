@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Car Wash Management System — Developer Guide</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2430; line-height: 1.55; font-size: 13px; margin: 0;
+  }
+  .cover {
+    height: 245mm; display: flex; flex-direction: column; justify-content: center;
+  }
+  .cover .kicker { color: #6f42c1; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
+  .cover h1 { font-size: 40px; margin: 12px 0 4px; }
+  .cover .sub { color: #555; font-size: 15px; margin-bottom: 40px; }
+  .cover table { border-collapse: collapse; font-size: 12px; }
+  .cover td { padding: 4px 12px 4px 0; color: #555; }
+  .cover td.v { color: #1f2430; font-weight: 600; }
+
+  h1 { font-size: 22px; border-bottom: 3px solid #6f42c1; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 16px; color: #6f42c1; margin-top: 26px; border-left: 4px solid #6f42c1; padding-left: 8px; }
+  h3 { font-size: 13.5px; margin-top: 18px; color: #333; }
+  section { page-break-before: always; }
+  p { margin: 6px 0; }
+  code, .mono { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 11.5px; background: #f4f2fa; padding: 1px 5px; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 12px; }
+  th, td { border: 1px solid #ddd; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #f4f2fa; color: #4a3a6e; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 600; color: #fff; }
+  .b-primary { background: #6f42c1; } .b-info { background: #0dcaf0; color:#03363d; }
+  .b-success { background: #20c997; } .b-warning { background: #ffc107; color:#4a3a00; } .b-danger { background: #dc3545; }
+  .b-secondary { background: #6c757d; }
+  .note { background: #f4f2fa; border-left: 4px solid #6f42c1; padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .warn { background: #fff8e6; border-left: 4px solid #ffc107; padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .diagram { border: 1px solid #ddd; border-radius: 6px; padding: 14px; background: #fcfcfd; margin: 12px 0; }
+  .modrow { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .modbox { border: 2px solid #6f42c1; border-radius: 6px; padding: 6px 12px; font-weight: 600; font-size: 12px; background: #fff; white-space: nowrap; }
+  .modbox.sm { border-color: #999; font-weight: 500; color: #555; }
+  .arrow { color: #999; font-size: 16px; }
+  ul, ol { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .fsm { font-family: monospace; font-size: 12px; background: #f8f8fb; padding: 10px 14px; border-radius: 6px; border: 1px solid #eee; white-space: pre; overflow-x: auto; }
+  .toc { columns: 1; }
+  .toc a { text-decoration: none; color: #1f2430; }
+  .toc li { margin: 4px 0; }
+  .small { font-size: 11px; color: #666; }
+  footer { margin-top: 30px; font-size: 10px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">Developer Guide</div>
+  <h1>Car Wash Management System</h1>
+  <div class="sub">Odoo 19 Community Edition — Architecture, Data Model, Security &amp; Integration Reference</div>
+  <table>
+    <tr><td>Modules</td><td class="v">6 (carwash_base, carwash_jobcard, carwash_membership, carwash_multibranch, carwash_dashboard, carwash_website)</td></tr>
+    <tr><td>Platform</td><td class="v">Odoo 19.0 Community Edition (no Enterprise dependencies)</td></tr>
+    <tr><td>Scope</td><td class="v">POS is explicitly out of scope for this system</td></tr>
+    <tr><td>Audience</td><td class="v">Developers extending, maintaining, or integrating with this system</td></tr>
+  </table>
+</div>
+
+<section id="toc">
+<h1>Table of Contents</h1>
+<ol class="toc">
+  <li><a href="#arch">Module Architecture</a></li>
+  <li><a href="#data">Data Model</a></li>
+  <li><a href="#security">Security &amp; Access Control</a></li>
+  <li><a href="#states">State Machines</a></li>
+  <li><a href="#booking">Booking &amp; Slot-Availability Design</a></li>
+  <li><a href="#integrations">Integration Points</a></li>
+  <li><a href="#ops">Installation &amp; Operations</a></li>
+</ol>
+</section>
+
+<section id="arch">
+<h1>1. Module Architecture</h1>
+<p>The system is a chain of six installable Odoo apps, each depending on the previous. Every module is Community-edition only — no Enterprise modules appear anywhere in the dependency graph.</p>
+
+<div class="diagram">
+  <div class="modrow"><div class="modbox">carwash_base</div><span class="small">Customers, vehicles, service catalogue, appointments, bays, queue, inventory consumption, Sales Order handoff</span></div>
+  <div class="modrow"><span class="arrow">&#8595;</span></div>
+  <div class="modrow"><div class="modbox">carwash_jobcard</div><span class="small">Job cards, staff assignment, checklists, QC, inspections, service packages, Project/Timesheet time-tracking</span></div>
+  <div class="modrow"><span class="arrow">&#8595;</span></div>
+  <div class="modrow"><div class="modbox">carwash_membership</div><span class="small">Membership plans, recurring billing, wash allowances, Loyalty integration</span></div>
+  <div class="modrow"><span class="arrow">&#8595;</span></div>
+  <div class="modrow"><div class="modbox">carwash_multibranch</div><span class="small">Multi-company branch isolation, Owner role, cross-branch reporting</span></div>
+  <div class="modrow"><span class="arrow">&#8595;</span></div>
+  <div class="modrow">
+    <div class="modbox">carwash_dashboard</div><span class="arrow">+</span><div class="modbox">carwash_website</div>
+    <span class="small">Role-aware OWL dashboard &nbsp;|&nbsp; Real-time-slot online booking + customer portal</span>
+  </div>
+</div>
+
+<table>
+<tr><th>Module</th><th>Odoo Dependencies</th><th>Adds</th></tr>
+<tr><td class="mono">carwash_base</td><td class="mono">base, mail, contacts, product, sale_management, stock</td><td>Core operational models</td></tr>
+<tr><td class="mono">carwash_jobcard</td><td class="mono">carwash_base, hr, hr_timesheet</td><td>Job cards, QC, Project/Timesheet integration</td></tr>
+<tr><td class="mono">carwash_membership</td><td class="mono">carwash_base, loyalty</td><td>Recurring billing, Loyalty points</td></tr>
+<tr><td class="mono">carwash_multibranch</td><td class="mono">carwash_membership</td><td>Owner role, branch isolation rules</td></tr>
+<tr><td class="mono">carwash_dashboard</td><td class="mono">carwash_multibranch</td><td>OWL client-action dashboard (no report engine)</td></tr>
+<tr><td class="mono">carwash_website</td><td class="mono">carwash_multibranch, website, portal, resource</td><td>Public booking controllers, portal "My Bookings"</td></tr>
+</table>
+
+<p><strong>Why this order matters:</strong> each module only ever depends on modules earlier in the chain, so a deployment can stop at any point — e.g. a single-branch shop can skip <span class="mono">carwash_multibranch</span>/<span class="mono">carwash_dashboard</span>/<span class="mono">carwash_website</span> entirely and run just base + jobcard + membership.</p>
+</section>
+
+<section id="data">
+<h1>2. Data Model</h1>
+
+<h2>carwash_base</h2>
+<table>
+<tr><th>Model</th><th>Purpose</th><th>Key Relations</th></tr>
+<tr><td class="mono">carwash.appointment</td><td>A booked or walk-in visit</td><td>customer_id → res.partner, vehicle_id → carwash.vehicle, bay_id → carwash.bay, line_ids → carwash.appointment.line, sale_order_id → sale.order</td></tr>
+<tr><td class="mono">carwash.appointment.line</td><td>One service on an appointment</td><td>product_id → product.product (is_carwash_service=True)</td></tr>
+<tr><td class="mono">carwash.vehicle</td><td>A customer's registered vehicle</td><td>customer_id → res.partner; unique(license_plate, company_id)</td></tr>
+<tr><td class="mono">carwash.bay</td><td>A physical wash bay/tunnel</td><td>company_id → res.company (branch-scoped)</td></tr>
+<tr><td class="mono">carwash.service.material.line</td><td>Consumables recipe for a service product</td><td>lives on product.template (Car Wash page)</td></tr>
+</table>
+
+<h2>carwash_jobcard</h2>
+<table>
+<tr><th>Model</th><th>Purpose</th><th>Key Relations</th></tr>
+<tr><td class="mono">carwash.jobcard</td><td>The shop-floor work order for an appointment</td><td>appointment_id → carwash.appointment (cascade), assigned_employee_ids → hr.employee (m2m), checklist_template_id → carwash.checklist.template, task_id → project.task</td></tr>
+<tr><td class="mono">carwash.jobcard.checklist.line</td><td>One task item on a job card</td><td>jobcard_id → carwash.jobcard (cascade)</td></tr>
+<tr><td class="mono">carwash.checklist.template / .item</td><td>Reusable task lists (e.g. "Basic Wash Checklist")</td><td>template_id → carwash.checklist.template (cascade)</td></tr>
+<tr><td class="mono">carwash.inspection / .photo</td><td>Pre/post-wash vehicle condition record</td><td>appointment_id → carwash.appointment (cascade)</td></tr>
+<tr><td class="mono">carwash.service.package / .line</td><td>Bundled services applied to an appointment in one click</td><td>package_id → carwash.service.package (cascade)</td></tr>
+</table>
+
+<h2>carwash_membership</h2>
+<table>
+<tr><th>Model</th><th>Purpose</th><th>Key Relations</th></tr>
+<tr><td class="mono">carwash.membership</td><td>A customer's active subscription</td><td>partner_id → res.partner, plan_id → carwash.membership.plan, company_id → res.company</td></tr>
+<tr><td class="mono">carwash.membership.plan</td><td>A billable recurring plan (price, period, wash allowance, covered services)</td><td>product_id → product.product (billing product)</td></tr>
+</table>
+
+<h2>carwash_dashboard / carwash_website</h2>
+<p>Neither module adds new persistent business models. <span class="mono">carwash.dashboard</span> is a transient, non-stored model that exists only to expose one server method (<span class="mono">get_dashboard_data()</span>) to an OWL client action — there is nothing to query it directly for. <span class="mono">carwash_website</span> adds no models at all; it is controllers + security + templates over the existing <span class="mono">carwash.appointment</span> / <span class="mono">carwash.vehicle</span> models.</p>
+
+<h2>Cross-Module Extension Pattern</h2>
+<p>Later modules extend <span class="mono">carwash.appointment</span> via <span class="mono">_inherit</span> rather than new models — e.g. <span class="mono">carwash_jobcard</span> adds <span class="mono">jobcard_ids</span>/<span class="mono">inspection_count</span> and overrides <span class="mono">action_ready()</span> to gate on job-card completion; <span class="mono">carwash_multibranch</span> adds no fields at all, only <span class="mono">ir.rule</span> records. This keeps the base model's own file the single source of truth for the core fields and state machine.</p>
+</section>
+
+<section id="security">
+<h1>3. Security &amp; Access Control</h1>
+
+<h2>The Five Roles</h2>
+<p>All five groups share one <span class="mono">res.groups.privilege</span> ("Car Wash", defined in <span class="mono">carwash_base</span>), which is the Odoo 19 replacement for the deprecated <span class="mono">category_id</span> grouping — it's what makes them appear together as one radio-button set on a user's form.</p>
+<table>
+<tr><th>Group (XML ID)</th><th>Defined In</th><th>Implies</th><th>Typical User</th></tr>
+<tr><td><span class="badge b-secondary">Front Desk</span> <span class="mono">group_carwash_user</span></td><td>carwash_base</td><td>base.group_user</td><td>Reception / booking desk</td></tr>
+<tr><td><span class="badge b-info">Washer/Detailer</span> <span class="mono">group_carwash_washer</span></td><td>carwash_jobcard</td><td>base.group_user</td><td>Wash bay staff</td></tr>
+<tr><td><span class="badge b-warning">QC Inspector</span> <span class="mono">group_carwash_qc</span></td><td>carwash_jobcard</td><td>base.group_user</td><td>Quality control staff</td></tr>
+<tr><td><span class="badge b-primary">Manager</span> <span class="mono">group_carwash_manager</span></td><td>carwash_base</td><td>group_carwash_user</td><td>Branch/shop manager</td></tr>
+<tr><td><span class="badge b-success">Owner</span> <span class="mono">group_carwash_owner</span></td><td>carwash_multibranch</td><td>group_carwash_manager, base.group_multi_company</td><td>Multi-branch operator</td></tr>
+</table>
+
+<h2>Model Access (ir.model.access.csv)</h2>
+<table>
+<tr><th>Model</th><th>Front Desk</th><th>Washer</th><th>QC</th><th>Manager</th></tr>
+<tr><td class="mono">carwash.appointment</td><td>RWC</td><td>R</td><td>R</td><td>RWCU</td></tr>
+<tr><td class="mono">carwash.vehicle</td><td>RWC</td><td>—</td><td>—</td><td>RWCU</td></tr>
+<tr><td class="mono">carwash.bay</td><td>RW</td><td>—</td><td>—</td><td>RWCU</td></tr>
+<tr><td class="mono">carwash.jobcard</td><td>—</td><td>RW*</td><td>RW*</td><td>RWCU</td></tr>
+<tr><td class="mono">carwash.dashboard</td><td>R</td><td>R</td><td>R</td><td>R</td></tr>
+</table>
+<p class="small">R=read, W=write, C=create, U=unlink. * Washer/QC job-card access is further narrowed by an <span class="mono">ir.rule</span> ("washer sees only their own assigned job cards") — see below. Owner inherits Manager's full grant.</p>
+
+<div class="warn">
+<strong>Real bug found and fixed this round:</strong> in Odoo 19, a <span class="mono">groups="..."</span> attribute inside a view's <span class="mono">&lt;button&gt;</span>/<span class="mono">&lt;page&gt;</span> arch is resolved at <em>runtime</em> against fully-qualified <span class="mono">module.xml_id</span> strings — unlike <span class="mono">&lt;menuitem groups="..."&gt;</span>, which resolves bare names relative to the current module via the standard <span class="mono">ref()</span> mechanism. A bare <span class="mono">groups="group_carwash_user"</span> inside a form/kanban arch silently resolves to <em>no group at all</em>, which hides the element from <strong>every user, including the superuser</strong> (view-level group filtering is not bypassed by <span class="mono">env.su</span>). Always fully-qualify arch-embedded <span class="mono">groups=</span>, e.g. <span class="mono">groups="carwash_base.group_carwash_user"</span>, even when the group lives in the same module as the view.
+</div>
+
+<h2>Record Rules (ir.rule)</h2>
+<div class="note">
+<strong>Combination gotcha:</strong> Odoo ANDs together rules that have no <span class="mono">groups</span> field ("global" rules) with everything else, but ORs together rules that share a group. This system deliberately writes branch-isolation and ownership rules as <em>global</em> rules with a self-exempting domain (e.g. <span class="mono">... if not user.has_group('...group_carwash_owner') else []</span>) rather than as group-specific rules — a group-specific "Owner sees everything" rule would <em>OR</em> with a washer's "only assigned job cards" rule instead of narrowing it, defeating the restriction entirely for any user in both groups.
+</div>
+<table>
+<tr><th>Rule</th><th>Model</th><th>Kind</th><th>Effect</th></tr>
+<tr><td>Branch Isolation ×6</td><td>vehicle, bay, appointment, jobcard, inspection, membership</td><td>Global</td><td><span class="mono">company_id in company_ids</span> unless Owner</td></tr>
+<tr><td>Washer Own Job Cards</td><td>carwash.jobcard</td><td>Group (washer)</td><td>only job cards where they're an assigned employee</td></tr>
+<tr><td>Portal Own Bookings</td><td>carwash.appointment</td><td>Group (portal)</td><td><span class="mono">customer_id = user.partner_id</span></td></tr>
+<tr><td>Portal Own Vehicles</td><td>carwash.vehicle</td><td>Group (portal)</td><td><span class="mono">customer_id = user.partner_id</span></td></tr>
+</table>
+<p>Portal users get zero direct <span class="mono">create</span>/<span class="mono">write</span> ACL on either model — every booking is created via <span class="mono">sudo()</span> inside the controller after server-side validation, so there is exactly one code path that can create a booking, not two that can drift apart.</p>
+</section>
+
+<section id="states">
+<h1>4. State Machines</h1>
+
+<h2>carwash.appointment.state</h2>
+<div class="fsm">draft &#8594; confirmed &#8594; arrived &#8594; in_service &#8594; ready &#8594; done
+                                            \&#8594; cancelled
+                                  confirmed \&#8594; no_show</div>
+<ul>
+<li><span class="mono">action_confirm()</span> — requires at least one service line.</li>
+<li><span class="mono">action_arrive()</span> — stamps <span class="mono">arrived_at</span> (drives the "waiting time" KPI).</li>
+<li><span class="mono">action_start_service()</span> — requires a free bay; sets the bay to <span class="mono">occupied</span>; stamps <span class="mono">service_started_at</span>. <span class="mono">carwash_jobcard</span> also auto-creates a <span class="mono">carwash.jobcard</span> here.</li>
+<li><span class="mono">action_ready()</span> — frees the bay. <span class="mono">carwash_jobcard</span> overrides this to <em>block</em> until every open job card on the appointment has reached <span class="mono">done</span>/<span class="mono">cancel</span> (QC-gated).</li>
+<li><span class="mono">action_done()</span> — creates stock consumption moves and a confirmed Sales Order (both idempotent — skipped if already present).</li>
+</ul>
+<p><strong>Bay time-window guard:</strong> <span class="mono">_check_bay_time_conflict</span> (a <span class="mono">@api.constrains</span>) rejects any <span class="mono">confirmed</span>/<span class="mono">arrived</span>/<span class="mono">in_service</span> appointment whose <span class="mono">[start, start+duration)</span> window overlaps another appointment on the same bay in one of those three states. This supersedes an earlier, narrower version of the constraint that only checked <span class="mono">in_service</span> — the physical <span class="mono">bay.state != 'free'</span> guard in <span class="mono">action_start_service()</span> is unrelated and still applies on top of it (one guards the paper reservation, the other the physical bay).</p>
+
+<h2>carwash.jobcard.stages</h2>
+<div class="fsm">draft &#8594; in_progress &#8594; qc &#8594; done
+                       ^          \&#8594; in_progress  (QC Fail / rework loop)
+              draft/in_progress &#8594; cancel</div>
+<ul>
+<li><span class="mono">action_start()</span> — requires <span class="mono">assigned_employee_ids</span>; auto-creates a <span class="mono">project.task</span> on first start (idempotent).</li>
+<li><span class="mono">action_submit_qc()</span> — blocked while any checklist line is unchecked.</li>
+<li><span class="mono">action_qc_pass()</span> — stamps <span class="mono">qc_inspector_id</span>/<span class="mono">end_time</span>; auto-creates one <span class="mono">account.analytic.line</span> timesheet entry (<span class="mono">end_time − start_time</span>, attributed to the first assigned employee).</li>
+<li><span class="mono">action_qc_fail()</span> — sends the card back to <span class="mono">in_progress</span> and resets every checklist line to unchecked.</li>
+</ul>
+
+<h2>carwash.membership.state</h2>
+<div class="fsm">active &#8594; expired
+active &#8594; cancelled</div>
+<p><span class="mono">_bill_cycle()</span> (called from a cron and from <span class="mono">action_renew_now()</span>) creates+confirms a Sales Order for the plan's billing product, advances <span class="mono">next_billing_date</span> by one period, and resets <span class="mono">washes_used</span>. Each covered wash increments <span class="mono">washes_used</span> via the appointment-done hook.</p>
+</section>
+
+<section id="booking">
+<h1>5. Booking &amp; Slot-Availability Design</h1>
+
+<h2>Business Hours</h2>
+<p>Reused wholesale from <span class="mono">resource.calendar</span> (via <span class="mono">res.company.resource_calendar_id</span>, brought in by the <span class="mono">resource</span>/<span class="mono">hr</span> dependency chain) — zero new fields or models. Each branch's hours are managed through the standard Employees → Working Schedules screen.</p>
+
+<h2>_get_available_slots(company, date, service)</h2>
+<p>An <span class="mono">@api.model</span> method on <span class="mono">carwash.appointment</span> that walks each <span class="mono">resource.calendar.attendance</span> window for the requested weekday in half-hour increments, and for each candidate slot counts how many of the branch's active bays are <em>not</em> already covered by an overlapping <span class="mono">confirmed</span>/<span class="mono">arrived</span>/<span class="mono">in_service</span> appointment. Returns <span class="mono">[{start, bay_count, bay_ids}, ...]</span> — one entry per slot that has at least one free bay. This is the same overlap logic as the model constraint, so a slot the method offers can never fail the constraint moments later under normal (non-concurrent) use.</p>
+
+<h2>Concurrency: Row Locking</h2>
+<div class="warn">
+Two customers can request the same slot in the same instant. A Python-level <span class="mono">@api.constrains</span> check alone is not enough under PostgreSQL's default READ COMMITTED isolation — both transactions can pass the pre-check before either commits.
+</div>
+<p>The booking controller's <span class="mono">_lock_and_pick_bay(company, start, end)</span> issues <span class="mono">SELECT id FROM carwash_bay WHERE id IN (...) FOR UPDATE</span> against the branch's bay rows <em>before</em> re-reading existing appointments and picking a free bay. A second concurrent request blocks on that lock until the first request's transaction commits, then re-reads and correctly sees the first booking — so it picks a different bay, or reports the slot full, instead of double-booking. This is plain PostgreSQL row locking; no new infrastructure.</p>
+
+<h2>Controller Flow (no JavaScript)</h2>
+<p>The whole booking flow is server-rendered, plain HTML forms — GET → GET → POST → GET — deliberately avoiding a JS/ajax layer, since the environment this was built in has no way to browser-test client-side behavior. Every route is <span class="mono">auth='user'</span>, so an anonymous visitor is auto-redirected to <span class="mono">/web/login</span> — this alone satisfies "portal login required to book."</p>
+<table>
+<tr><th>Route</th><th>Method</th><th>Purpose</th></tr>
+<tr><td class="mono">/car-wash/book</td><td>GET</td><td>Branch + service + date picker</td></tr>
+<tr><td class="mono">/car-wash/book/slots</td><td>GET</td><td>Renders <span class="mono">_get_available_slots()</span> output + vehicle picker (existing or inline new-vehicle form)</td></tr>
+<tr><td class="mono">/car-wash/book/confirm</td><td>POST (CSRF)</td><td>Locks bays, re-validates, <span class="mono">sudo()</span>-creates vehicle (if new) + appointment, calls the real <span class="mono">action_confirm()</span></td></tr>
+<tr><td class="mono">/car-wash/book/success/&lt;id&gt;</td><td>GET</td><td>Confirmation page</td></tr>
+<tr><td class="mono">/my/bookings</td><td>GET</td><td>Portal list (CustomerPortal extension, mirrors <span class="mono">sale</span>'s <span class="mono">/my/orders</span> pattern)</td></tr>
+<tr><td class="mono">/my/bookings/&lt;id&gt;</td><td>GET</td><td>Portal detail, via <span class="mono">_document_check_access</span></td></tr>
+</table>
+<p><strong>Explicitly out of scope:</strong> online payment at booking time (billing still happens at completion via the existing Sales Order flow) and holiday/one-off closures (a clean upgrade path exists via <span class="mono">resource.calendar.leaves</span> if ever needed).</p>
+</section>
+
+<section id="integrations">
+<h1>6. Integration Points</h1>
+<table>
+<tr><th>Odoo App</th><th>How It's Used</th></tr>
+<tr><td>Sales (sale_management)</td><td>Every completed appointment and every membership billing cycle creates and confirms a real <span class="mono">sale.order</span> — all revenue reporting downstream is standard Odoo Sales/Accounting, nothing bespoke.</td></tr>
+<tr><td>Stock</td><td><span class="mono">action_done()</span> creates <span class="mono">stock.move</span>s for each service's consumables recipe (<span class="mono">carwash.service.material.line</span>), so material usage is real, reportable inventory movement.</td></tr>
+<tr><td>Loyalty</td><td>Membership billing feeds the standard <span class="mono">loyalty.program</span>/<span class="mono">loyalty.card</span> models — points accrue on confirmed Sales Orders exactly as they would for any other customer.</td></tr>
+<tr><td>Project + Timesheets</td><td>One shared <span class="mono">project.project</span> ("Car Wash Jobs"). Starting a job card creates a <span class="mono">project.task</span>; passing QC logs one <span class="mono">account.analytic.line</span> timesheet entry — real, standard-Odoo-reportable time data (Timesheets app, project profitability), not just raw timestamp fields.</td></tr>
+<tr><td>Website/Portal</td><td>Reuses <span class="mono">website.layout</span> and the <span class="mono">portal.CustomerPortal</span> extension pattern from <span class="mono">sale</span> — no bespoke front-end framework.</td></tr>
+<tr><td>Resource (business hours)</td><td><span class="mono">res.company.resource_calendar_id</span> powers slot generation — the same calendar model used for employee working schedules.</td></tr>
+</table>
+</section>
+
+<section id="ops">
+<h1>7. Installation &amp; Operations</h1>
+<h2>Install Order</h2>
+<p>Standard Odoo dependency resolution handles this automatically — installing <span class="mono">carwash_website</span> (the leaf module) pulls in all five others. For a minimal single-branch, no-online-booking deployment, install only <span class="mono">carwash_base</span> + <span class="mono">carwash_jobcard</span> (+ <span class="mono">carwash_membership</span> if recurring plans are needed).</p>
+<h2>Demo Data</h2>
+<p>Every module ships realistic demo data (customers, vehicles, bays, a full day's queue including one intentionally in-progress appointment, a second branch, an Owner and a Branch Manager account) so a fresh install is immediately explorable without manual setup.</p>
+<h2>Multi-Company Note for Developers</h2>
+<p><span class="mono">env.companies</span> (active/switcher-selected companies) and <span class="mono">user.company_id</span> (the user's fixed home company) are <strong>not the same thing</strong> and are easy to conflate. Dashboard and booking scoping consistently use <span class="mono">env.companies</span> so behavior follows the company switcher, not just the user's default branch.</p>
+<h2>Regression Testing</h2>
+<p>There is no formal Odoo <span class="mono">tests/</span> package; verification throughout development used ad-hoc <span class="mono">odoo-bin shell</span> scripts exercising the full workflow per module plus targeted negative-path and cross-role access checks, re-run after every change against a clean reinstall.</p>
+</section>
+
+<footer>Car Wash Management System — Developer Guide — Odoo 19 Community Edition</footer>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="inspection_type_pre" model="carwash.inspection.type">
+        <field name="name">Pre-Wash</field>
+        <field name="sequence">10</field>
+        <field name="description">Record existing scratches, dents and damage before the wash starts.</field>
+    </record>
+    <record id="inspection_type_post" model="carwash.inspection.type">
+        <field name="name">Post-Wash</field>
+        <field name="sequence">20</field>
+        <field name="description">Confirm the vehicle is clean and no new damage was caused during the wash.</field>
+    </record>
+</odoo>

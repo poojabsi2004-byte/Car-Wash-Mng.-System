@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_carwash_appointment_portal,carwash.appointment.portal,carwash_base.model_carwash_appointment,base.group_portal,1,0,0,0
+access_carwash_vehicle_portal,carwash.vehicle.portal,carwash_base.model_carwash_vehicle,base.group_portal,1,0,0,0

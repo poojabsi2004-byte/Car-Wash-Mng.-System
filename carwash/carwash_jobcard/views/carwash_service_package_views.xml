@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_service_package_list" model="ir.ui.view">
+        <field name="name">carwash.service.package.list</field>
+        <field name="model">carwash.service.package</field>
+        <field name="arch" type="xml">
+            <list string="Service Packages">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="service_count"/>
+                <field name="duration" widget="float_time"/>
+                <field name="services_total"/>
+                <field name="price_type"/>
+                <field name="total_price" string="Package Amount"/>
+                <field name="saving" decoration-success="saving &gt; 0"/>
+                <field name="booking_count" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_service_package_form" model="ir.ui.view">
+        <field name="name">carwash.service.package.form</field>
+        <field name="model">carwash.service.package</field>
+        <field name="arch" type="xml">
+            <form string="Service Package">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
+                            <field name="booking_count" widget="statinfo" string="Bookings"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Full Wash Package"/></h1>
+                    </div>
+                    <group>
+                        <group string="Pricing">
+                            <field name="active" invisible="1"/>
+                            <field name="price_type" widget="radio"/>
+                            <field name="fixed_price" invisible="price_type != 'fixed'" required="price_type == 'fixed'"/>
+                            <field name="services_total"/>
+                            <field name="total_price" string="Package Amount" class="fw-bold"/>
+                            <field name="saving" invisible="not saving" decoration-success="1"/>
+                        </group>
+                        <group string="Summary">
+                            <field name="service_count"/>
+                            <field name="duration" widget="float_time"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Describe what this package includes..."/>
+                    <notebook>
+                        <page string="Services" name="services">
+                            <p class="text-muted">The bookable services in this package - drives pricing and what actually gets applied to a booking.</p>
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="list_price"/>
+                                    <field name="duration" widget="float_time" optional="show"/>
+                                    <field name="subtotal" sum="Services Total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Website Content" name="website_content">
+                            <p class="text-muted">
+                                Rich "what's included" content shown on this package's website tab. Use headings
+                                for each wash stage and bullet lists underneath (bullets get a checkmark style
+                                automatically). Leave empty to fall back to a plain list of the services above.
+                            </p>
+                            <field name="website_highlights" widget="html"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_carwash_service_package" model="ir.actions.act_window">
+        <field name="name">Service Packages</field>
+        <field name="res_model">carwash.service.package</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

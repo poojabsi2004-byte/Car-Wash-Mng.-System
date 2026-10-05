@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="book_requested_page" name="Booking Request Received">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+                <div class="container py-5" style="max-width: 640px;">
+                    <t t-call="carwash_website.book_steps"><t t-set="step" t-value="3"/></t>
+                    <div class="o_cw_form_card card p-5 text-center">
+                        <div class="o_cw_card_icon o_cw_teal mx-auto mb-3" style="width:4rem;height:4rem;font-size:2rem;">
+                            <i class="fa fa-paper-plane"/>
+                        </div>
+                        <h1 class="h3 mb-3">Booking Request Received!</h1>
+                        <p class="text-muted">
+                            Thanks! We've received your request for
+                            <t t-if="lead.carwash_package_id"><strong t-esc="lead.carwash_package_id.name"/>
+                                (<t t-esc="'%.2f' % lead.carwash_package_amount"/>)</t>
+                            <t t-if="lead.carwash_package_id and lead.carwash_service_ids"> + </t>
+                            <strong t-if="lead.carwash_service_ids" t-esc="', '.join(lead.carwash_service_ids.mapped('name'))"/> on
+                            <strong t-esc="lead.carwash_booking_date.strftime('%B %d, %Y at %I:%M %p')"/>
+                            at <strong t-esc="lead.company_id.name"/>.
+                        </p>
+                        <p t-if="lead.carwash_use_membership" class="text-success">
+                            <i class="fa fa-id-card me-1"/> Your membership will be applied to this booking
+                            <t t-if="lead.carwash_member_saving"> - estimated price
+                                <strong t-esc="'%.2f' % lead.carwash_member_amount"/>
+                                (you save <t t-esc="'%.2f' % lead.carwash_member_saving"/>)</t>.
+                        </p>
+                        <p class="text-muted">Our team will confirm it shortly - you'll get an email once your booking is confirmed.</p>
+                        <a href="/my/bookings" class="btn btn-primary btn-lg mt-2">View My Bookings</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- My Bookings: requests waiting for staff confirmation, with the membership switch -->
+    <template id="portal_my_bookings_requests" name="My Bookings: Pending Requests" inherit_id="carwash_website.portal_my_bookings">
+        <xpath expr="//div[@id='carwash_booking_requests']" position="inside">
+            <div t-if="request_message == 'membership_on'" class="alert alert-success">
+                Your membership will be applied when we confirm the booking.</div>
+            <div t-if="request_message == 'membership_off'" class="alert alert-info">
+                Membership turned off for that request - normal prices apply.</div>
+            <t t-if="booking_requests">
+                <h5 class="mt-3">Awaiting confirmation</h5>
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr><th>Request</th><th>Vehicle</th><th class="text-end">Date</th>
+                            <th class="text-end">Est. price</th><th class="text-end">Membership</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="booking_requests" t-as="req">
+                            <td>
+                                <t t-esc="' + '.join(filter(None, [req.carwash_package_id.name] + req.carwash_service_ids.mapped('name')))"/>
+                                <span class="badge text-bg-warning ms-1">Requested</span>
+                            </td>
+                            <td t-esc="req.carwash_license_plate"/>
+                            <td class="text-end" t-esc="req.carwash_booking_date.strftime('%d %b %Y %I:%M %p') if req.carwash_booking_date else ''"/>
+                            <td class="text-end">
+                                <small t-if="req.carwash_member_saving" class="text-muted text-decoration-line-through me-1"
+                                       t-esc="'%.2f' % req.carwash_normal_amount"/>
+                                <t t-esc="'%.2f' % req.carwash_member_amount"/>
+                            </td>
+                            <td class="text-end">
+                                <form t-if="membership or req.carwash_use_membership"
+                                      t-attf-action="/my/booking-requests/#{req.id}/membership" method="post" class="m-0">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="use_membership" t-att-value="'0' if req.carwash_use_membership else '1'"/>
+                                    <button t-if="req.carwash_use_membership" type="submit" class="btn btn-link btn-sm text-danger p-0">
+                                        <i class="fa fa-id-card me-1 text-success"/>Applied · remove</button>
+                                    <button t-else="" type="submit" class="btn btn-primary btn-sm">Apply my membership</button>
+                                </form>
+                                <span t-else="" class="text-muted small">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h5 class="mt-4">Confirmed bookings</h5>
+            </t>
+        </xpath>
+    </template>
+</odoo>

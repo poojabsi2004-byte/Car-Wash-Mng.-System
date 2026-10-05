@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_carwash_appointment_form" model="ir.ui.view">
+        <field name="name">carwash.appointment.form</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <form string="Booking" class="o_cw_appointment_form">
+                <header>
+                    <field name="all_services_done" invisible="1"/>
+                    <field name="can_run_services" invisible="1"/>
+                    <button name="action_confirm" type="object" string="Confirm" icon="fa-check"
+                            class="btn-primary o_cw_btn_primary" invisible="state != 'draft'" groups="carwash_base.group_carwash_user"/>
+                    <button name="action_arrive" type="object" string="Vehicle Arrived" icon="fa-sign-in"
+                            class="btn-primary o_cw_btn_primary" invisible="state != 'confirmed'" groups="carwash_base.group_carwash_user"/>
+                    <button name="action_start_service" type="object" string="Start Service" icon="fa-play"
+                            class="btn-primary o_cw_btn_primary" invisible="state != 'arrived'" groups="carwash_base.group_carwash_user"/>
+                    <button name="action_ready" type="object" string="End Service" icon="fa-flag-checkered"
+                            class="btn-primary o_cw_btn_primary" invisible="state != 'in_service' or not all_services_done"
+                            groups="carwash_base.group_carwash_user"/>
+                    <button name="action_done" type="object" string="Complete" icon="fa-check-circle"
+                            class="btn-primary o_cw_btn_primary" invisible="state != 'ready'" groups="carwash_base.group_carwash_user"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'confirmed')" groups="carwash_base.group_carwash_user"/>
+                    <button name="action_no_show" type="object" string="No-Show"
+                            invisible="state != 'confirmed'" groups="carwash_base.group_carwash_user"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,arrived,in_service,ready,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sale_order" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="not sale_order_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Sales Order</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="o_cw_service_banner" invisible="state != 'in_service'">
+                        <div class="o_cw_service_banner_text">
+                            <i class="fa fa-tint"/>
+                            <span invisible="all_services_done">
+                                <strong>Service running.</strong> Start and end each service below -
+                                <field name="services_done" class="o_cw_inline"/> of <field name="services_total" class="o_cw_inline"/> done.
+                            </span>
+                            <span invisible="not all_services_done">
+                                <strong>All services finished.</strong> Click <em>End Service</em> to end the main service.
+                            </span>
+                        </div>
+                        <field name="services_progress" widget="progressbar" class="o_cw_service_progress"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="customer_id"/>
+                            <field name="vehicle_id"/>
+                            <field name="appointment_date"/>
+                        </group>
+                        <group>
+                            <field name="bay_id"/>
+                            <field name="token_no" readonly="1"/>
+                            <field name="amount_total"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Services" name="services">
+                            <field name="line_ids">
+                                <list editable="bottom" class="o_cw_service_lines"
+                                      decoration-muted="service_state == 'done' and not is_discount_line"
+                                      decoration-info="is_discount_line">
+                                    <field name="is_discount_line" column_invisible="1"/>
+                                    <field name="product_id" readonly="service_state != 'pending' or is_discount_line"/>
+                                    <field name="description" readonly="is_discount_line"/>
+                                    <field name="quantity" readonly="service_state != 'pending' or is_discount_line"/>
+                                    <field name="price_unit" readonly="is_discount_line"/>
+                                    <field name="price_subtotal" readonly="1"/>
+                                    <field name="service_state" widget="badge" readonly="1" invisible="is_discount_line"
+                                           column_invisible="parent.state in ('draft', 'confirmed', 'cancelled', 'no_show')"
+                                           decoration-info="service_state == 'in_progress'"
+                                           decoration-success="service_state == 'done'"/>
+                                    <field name="start_time" optional="show"
+                                           column_invisible="parent.state in ('draft', 'confirmed', 'arrived', 'cancelled', 'no_show')"/>
+                                    <field name="end_time" optional="show"
+                                           column_invisible="parent.state in ('draft', 'confirmed', 'arrived', 'cancelled', 'no_show')"/>
+                                    <field name="actual_duration" optional="show"
+                                           column_invisible="parent.state in ('draft', 'confirmed', 'arrived', 'cancelled', 'no_show')"/>
+                                    <button name="action_start_line" type="object" string="Start" icon="fa-play"
+                                            class="o_cw_line_btn o_cw_line_btn_start"
+                                            column_invisible="parent.state != 'in_service'"
+                                            invisible="service_state != 'pending' or not parent.can_run_services or is_discount_line"/>
+                                    <button name="action_end_line" type="object" string="End" icon="fa-stop"
+                                            class="o_cw_line_btn o_cw_line_btn_end"
+                                            column_invisible="parent.state != 'in_service'"
+                                            invisible="service_state != 'in_progress' or not parent.can_run_services or is_discount_line"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes"/>
+                            <field name="cancel_reason" invisible="state not in ('cancelled', 'no_show')"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_appointment_list" model="ir.ui.view">
+        <field name="name">carwash.appointment.list</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <list string="Bookings">
+                <field name="name"/>
+                <field name="token_no"/>
+                <field name="customer_id"/>
+                <field name="vehicle_id"/>
+                <field name="appointment_date"/>
+                <field name="bay_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state in ('cancelled', 'no_show')"
+                       decoration-info="state in ('confirmed', 'arrived', 'in_service', 'ready')"/>
+                <field name="amount_total" sum="Total"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_appointment_search" model="ir.ui.view">
+        <field name="name">carwash.appointment.search</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <search string="Bookings">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="vehicle_id"/>
+                <field name="bay_id"/>
+                <filter string="Today" name="today"
+                        domain="[('appointment_date', '&gt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('appointment_date', '&lt;', (context_today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Active Queue" name="active_queue"
+                        domain="[('state', 'not in', ('done', 'cancelled', 'no_show'))]"/>
+                <group>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Bay" name="group_bay" context="{'group_by': 'bay_id'}"/>
+                    <filter string="Customer" name="group_customer" context="{'group_by': 'customer_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_carwash_appointment_kanban" model="ir.ui.view">
+        <field name="name">carwash.appointment.kanban</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <field name="token_no"/>
+                <field name="waiting_time"/>
+                <field name="all_services_done"/>
+                <field name="services_done"/>
+                <field name="services_total"/>
+                <templates>
+                    <t t-name="card">
+                        <main t-att-class="'border-start border-4 ps-2 ' + (
+                            record.state.raw_value === 'confirmed' ? 'border-primary' :
+                            record.state.raw_value === 'arrived' ? 'border-info' :
+                            record.state.raw_value === 'in_service' ? 'border-warning' :
+                            record.state.raw_value === 'ready' || record.state.raw_value === 'done' ? 'border-success' :
+                            record.state.raw_value === 'cancelled' || record.state.raw_value === 'no_show' ? 'border-danger' :
+                            'border-secondary'
+                        )">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong class="fs-4"><field name="token_no"/></strong>
+                                <i t-att-class="'fa fa-fw text-muted ' + (
+                                    record.state.raw_value === 'confirmed' ? 'fa-calendar-check-o' :
+                                    record.state.raw_value === 'arrived' ? 'fa-car' :
+                                    record.state.raw_value === 'in_service' ? 'fa-wrench' :
+                                    record.state.raw_value === 'ready' ? 'fa-check-circle-o' :
+                                    record.state.raw_value === 'done' ? 'fa-check' :
+                                    record.state.raw_value === 'cancelled' || record.state.raw_value === 'no_show' ? 'fa-ban' :
+                                    'fa-file-o'
+                                )" t-att-title="record.state.raw_value"/>
+                                <span t-if="record.bay_id.raw_value" class="badge text-bg-secondary">
+                                    <field name="bay_id"/>
+                                </span>
+                            </div>
+                            <field name="vehicle_id"/>
+                            <field name="customer_id" widget="many2one_avatar"/>
+                            <div t-if="record.state.raw_value === 'in_service' and record.services_total.raw_value" class="small text-muted">
+                                <i class="fa fa-tasks"/> <t t-esc="record.services_done.raw_value"/>/<t t-esc="record.services_total.raw_value"/> services done
+                            </div>
+                            <div t-if="record.waiting_time.raw_value"
+                                 t-att-class="record.waiting_time.raw_value > 15 ? 'text-danger fw-bold' : 'text-muted'">
+                                Waiting: <t t-esc="Math.round(record.waiting_time.raw_value)"/> min
+                            </div>
+                            <footer>
+                                <a name="action_arrive" type="object" role="button" class="btn btn-sm btn-primary o_cw_btn_primary"
+                                   invisible="state != 'confirmed'" groups="carwash_base.group_carwash_user">Vehicle Arrived</a>
+                                <a name="action_start_service" type="object" role="button" class="btn btn-sm btn-primary o_cw_btn_primary"
+                                   invisible="state != 'arrived'" groups="carwash_base.group_carwash_user">Start Service</a>
+                                <a name="action_ready" type="object" role="button" class="btn btn-sm btn-primary o_cw_btn_primary"
+                                   invisible="state != 'in_service' or not all_services_done" groups="carwash_base.group_carwash_user">End Service</a>
+                                <a name="action_done" type="object" role="button" class="btn btn-sm btn-primary o_cw_btn_primary"
+                                   invisible="state != 'ready'" groups="carwash_base.group_carwash_user">Complete</a>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_carwash_appointment_queue" model="ir.actions.act_window">
+        <field name="name">Queue</field>
+        <field name="res_model">carwash.appointment</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('state', 'not in', ('done', 'cancelled', 'no_show')), ('appointment_date', '&lt;', datetime.datetime.combine(context_today() + relativedelta(days=1), datetime.time(0, 0, 0)))]</field>
+        <field name="context">{'search_default_active_queue': 1}</field>
+    </record>
+
+    <record id="action_carwash_appointment_all" model="ir.actions.act_window">
+        <field name="name">All Bookings</field>
+        <field name="res_model">carwash.appointment</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+    <record id="action_carwash_appointment_new" model="ir.actions.act_window">
+        <field name="name">New Booking</field>
+        <field name="res_model">carwash.appointment</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

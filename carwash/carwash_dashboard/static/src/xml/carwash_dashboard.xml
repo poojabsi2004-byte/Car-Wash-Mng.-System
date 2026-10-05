@@ -1,0 +1,758 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!-- Animated number -->
+  <t t-name="carwash_dashboard.Count">
+    <span class="o_cwd_count" t-esc="text"/>
+  </t>
+
+  <!-- Per-card search box: expects `key` and `placeholder` -->
+  <t t-name="carwash_dashboard.SearchBox">
+    <label class="o_cwd_search" t-att-class="state.search[key] ? 'o_cwd_search_active' : ''">
+      <i class="fa fa-search" aria-hidden="true"/>
+      <input type="search" t-att-placeholder="placeholder" t-att-aria-label="placeholder"
+             t-att-value="state.search[key]"
+             t-on-input="(ev) => this.state.search[key] = ev.target.value"/>
+      <button t-if="state.search[key]" type="button" class="o_cwd_search_clear" title="Clear"
+              t-on-click.prevent="() => this.clearSearch(key)">
+        <i class="fa fa-times"/>
+      </button>
+    </label>
+  </t>
+
+  <!-- Empty state: expects `searchKey` -->
+  <t t-name="carwash_dashboard.Empty">
+    <div class="o_cwd_empty">
+      <t t-if="state.search[searchKey] or state.globalSearch">
+        <i class="fa fa-search-minus"/>
+        <span>No matches for your search</span>
+      </t>
+      <t t-else="">
+        <i class="fa fa-tint"/>
+        <span t-esc="emptyText"/>
+      </t>
+    </div>
+  </t>
+
+  <!-- License plate chip -->
+  <t t-name="carwash_dashboard.Plate">
+    <span class="o_cwd_plate"><span class="o_cwd_plate_ind">IND</span><span t-esc="plate or '—'"/></span>
+  </t>
+
+  <t t-name="carwash_dashboard.Dashboard">
+    <div class="o_cwd" t-att-data-cw-theme="state.theme" t-ref="root">
+      <div class="o_cwd_scroll">
+
+        <!-- ============ Loading skeleton ============ -->
+        <t t-if="!state.data">
+          <div class="o_cwd_skeleton">
+            <div class="o_cwd_sk o_cwd_sk_hero"/>
+            <div class="o_cwd_sk_row">
+              <div class="o_cwd_sk"/><div class="o_cwd_sk"/><div class="o_cwd_sk"/><div class="o_cwd_sk"/>
+            </div>
+            <div class="o_cwd_sk o_cwd_sk_tall"/>
+          </div>
+        </t>
+
+        <t t-else="">
+          <t t-set="d" t-value="state.data"/>
+
+          <!-- ============ HERO ============ -->
+          <section class="o_cwd_hero">
+            <div class="o_cwd_bubbles" aria-hidden="true">
+              <span t-foreach="bubbles" t-as="b" t-key="b.id" t-att-style="b.style"/>
+            </div>
+            <svg class="o_cwd_waves" viewBox="0 24 150 28" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <path id="cwd-wave" d="M-160 44c30 0 58-18 88-18s58 18 88 18 58-18 88-18 58 18 88 18v44h-352z"/>
+              </defs>
+              <g class="o_cwd_wave_layers">
+                <use href="#cwd-wave" x="48" y="0"/>
+                <use href="#cwd-wave" x="48" y="3"/>
+                <use href="#cwd-wave" x="48" y="5"/>
+                <use href="#cwd-wave" x="48" y="7"/>
+              </g>
+            </svg>
+
+            <!-- Looping story: washer sprays the dirty car -> sparkling clean -> happy customer -->
+            <div class="o_cwd_scene" aria-hidden="true">
+              <svg viewBox="0 0 420 150">
+                <defs>
+                  <linearGradient id="cwh-paint" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#ff8a80"/>
+                    <stop offset="1" stop-color="#e5484d"/>
+                  </linearGradient>
+                  <clipPath id="cwh-car-clip">
+                    <path d="M128 122 V108 Q128 100 138 99 L162 96 L182 77 Q186 73 192 73 H246 Q252 73 256 77 L276 96 L302 99 Q312 100 312 110 V122 Q312 126 308 126 H132 Q128 126 128 122 Z"/>
+                  </clipPath>
+                </defs>
+
+                <!-- captions -->
+                <g class="cwh_cap cwh_cap1"><rect x="168" y="4" width="84" height="22" rx="11"/><text x="210" y="19">Washing…</text></g>
+                <g class="cwh_cap cwh_cap2"><rect x="148" y="4" width="124" height="22" rx="11"/><text x="210" y="19">Sparkling clean!</text></g>
+                <g class="cwh_cap cwh_cap3"><rect x="150" y="4" width="120" height="22" rx="11"/><text x="210" y="19">Happy customer!</text></g>
+
+                <ellipse class="cwh_shadow" cx="215" cy="136" rx="170" ry="6"/>
+
+                <!-- bucket -->
+                <g class="cwh_bucket">
+                  <path d="M28 114 H50 L47 134 H31 Z"/>
+                  <circle class="cwh_suds" cx="33" cy="113" r="4"/>
+                  <circle class="cwh_suds" cx="40" cy="111" r="5"/>
+                  <circle class="cwh_suds" cx="47" cy="113" r="4"/>
+                </g>
+
+                <!-- washer -->
+                <g class="cwh_washer">
+                  <rect class="cwh_pants" x="62" y="108" width="7" height="24" rx="3"/>
+                  <rect class="cwh_pants" x="73" y="108" width="7" height="24" rx="3"/>
+                  <rect class="cwh_shoe" x="59" y="129" width="12" height="5" rx="2"/>
+                  <rect class="cwh_shoe" x="71" y="129" width="12" height="5" rx="2"/>
+                  <rect class="cwh_uniform_dark" x="55" y="82" width="6" height="22" rx="3"/>
+                  <path class="cwh_uniform" d="M58 84 Q58 78 64 78 H78 Q84 78 84 84 V110 H58 Z"/>
+                  <path class="cwh_logo" d="M71 89 c-3 4 -4 6 -4 8 a4 4 0 0 0 8 0 c0 -2 -1 -4 -4 -8 z"/>
+                  <circle class="cwh_skin" cx="71" cy="68" r="9"/>
+                  <path class="cwh_hat" d="M62 66 Q62 57 71 57 Q80 57 80 66 Z"/>
+                  <rect class="cwh_hat" x="76" y="63" width="10" height="3" rx="1.5"/>
+                  <circle class="cwh_eye" cx="75" cy="69" r="1.1"/>
+                  <path class="cwh_mouth" d="M73 73 q2 1.6 4 0"/>
+                  <g class="cwh_arm">
+                    <rect class="cwh_uniform_dark" x="78" y="81" width="22" height="6" rx="3"/>
+                    <circle class="cwh_skin" cx="101" cy="84" r="3.2"/>
+                    <path class="cwh_gun" d="M98 79 h14 v4 h-6 v6 h-4 v-6 h-4 z"/>
+                    <g class="cwh_jet">
+                      <path class="cwh_mist" d="M112 81 L154 72 L154 92 Z"/>
+                      <circle class="cwh_drop" cx="116" cy="81" r="1.8"/>
+                      <circle class="cwh_drop cwh_d2" cx="116" cy="79" r="1.4"/>
+                      <circle class="cwh_drop cwh_d3" cx="116" cy="83" r="1.5"/>
+                      <circle class="cwh_drop cwh_d4" cx="116" cy="81" r="1.2"/>
+                    </g>
+                  </g>
+                </g>
+
+                <!-- car -->
+                <g class="cwh_car">
+                  <path fill="url(#cwh-paint)" d="M128 122 V108 Q128 100 138 99 L162 96 L182 77 Q186 73 192 73 H246 Q252 73 256 77 L276 96 L302 99 Q312 100 312 110 V122 Q312 126 308 126 H132 Q128 126 128 122 Z"/>
+                  <path class="cwh_glass" d="M170 96 L186 80 Q188 78 191 78 H214 V96 Z"/>
+                  <path class="cwh_glass" d="M219 96 V78 H245 Q248 78 250 80 L267 96 Z"/>
+                  <path class="cwh_line" d="M216 99 V122"/>
+                  <rect class="cwh_handle" x="196" y="104" width="10" height="2.5" rx="1.2"/>
+                  <rect class="cwh_handle" x="236" y="104" width="10" height="2.5" rx="1.2"/>
+                  <rect class="cwh_trim" x="128" y="115" width="184" height="3"/>
+                  <rect class="cwh_light" x="303" y="103" width="8" height="5" rx="2"/>
+                  <rect class="cwh_tail" x="128" y="103" width="5" height="6" rx="2"/>
+                  <g class="cwh_dirt">
+                    <ellipse cx="150" cy="109" rx="7" ry="4"/>
+                    <ellipse cx="188" cy="112" rx="9" ry="3.5"/>
+                    <ellipse cx="232" cy="109" rx="6" ry="3"/>
+                    <ellipse cx="284" cy="112" rx="8" ry="4"/>
+                    <ellipse cx="262" cy="104" rx="4" ry="2.5"/>
+                    <ellipse cx="206" cy="88" rx="5" ry="3"/>
+                    <ellipse cx="164" cy="119" rx="5" ry="2"/>
+                  </g>
+                  <g class="cwh_foam">
+                    <circle cx="146" cy="104" r="6"/><circle cx="156" cy="100" r="5"/><circle cx="168" cy="105" r="7"/>
+                    <circle cx="186" cy="84" r="5"/><circle cx="197" cy="78" r="6"/><circle cx="210" cy="82" r="5"/>
+                    <circle cx="226" cy="78" r="6"/><circle cx="240" cy="82" r="5"/><circle cx="198" cy="106" r="6"/>
+                    <circle cx="214" cy="110" r="5"/><circle cx="250" cy="106" r="7"/><circle cx="270" cy="102" r="5"/>
+                    <circle cx="290" cy="108" r="6"/><circle cx="300" cy="104" r="4"/><circle cx="232" cy="113" r="4"/>
+                  </g>
+                  <g clip-path="url(#cwh-car-clip)">
+                    <path class="cwh_gloss" d="M150 60 L166 60 L140 130 L124 130 Z"/>
+                  </g>
+                  <g class="cwh_wheel"><circle class="cwh_tyre" cx="168" cy="126" r="13"/><circle class="cwh_rim" cx="168" cy="126" r="5.5"/></g>
+                  <g class="cwh_wheel"><circle class="cwh_tyre" cx="276" cy="126" r="13"/><circle class="cwh_rim" cx="276" cy="126" r="5.5"/></g>
+                  <g transform="translate(192 70)"><path class="cwh_star" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z"/></g>
+                  <g transform="translate(300 92)"><path class="cwh_star cwh_s2" d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z"/></g>
+                  <g transform="translate(146 96)"><path class="cwh_star cwh_s3" d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5 Z"/></g>
+                  <g transform="translate(252 68)"><path class="cwh_star cwh_s4" d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5 Z"/></g>
+                </g>
+
+                <!-- happy customer -->
+                <g class="cwh_customer">
+                  <rect class="cwh_jeans" x="350" y="108" width="7" height="24" rx="3"/>
+                  <rect class="cwh_jeans" x="361" y="108" width="7" height="24" rx="3"/>
+                  <rect class="cwh_shoe" x="347" y="129" width="12" height="5" rx="2"/>
+                  <rect class="cwh_shoe" x="359" y="129" width="12" height="5" rx="2"/>
+                  <g class="cwh_cust_arm_l"><rect class="cwh_shirt_dark" x="342" y="64" width="6" height="22" rx="3"/><circle class="cwh_skin" cx="345" cy="63" r="3.2"/></g>
+                  <g class="cwh_cust_arm_r"><rect class="cwh_shirt_dark" x="370" y="64" width="6" height="22" rx="3"/><circle class="cwh_skin" cx="373" cy="63" r="3.2"/></g>
+                  <path class="cwh_shirt" d="M346 84 Q346 78 352 78 H366 Q372 78 372 84 V110 H346 Z"/>
+                  <circle class="cwh_skin" cx="359" cy="68" r="9"/>
+                  <path class="cwh_hair" d="M350 66 Q350 56 359 56 Q368 56 368 66 Q364 61 359 62 Q353 62 350 66 Z"/>
+                  <path class="cwh_mouth" d="M354.5 67.5 q1.5 -2 3 0"/>
+                  <path class="cwh_mouth" d="M360.5 67.5 q1.5 -2 3 0"/>
+                  <path class="cwh_smile" d="M354 71 Q359 78 364 71 Z"/>
+                  <circle class="cwh_cheek" cx="353" cy="71" r="1.6"/>
+                  <circle class="cwh_cheek" cx="365" cy="71" r="1.6"/>
+                  <g transform="translate(359 42)"><path class="cwh_heart" d="M0 6 C-9 -1 -9 -10 -3 -10 C0 -10 0 -7 0 -6 C0 -7 0 -10 3 -10 C9 -10 9 -1 0 6 Z"/></g>
+                </g>
+              </svg>
+            </div>
+
+            <div class="o_cwd_hero_inner">
+              <div class="o_cwd_hero_top">
+                <div class="o_cwd_hero_title">
+                  <div class="o_cwd_eyebrow">
+                    <span class="o_cwd_live"><span/></span>
+                    Wash Control Deck
+                    <span class="o_cwd_eyebrow_sep">·</span>
+                    <span t-esc="d.company_name"/>
+                  </div>
+                  <h1 t-esc="greeting"/>
+                  <div class="o_cwd_hero_sub">
+                    <i class="fa fa-calendar-o"/> <t t-esc="d.today_label"/>
+                    <span class="o_cwd_clock"><i class="fa fa-clock-o"/> <t t-esc="state.clock"/></span>
+                  </div>
+                </div>
+
+                <div class="o_cwd_hero_tools">
+                  <label class="o_cwd_omni">
+                    <i class="fa fa-search"/>
+                    <input type="search" t-ref="globalSearch" placeholder="Find plate, customer, service…"
+                           aria-label="Search the whole dashboard"
+                           t-att-value="state.globalSearch"
+                           t-on-input="(ev) => this.state.globalSearch = ev.target.value"/>
+                    <button t-if="state.globalSearch" type="button" class="o_cwd_search_clear" title="Clear"
+                            t-on-click.prevent="() => this.clearSearch('global')"><i class="fa fa-times"/></button>
+                    <kbd t-else="">/</kbd>
+                  </label>
+                  <button class="o_cwd_icon_btn" t-on-click="toggleTheme"
+                          t-att-title="state.theme === 'night' ? 'Switch to day mode' : 'Switch to night shift'">
+                    <i t-att-class="'fa ' + (state.theme === 'night' ? 'fa-sun-o' : 'fa-moon-o')"/>
+                  </button>
+                  <button class="o_cwd_icon_btn" t-att-class="state.refreshing ? 'o_cwd_spinning' : ''"
+                          t-on-click="fetchData" title="Refresh now">
+                    <i class="fa fa-refresh"/>
+                  </button>
+                </div>
+              </div>
+
+              <div class="o_cwd_hero_stats">
+                <button class="o_cwd_glass" t-on-click="openQueue" style="--cw-i:0">
+                  <span class="o_cwd_glass_icon"><i class="fa fa-car"/></span>
+                  <span class="o_cwd_glass_value"><CwCount value="d.queue_total"/></span>
+                  <span class="o_cwd_glass_label">Vehicles in queue</span>
+                </button>
+                <button class="o_cwd_glass" t-on-click="openTodayAppointments" style="--cw-i:1">
+                  <span class="o_cwd_glass_icon"><i class="fa fa-calendar-check-o"/></span>
+                  <span class="o_cwd_glass_value"><CwCount value="d.today_appointments"/></span>
+                  <span class="o_cwd_glass_label">Booked today · <t t-esc="d.today_done"/> done</span>
+                </button>
+                <button class="o_cwd_glass" t-on-click="() => this.openBays('free')" style="--cw-i:2">
+                  <span class="o_cwd_glass_icon"><i class="fa fa-th-large"/></span>
+                  <span class="o_cwd_glass_value"><CwCount value="d.bay_counts.free"/><small>/<t t-esc="d.bay_counts.total"/></small></span>
+                  <span class="o_cwd_glass_label">Bays free</span>
+                </button>
+                <div class="o_cwd_glass" style="--cw-i:3">
+                  <span class="o_cwd_glass_icon"><i class="fa fa-hourglass-half"/></span>
+                  <span class="o_cwd_glass_value"><CwCount value="d.avg_wait" format="formatMinutes"/></span>
+                  <span class="o_cwd_glass_label">Avg wait before wash</span>
+                </div>
+                <button t-if="d.has_manager_data" class="o_cwd_glass o_cwd_glass_accent" t-on-click="openDoneInPeriod" style="--cw-i:4">
+                  <span class="o_cwd_glass_icon"><i class="fa fa-money"/></span>
+                  <span class="o_cwd_glass_value"><CwCount value="d.revenue_today" format="formatMoney"/></span>
+                  <span class="o_cwd_glass_label">Revenue today</span>
+                </button>
+              </div>
+
+              <div class="o_cwd_hero_actions">
+                <button class="o_cwd_btn o_cwd_btn_primary" t-on-click="openNewAppointment">
+                  <i class="fa fa-plus"/> New Booking
+                </button>
+                <button class="o_cwd_btn" t-on-click="openQueue"><i class="fa fa-list-ol"/> Live Queue</button>
+                <button class="o_cwd_btn" t-on-click="() => this.openJobcards()"><i class="fa fa-clipboard"/> Job Cards</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ ROLE BANNERS ============ -->
+          <div t-if="d.has_washer_data and d.my_jobcards" class="o_cwd_banner_row">
+            <button class="o_cwd_banner" t-on-click="() => this.openJobcards('in_progress')" style="--cw-i:0">
+              <i class="fa fa-wrench"/><div><strong><CwCount value="d.my_jobcards.in_progress"/></strong><span>My cars in progress</span></div>
+            </button>
+            <button class="o_cwd_banner" t-on-click="() => this.openJobcards('qc')" style="--cw-i:1">
+              <i class="fa fa-search"/><div><strong><CwCount value="d.my_jobcards.qc"/></strong><span>Waiting for QC</span></div>
+            </button>
+            <div class="o_cwd_banner o_cwd_banner_good" style="--cw-i:2">
+              <i class="fa fa-trophy"/><div><strong><CwCount value="d.my_jobcards.done_today"/></strong><span>Finished today</span></div>
+            </div>
+          </div>
+          <button t-if="d.has_qc_data" class="o_cwd_qc_banner" t-att-class="d.pending_qc ? 'o_cwd_qc_hot' : ''"
+                  t-on-click="() => this.openJobcards('qc')">
+            <span class="o_cwd_qc_icon"><i class="fa fa-check-square-o"/></span>
+            <span><strong><CwCount value="d.pending_qc"/></strong> job card(s) waiting for quality check</span>
+            <i class="fa fa-arrow-right ms-auto"/>
+          </button>
+
+          <!-- ============ WASH PIPELINE ============ -->
+          <section class="o_cwd_card o_cwd_span_12" style="--cw-i:1">
+            <header class="o_cwd_card_head">
+              <div>
+                <h3><i class="fa fa-road"/> Wash Pipeline</h3>
+                <p>Every vehicle on site, from booking to pickup<t t-if="state.search.pipeline or state.globalSearch"> · <strong t-esc="pipelineMatchCount"/> match(es)</t></p>
+              </div>
+              <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'pipeline'"/><t t-set="placeholder" t-value="'Search plate, customer, bay…'"/></t>
+            </header>
+            <div class="o_cwd_track">
+              <div t-foreach="pipelineStages" t-as="stage" t-key="stage.key"
+                   t-attf-class="o_cwd_stage o_cwd_stage_{{stage.key}}" t-att-style="stagger(stage_index)">
+                <button class="o_cwd_stage_head" t-on-click="() => this.openStage(stage.key)" t-att-title="stage.hint">
+                  <span class="o_cwd_stage_icon"><i t-att-class="'fa ' + stage.icon"/></span>
+                  <span class="o_cwd_stage_label">
+                    <strong t-esc="stage.label"/>
+                    <small t-esc="stage.hint"/>
+                  </span>
+                  <span class="o_cwd_stage_count"><CwCount value="d.queue[stage.key]"/></span>
+                </button>
+                <div class="o_cwd_stage_flow" aria-hidden="true"><span/><span/><span/></div>
+                <div class="o_cwd_stage_list">
+                  <t t-set="cards" t-value="pipelineCards(stage.key)"/>
+                  <div t-foreach="cards" t-as="c" t-key="c.id" class="o_cwd_vchip"
+                       t-att-class="c.waiting gt 15 ? 'o_cwd_vchip_hot' : ''" t-att-style="stagger(c_index)"
+                       t-on-click="() => this.openRecord('carwash.appointment', c.id)">
+                    <div class="o_cwd_vchip_token">
+                      <small>TOKEN</small>
+                      <strong t-esc="c.token"/>
+                    </div>
+                    <div class="o_cwd_vchip_body">
+                      <div class="o_cwd_vchip_top">
+                        <t t-call="carwash_dashboard.Plate"><t t-set="plate" t-value="c.plate"/></t>
+                        <span class="o_cwd_vchip_time"><i class="fa fa-clock-o"/> <t t-esc="c.time"/></span>
+                      </div>
+                      <div class="o_cwd_vchip_cust" t-esc="c.customer"/>
+                      <div class="o_cwd_vchip_meta">
+                        <i t-att-class="'fa ' + c.vehicle_icon"/> <t t-esc="c.vehicle or 'Vehicle'"/>
+                        <t t-if="c.bay"> · <i class="fa fa-map-marker"/> <t t-esc="c.bay"/></t>
+                      </div>
+                      <div t-if="c.services" class="o_cwd_vchip_services" t-esc="c.services"/>
+                      <div t-if="c.state === 'in_service'" class="o_cwd_mini_progress">
+                        <span t-attf-style="width: {{c.progress}}%"/>
+                        <em t-esc="etaText(c.eta)"/>
+                      </div>
+                      <div t-if="c.state === 'in_service' and c.services_total" class="o_cwd_vchip_steps">
+                        <span t-foreach="Array.from({length: c.services_total})" t-as="step" t-key="step_index"
+                              t-att-class="step_index lt c.services_done ? 'done' : ''"/>
+                        <small><t t-esc="c.services_done"/>/<t t-esc="c.services_total"/> services</small>
+                      </div>
+                      <div t-if="c.state === 'arrived' and c.waiting" class="o_cwd_wait">
+                        <i class="fa fa-hourglass-half"/> waiting <t t-esc="c.waiting"/> min
+                      </div>
+                    </div>
+                  </div>
+                  <div t-if="!cards.length" class="o_cwd_stage_empty">
+                    <i t-att-class="'fa ' + ((state.search.pipeline or state.globalSearch) ? 'fa-search-minus' : 'fa-check')"/>
+                    <span t-esc="(state.search.pipeline or state.globalSearch) ? 'No matches' : 'All clear'"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="o_cwd_grid">
+            <!-- ============ BAY MAP ============ -->
+            <section class="o_cwd_card o_cwd_span_8" style="--cw-i:2">
+              <header class="o_cwd_card_head">
+                <div>
+                  <h3><i class="fa fa-th-large"/> Bay Map</h3>
+                  <p>
+                    <span class="o_cwd_dot o_cwd_dot_free"/> <t t-esc="d.bay_counts.free"/> free
+                    <span class="o_cwd_dot o_cwd_dot_occupied"/> <t t-esc="d.bay_counts.occupied"/> washing
+                    <span class="o_cwd_dot o_cwd_dot_maintenance"/> <t t-esc="d.bay_counts.maintenance"/> maintenance
+                  </p>
+                </div>
+                <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'bays'"/><t t-set="placeholder" t-value="'Search bay or plate…'"/></t>
+              </header>
+              <div class="o_cwd_bays">
+                <div t-foreach="filteredBays" t-as="bay" t-key="bay.id"
+                     t-attf-class="o_cwd_bay o_cwd_bay_{{bay.state}}" t-att-style="stagger(bay_index)"
+                     t-on-click="() => this.openBay(bay)">
+                  <div t-if="bay.state === 'occupied'" class="o_cwd_spray" aria-hidden="true">
+                    <i/><i/><i/><i/><i/><i/>
+                  </div>
+                  <div class="o_cwd_bay_head">
+                    <strong t-esc="bay.name"/>
+                    <span class="o_cwd_bay_type"><i t-att-class="'fa ' + bay.type_icon"/> <t t-esc="bay.type"/></span>
+                  </div>
+                  <t t-if="bay.state === 'occupied' and bay.current">
+                    <div class="o_cwd_bay_body">
+                      <div class="o_cwd_ring">
+                        <svg viewBox="0 0 60 60">
+                          <circle class="o_cwd_ring_bg" cx="30" cy="30" r="26"/>
+                          <circle class="o_cwd_ring_fg" cx="30" cy="30" r="26"
+                                  stroke-dasharray="163.36" t-att-stroke-dashoffset="ringOffset(bay.current.progress)"/>
+                        </svg>
+                        <span><t t-esc="bay.current.progress"/>%</span>
+                      </div>
+                      <div class="o_cwd_bay_info">
+                        <t t-call="carwash_dashboard.Plate"><t t-set="plate" t-value="bay.current.plate"/></t>
+                        <div class="o_cwd_bay_cust" t-esc="bay.current.customer"/>
+                        <div t-if="bay.current.services_total" class="o_cwd_bay_eta">
+                          <i class="fa fa-tasks"/> <t t-esc="bay.current.services_done"/>/<t t-esc="bay.current.services_total"/> services done
+                        </div>
+                        <div class="o_cwd_bay_eta" t-att-class="bay.current.eta lt 0 ? 'o_cwd_over' : ''">
+                          <i class="fa fa-clock-o"/> <t t-esc="etaText(bay.current.eta)"/>
+                        </div>
+                      </div>
+                    </div>
+                  </t>
+                  <t t-elif="bay.state === 'occupied'">
+                    <div class="o_cwd_bay_idle"><i class="fa fa-tint"/><span>Occupied</span></div>
+                  </t>
+                  <t t-elif="bay.state === 'maintenance'">
+                    <div class="o_cwd_bay_idle"><i class="fa fa-wrench"/><span>Under maintenance</span></div>
+                  </t>
+                  <t t-else="">
+                    <div class="o_cwd_bay_idle"><i class="fa fa-check-circle"/><span>Ready for the next car</span></div>
+                  </t>
+                  <div class="o_cwd_bay_foot">
+                    <span t-attf-class="o_cwd_dot o_cwd_dot_{{bay.state}}"/>
+                    <span t-esc="bay.state === 'free' ? 'Free' : bay.state === 'occupied' ? 'Washing' : 'Maintenance'"/>
+                    <span t-if="bay.next" class="o_cwd_bay_next">Next: <t t-esc="bay.next.plate"/> @ <t t-esc="bay.next.time"/></span>
+                  </div>
+                </div>
+              </div>
+              <t t-if="!filteredBays.length" t-call="carwash_dashboard.Empty">
+                <t t-set="searchKey" t-value="'bays'"/><t t-set="emptyText" t-value="'No bays configured yet'"/>
+              </t>
+            </section>
+
+            <!-- ============ RUSH HOUR ============ -->
+            <section class="o_cwd_card o_cwd_span_4" style="--cw-i:3">
+              <header class="o_cwd_card_head">
+                <div>
+                  <h3><i class="fa fa-bolt"/> Rush Hour</h3>
+                  <p>Vehicles booked per hour today</p>
+                </div>
+              </header>
+              <div class="o_cwd_chart" t-ref="hourlyChart"/>
+              <div class="o_cwd_util">
+                <div class="o_cwd_ring o_cwd_ring_sm">
+                  <svg viewBox="0 0 60 60">
+                    <circle class="o_cwd_ring_bg" cx="30" cy="30" r="26"/>
+                    <circle class="o_cwd_ring_fg" cx="30" cy="30" r="26"
+                            stroke-dasharray="163.36" t-att-stroke-dashoffset="ringOffset(d.bay_utilization)"/>
+                  </svg>
+                  <span><t t-esc="d.bay_utilization"/>%</span>
+                </div>
+                <div>
+                  <strong>Bay utilisation</strong>
+                  <small><t t-esc="d.bay_counts.occupied"/> of <t t-esc="d.bay_counts.total"/> bays washing right now</small>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ JOB CARDS ============ -->
+            <section t-if="d.jobcards" class="o_cwd_card o_cwd_span_12" style="--cw-i:4">
+              <header class="o_cwd_card_head">
+                <div>
+                  <h3><i class="fa fa-clipboard"/> Job Cards in Flight</h3>
+                  <p><t t-esc="d.jobcards.length"/> open · checklist progress and crew</p>
+                </div>
+                <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'jobcards'"/><t t-set="placeholder" t-value="'Search job card, plate, staff…'"/></t>
+              </header>
+              <div class="o_cwd_jobs">
+                <div t-foreach="filteredJobcards" t-as="j" t-key="j.id"
+                     t-attf-class="o_cwd_job o_cwd_job_{{j.stage}}" t-att-style="stagger(j_index)"
+                     t-on-click="() => this.openRecord('carwash.jobcard', j.id)">
+                  <div class="o_cwd_job_top">
+                    <strong t-esc="j.name"/>
+                    <span t-attf-class="o_cwd_pill o_cwd_pill_{{j.stage}}" t-esc="j.stage_label"/>
+                  </div>
+                  <div class="o_cwd_job_mid">
+                    <t t-call="carwash_dashboard.Plate"><t t-set="plate" t-value="j.plate"/></t>
+                    <span class="o_cwd_job_cust" t-esc="j.customer"/>
+                  </div>
+                  <div class="o_cwd_bar"><span t-attf-style="width: {{j.progress}}%"/></div>
+                  <div class="o_cwd_job_foot">
+                    <div class="o_cwd_avatars">
+                      <span t-foreach="j.staff.slice(0, 4)" t-as="s" t-key="s_index" class="o_cwd_avatar"
+                            t-att-title="s.name" t-esc="s.initials"/>
+                      <span t-if="!j.staff.length" class="o_cwd_unassigned">Unassigned</span>
+                    </div>
+                    <span class="o_cwd_job_meta">
+                      <t t-esc="j.progress"/>% tasks<t t-if="j.minutes"> · <t t-esc="j.minutes"/> min</t>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <t t-if="!filteredJobcards.length" t-call="carwash_dashboard.Empty">
+                <t t-set="searchKey" t-value="'jobcards'"/><t t-set="emptyText" t-value="'No open job cards - the floor is clear'"/>
+              </t>
+            </section>
+          </div>
+
+          <!-- ============ MANAGER ============ -->
+          <t t-if="d.has_manager_data">
+            <div class="o_cwd_section_head">
+              <div>
+                <h2>Performance</h2>
+                <p t-esc="periodLabel + ' · ' + d.period_from + ' → ' + d.period_to"/>
+              </div>
+              <div class="o_cwd_period">
+                <button t-foreach="periods" t-as="p" t-key="p.key" class="o_cwd_period_btn"
+                        t-att-class="state.period === p.key ? 'active' : ''"
+                        t-on-click="() => this.setPeriod(p.key)" t-esc="p.label"/>
+              </div>
+            </div>
+            <div t-if="state.period === 'custom'" class="o_cwd_custom">
+              <input type="date" t-model="state.customFrom" aria-label="From"/>
+              <i class="fa fa-long-arrow-right"/>
+              <input type="date" t-model="state.customTo" aria-label="To"/>
+              <button class="o_cwd_btn o_cwd_btn_primary" t-on-click="applyCustomRange"
+                      t-att-disabled="!state.customFrom or !state.customTo">Apply</button>
+            </div>
+
+            <div class="o_cwd_kpis">
+              <button class="o_cwd_kpi o_cwd_kpi_aqua" t-on-click="openDoneInPeriod" style="--cw-i:0">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-line-chart"/></span>
+                <span class="o_cwd_kpi_label">Revenue</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.revenue_period" format="formatMoney"/></span>
+                <span t-attf-class="o_cwd_trend {{trendClass(d.revenue_period_change)}}">
+                  <i t-att-class="'fa ' + trendIcon(d.revenue_period_change)"/> <t t-esc="trendText(d.revenue_period_change)"/>
+                </span>
+              </button>
+              <button class="o_cwd_kpi o_cwd_kpi_violet" t-on-click="openDoneInPeriod" style="--cw-i:1">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-car"/></span>
+                <span class="o_cwd_kpi_label">Washes completed</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.wash_count_period"/></span>
+                <span t-attf-class="o_cwd_trend {{trendClass(d.wash_count_period_change)}}">
+                  <i t-att-class="'fa ' + trendIcon(d.wash_count_period_change)"/> <t t-esc="trendText(d.wash_count_period_change)"/>
+                </span>
+              </button>
+              <div class="o_cwd_kpi o_cwd_kpi_teal" style="--cw-i:2">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-ticket"/></span>
+                <span class="o_cwd_kpi_label">Average ticket</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.avg_ticket" format="formatMoney"/></span>
+                <span t-attf-class="o_cwd_trend {{trendClass(d.avg_ticket_change)}}">
+                  <i t-att-class="'fa ' + trendIcon(d.avg_ticket_change)"/> <t t-esc="trendText(d.avg_ticket_change)"/>
+                </span>
+              </div>
+              <div class="o_cwd_kpi o_cwd_kpi_amber" style="--cw-i:3">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-sun-o"/></span>
+                <span class="o_cwd_kpi_label">Revenue today</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.revenue_today" format="formatMoney"/></span>
+                <span class="o_cwd_trend o_cwd_trend_flat"><i class="fa fa-check"/> <t t-esc="d.today_done"/> washes done</span>
+              </div>
+            </div>
+
+            <div class="o_cwd_grid">
+              <section class="o_cwd_card o_cwd_span_8" style="--cw-i:4">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-area-chart"/> Revenue &amp; Wash Volume</h3>
+                    <p t-esc="periodLabel"/>
+                  </div>
+                </header>
+                <div class="o_cwd_chart" t-ref="trendChart"/>
+              </section>
+
+              <section class="o_cwd_card o_cwd_span_4" style="--cw-i:5">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-star"/> Top Services</h3>
+                    <p>By revenue</p>
+                  </div>
+                </header>
+                <div t-if="d.top_services.length" class="o_cwd_chart" t-ref="servicesChart"/>
+                <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'services'"/><t t-set="placeholder" t-value="'Search service…'"/></t>
+                <ul class="o_cwd_rank">
+                  <li t-foreach="filteredServices" t-as="s" t-key="s_index" t-att-style="stagger(s_index)">
+                    <span class="o_cwd_rank_name" t-esc="s.name"/>
+                    <span class="o_cwd_rank_val" t-esc="formatMoney(s.revenue)"/>
+                    <span class="o_cwd_rank_bar"><span t-attf-style="width: {{Math.round(s.revenue / maxServiceRevenue * 100)}}%"/></span>
+                    <small><t t-esc="s.count"/> sold</small>
+                  </li>
+                </ul>
+                <t t-if="!filteredServices.length" t-call="carwash_dashboard.Empty">
+                  <t t-set="searchKey" t-value="'services'"/><t t-set="emptyText" t-value="'No completed washes in this period'"/>
+                </t>
+              </section>
+
+              <section class="o_cwd_card o_cwd_span_6" style="--cw-i:6">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-flask"/> Consumables</h3>
+                    <p>Used this period vs. stock on hand</p>
+                  </div>
+                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'products'"/><t t-set="placeholder" t-value="'Search consumable…'"/></t>
+                </header>
+                <div class="o_cwd_stock">
+                  <div t-foreach="filteredProducts" t-as="p" t-key="p.id" class="o_cwd_stock_row"
+                       t-att-class="p.low ? 'o_cwd_stock_low' : ''" t-att-style="stagger(p_index)"
+                       t-on-click="() => this.openRecord('product.product', p.id)">
+                    <div class="o_cwd_stock_top">
+                      <strong t-esc="p.name"/>
+                      <span t-if="p.low" class="o_cwd_pill o_cwd_pill_low"><i class="fa fa-exclamation-triangle"/> Low</span>
+                    </div>
+                    <div class="o_cwd_bar"><span t-attf-style="width: {{p.stock_pct}}%"/></div>
+                    <div class="o_cwd_stock_meta">
+                      <span>Used <strong><t t-esc="p.qty_used"/></strong> <t t-esc="p.uom"/></span>
+                      <span>On hand <strong><t t-esc="p.stock_on_hand"/></strong> <t t-esc="p.uom"/></span>
+                    </div>
+                  </div>
+                </div>
+                <t t-if="!filteredProducts.length" t-call="carwash_dashboard.Empty">
+                  <t t-set="searchKey" t-value="'products'"/><t t-set="emptyText" t-value="'No consumables used in this period'"/>
+                </t>
+              </section>
+
+              <section class="o_cwd_card o_cwd_span_6" style="--cw-i:7">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-flag-checkered"/> Recently Completed</h3>
+                    <p>Latest washes handed back</p>
+                  </div>
+                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'recent'"/><t t-set="placeholder" t-value="'Search wash…'"/></t>
+                </header>
+                <div class="o_cwd_feed">
+                  <div t-foreach="filteredRecent" t-as="r" t-key="r.id" class="o_cwd_feed_row" t-att-style="stagger(r_index)"
+                       t-on-click="() => this.openRecord('carwash.appointment', r.id)">
+                    <span class="o_cwd_feed_dot"><i class="fa fa-check"/></span>
+                    <div class="o_cwd_feed_body">
+                      <div><strong t-esc="r.customer"/> <span class="o_cwd_muted">· <t t-esc="r.plate"/></span></div>
+                      <small t-esc="r.services"/>
+                    </div>
+                    <div class="o_cwd_feed_end">
+                      <strong t-esc="formatMoney(r.amount)"/>
+                      <small t-esc="r.done_at"/>
+                    </div>
+                  </div>
+                </div>
+                <t t-if="!filteredRecent.length" t-call="carwash_dashboard.Empty">
+                  <t t-set="searchKey" t-value="'recent'"/><t t-set="emptyText" t-value="'No completed washes in this period'"/>
+                </t>
+              </section>
+            </div>
+          </t>
+
+          <!-- ============ OWNER ============ -->
+          <t t-if="d.has_owner_data">
+            <div class="o_cwd_section_head">
+              <div>
+                <h2>Business Overview</h2>
+                <p>All branches, all time</p>
+              </div>
+            </div>
+            <div class="o_cwd_kpis">
+              <button class="o_cwd_kpi o_cwd_kpi_teal" style="--cw-i:0"
+                      t-on-click="() => this.openMemberships([['state', '=', 'active']], 'Active Memberships')">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-id-card-o"/></span>
+                <span class="o_cwd_kpi_label">Active memberships</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.membership_totals.active"/></span>
+                <span class="o_cwd_trend o_cwd_trend_flat"><i class="fa fa-users"/> recurring customers</span>
+              </button>
+              <div class="o_cwd_kpi o_cwd_kpi_aqua" style="--cw-i:1">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-refresh"/></span>
+                <span class="o_cwd_kpi_label">Recurring revenue / cycle</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.membership_totals.mrr" format="formatMoney"/></span>
+                <span class="o_cwd_trend o_cwd_trend_flat"><i class="fa fa-calendar"/> from active plans</span>
+              </div>
+              <button class="o_cwd_kpi" t-att-class="d.billing_overdue ? 'o_cwd_kpi_coral' : 'o_cwd_kpi_violet'" style="--cw-i:2"
+                      t-on-click="() => this.openMemberships([['state', '=', 'active'], ['next_billing_date', '&lt;', d.today]], 'Billing Overdue')">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-exclamation-circle"/></span>
+                <span class="o_cwd_kpi_label">Billing overdue</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.billing_overdue"/></span>
+                <span class="o_cwd_trend o_cwd_trend_flat"><i class="fa fa-bell-o"/> need renewal</span>
+              </button>
+              <button class="o_cwd_kpi o_cwd_kpi_amber" style="--cw-i:3" t-on-click="openLoyaltyCards">
+                <span class="o_cwd_kpi_icon"><i class="fa fa-gift"/></span>
+                <span class="o_cwd_kpi_label">Loyalty points balance</span>
+                <span class="o_cwd_kpi_value"><CwCount value="d.loyalty_totals.points_balance"/></span>
+                <span class="o_cwd_trend o_cwd_trend_flat"><i class="fa fa-credit-card"/> <t t-esc="d.loyalty_totals.cards"/> cards</span>
+              </button>
+            </div>
+
+            <div class="o_cwd_grid">
+              <section class="o_cwd_card o_cwd_span_6" style="--cw-i:4">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-building-o"/> Branches</h3>
+                    <p>Revenue by branch</p>
+                  </div>
+                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'branches'"/><t t-set="placeholder" t-value="'Search branch…'"/></t>
+                </header>
+                <div t-if="d.branch_breakdown.length" class="o_cwd_chart" t-ref="branchChart"/>
+                <ul class="o_cwd_rank">
+                  <li t-foreach="filteredBranches" t-as="b" t-key="b_index" t-att-style="stagger(b_index)">
+                    <span class="o_cwd_rank_name" t-esc="b.name"/>
+                    <span class="o_cwd_rank_val" t-esc="formatMoney(b.revenue)"/>
+                    <small><t t-esc="b.washes"/> washes</small>
+                  </li>
+                </ul>
+                <t t-if="!filteredBranches.length" t-call="carwash_dashboard.Empty">
+                  <t t-set="searchKey" t-value="'branches'"/><t t-set="emptyText" t-value="'No completed washes yet'"/>
+                </t>
+              </section>
+
+              <section class="o_cwd_card o_cwd_span_6" style="--cw-i:5">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-trophy"/> Crew Leaderboard</h3>
+                    <p>Job cards completed</p>
+                  </div>
+                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'staff'"/><t t-set="placeholder" t-value="'Search staff…'"/></t>
+                </header>
+                <ol class="o_cwd_leader">
+                  <li t-foreach="filteredStaff" t-as="s" t-key="s.name" t-att-style="stagger(s_index)"
+                      t-att-class="!(state.search.staff or state.globalSearch) and s_index lt 3 ? 'o_cwd_medal_' + (s_index + 1) : ''">
+                    <span class="o_cwd_leader_pos" t-esc="s_index + 1"/>
+                    <span class="o_cwd_avatar o_cwd_avatar_lg" t-esc="s.initials"/>
+                    <div class="o_cwd_leader_body">
+                      <strong t-esc="s.name"/>
+                      <span class="o_cwd_bar"><span t-attf-style="width: {{Math.round(s.completed / maxStaffCompleted * 100)}}%"/></span>
+                    </div>
+                    <span class="o_cwd_leader_val"><t t-esc="s.completed"/></span>
+                  </li>
+                </ol>
+                <t t-if="!filteredStaff.length" t-call="carwash_dashboard.Empty">
+                  <t t-set="searchKey" t-value="'staff'"/><t t-set="emptyText" t-value="'No completed job cards yet'"/>
+                </t>
+              </section>
+
+              <section class="o_cwd_card o_cwd_span_12" style="--cw-i:6">
+                <header class="o_cwd_card_head">
+                  <div>
+                    <h3><i class="fa fa-id-card-o"/> Memberships</h3>
+                    <p>Active members, by next billing date</p>
+                  </div>
+                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'memberships'"/><t t-set="placeholder" t-value="'Search member, plan…'"/></t>
+                </header>
+                <div class="o_cwd_members">
+                  <div t-foreach="filteredMemberships" t-as="m" t-key="m.id" class="o_cwd_member"
+                       t-att-class="m.overdue ? 'o_cwd_member_overdue' : ''" t-att-style="stagger(m_index)"
+                       t-on-click="() => this.openRecord('carwash.membership', m.id)">
+                    <div class="o_cwd_member_top">
+                      <strong t-esc="m.customer"/>
+                      <span class="o_cwd_pill o_cwd_pill_plan" t-esc="m.plan"/>
+                    </div>
+                    <div class="o_cwd_member_washes">
+                      <t t-if="m.allowance">
+                        <span t-foreach="Array.from({length: Math.min(m.allowance, 12)})" t-as="w" t-key="w_index"
+                              class="o_cwd_drop" t-att-class="w_index lt m.used ? 'used' : ''"><i class="fa fa-tint"/></span>
+                        <small><t t-esc="m.used"/>/<t t-esc="m.allowance"/> washes</small>
+                      </t>
+                      <small t-else=""><strong>∞</strong> Unlimited · <t t-esc="m.used"/> used</small>
+                    </div>
+                    <div class="o_cwd_member_foot">
+                      <span t-esc="m.name"/>
+                      <span t-att-class="m.overdue ? 'o_cwd_over' : ''"><i class="fa fa-calendar"/> <t t-esc="m.next_billing"/></span>
+                    </div>
+                  </div>
+                </div>
+                <t t-if="!filteredMemberships.length" t-call="carwash_dashboard.Empty">
+                  <t t-set="searchKey" t-value="'memberships'"/><t t-set="emptyText" t-value="'No active memberships yet'"/>
+                </t>
+              </section>
+            </div>
+          </t>
+
+          <footer class="o_cwd_footer">
+            <span class="o_cwd_live"><span/></span>
+            Live · auto-refreshes every minute<t t-if="state.lastUpdated"> · last update <t t-esc="state.lastUpdated"/></t>
+            <span class="o_cwd_footer_hint">Press <kbd>/</kbd> to search</span>
+          </footer>
+        </t>
+      </div>
+    </div>
+  </t>
+</templates>

@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="book_steps" name="Booking Steps">
+        <div class="d-flex align-items-center mb-4 flex-wrap" style="max-width: 480px;">
+            <div t-attf-class="o_cw_step #{'done' if step > 1 else ('active' if step == 1 else '')}">
+                <span class="o_cw_step_num"><i t-if="step > 1" class="fa fa-check"/><t t-else="">1</t></span>
+                <span>Details</span>
+            </div>
+            <div class="o_cw_step_sep"/>
+            <div t-attf-class="o_cw_step #{'done' if step > 2 else ('active' if step == 2 else '')}">
+                <span class="o_cw_step_num"><i t-if="step > 2" class="fa fa-check"/><t t-else="">2</t></span>
+                <span>Time Slot</span>
+            </div>
+            <div class="o_cw_step_sep"/>
+            <div t-attf-class="o_cw_step #{'active' if step == 3 else ''}">
+                <span class="o_cw_step_num">3</span>
+                <span>Confirmed</span>
+            </div>
+        </div>
+    </template>
+
+    <!-- Logged-in member: what their membership gives them before they pick anything -->
+    <template id="book_member_banner" name="Booking: Member Banner">
+        <div t-if="membership" class="o_cw_member_option card border-0 mb-4 p-3 d-flex flex-row align-items-center gap-3">
+            <i class="fa fa-id-card fa-2x text-success"/>
+            <div class="flex-grow-1">
+                <div class="fw-semibold">
+                    You're a <t t-esc="membership.plan_id.name"/> member
+                    <span class="badge text-bg-success ms-1">Active</span>
+                </div>
+                <div class="small text-muted">
+                    <t t-esc="membership.plan_id._benefit_summary()"/>
+                    <t t-if="membership.washes_remaining &gt;= 0"> · <t t-esc="membership.washes_remaining"/> free wash(es) left this cycle</t>
+                    <t t-if="membership.paid_until"> · valid until <t t-esc="membership.paid_until.strftime('%d %b %Y')"/></t>
+                </div>
+            </div>
+            <a href="/my/membership" class="small text-nowrap">My membership</a>
+        </div>
+    </template>
+
+    <template id="book_home_page" name="Car Wash Home">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+
+                <section class="o_cw_hero">
+                    <div class="container position-relative">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <h1>Skip the Line. Book Your Wash Online.</h1>
+                                <p class="lead my-3">
+                                    Real-time bay availability, instant confirmation, and a team that
+                                    treats your car right - pick a branch, a service and a time, and
+                                    we'll be ready when you pull up.
+                                </p>
+                                <a href="/car-wash/book" class="btn btn-light btn-lg mt-2">
+                                    <i class="fa fa-calendar-check-o me-2"/>Book Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="container py-5">
+                    <h2 class="o_cw_section_title text-center">Our Services</h2>
+                    <p class="o_cw_section_sub text-center">Pick what your car needs - every price and duration is fixed upfront.</p>
+                    <div class="row g-4">
+                        <t t-foreach="services" t-as="service">
+                            <div class="col-md-4">
+                                <div class="o_cw_card card p-4">
+                                    <div class="o_cw_card_icon">
+                                        <i class="fa fa-car"/>
+                                    </div>
+                                    <h5 t-esc="service.display_name"/>
+                                    <p class="text-muted mb-2" t-if="service.description_sale" t-esc="service.description_sale"/>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                                        <span class="fw-bold" t-esc="'%.2f' % service.list_price"/>
+                                        <span class="text-muted small">
+                                            <i class="fa fa-clock-o me-1"/>
+                                            <t t-esc="round((service.carwash_duration or 0.5) * 60)"/> min
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-if="not services" class="col-12 text-center text-muted">
+                            Services will be listed here once configured.
+                        </div>
+                    </div>
+                </section>
+
+                <section class="container py-5" t-if="show_packages and packages">
+                    <h2 class="o_cw_section_title text-center">Service Packages</h2>
+                    <p class="o_cw_section_sub text-center">Bundled services at one price - see exactly what's included before you book.</p>
+
+                    <div class="o_cw_pkg_tabbar mx-auto mb-4">
+                        <ul class="nav nav-pills" role="tablist">
+                            <t t-foreach="packages" t-as="package">
+                                <li class="nav-item flex-fill text-center" role="presentation">
+                                    <button type="button" role="tab"
+                                            t-att-class="'nav-link w-100' + (' active' if package_first else '')"
+                                            data-bs-toggle="tab"
+                                            t-attf-data-bs-target="#cw_pkg_#{package_index}">
+                                        <t t-esc="package.name"/>
+                                    </button>
+                                </li>
+                            </t>
+                        </ul>
+                    </div>
+
+                    <div class="tab-content">
+                        <t t-foreach="packages" t-as="package">
+                            <div role="tabpanel" t-att-id="'cw_pkg_%d' % package_index"
+                                 t-att-class="'tab-pane fade' + (' show active' if package_first else '')">
+                                <div class="o_cw_card card p-4 p-md-5">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-3">
+                                        <h4 class="mb-0"><t t-esc="package.name"/></h4>
+                                        <span class="fw-bold fs-5 text-nowrap" t-esc="'%.2f' % package.total_price"/>
+                                    </div>
+                                    <p class="o_cw_pkg_tagline" t-if="package.description" t-esc="package.description"/>
+
+                                    <div t-if="package.website_highlights" class="o_cw_pkg_highlights"
+                                         t-field="package.website_highlights"/>
+                                    <ul t-else="" class="list-unstyled mb-0">
+                                        <li t-foreach="package.line_ids" t-as="line"
+                                            class="d-flex justify-content-between border-bottom py-2">
+                                            <span><i class="fa fa-check text-success me-2"/><t t-esc="line.product_id.display_name"/></span>
+                                            <span class="text-muted" t-if="line.quantity != 1">&#215; <t t-esc="line.quantity"/></span>
+                                        </li>
+                                    </ul>
+
+                                    <a t-attf-href="/car-wash/book?package_id=#{package.id}" class="btn btn-primary mt-3">Book This Package</a>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </section>
+
+                <section class="container py-5">
+                    <h2 class="o_cw_section_title text-center">How It Works</h2>
+                    <p class="o_cw_section_sub text-center">Three steps, no phone calls.</p>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="o_cw_card card p-4 text-center">
+                                <div class="o_cw_card_icon mx-auto">
+                                    <i class="fa fa-map-marker"/>
+                                </div>
+                                <h5>1. Pick a Branch &amp; Service</h5>
+                                <p class="text-muted mb-0">Choose your nearest branch and the service your vehicle needs.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="o_cw_card card p-4 text-center">
+                                <div class="o_cw_card_icon o_cw_teal mx-auto">
+                                    <i class="fa fa-clock-o"/>
+                                </div>
+                                <h5>2. Choose a Real Time Slot</h5>
+                                <p class="text-muted mb-0">See live bay availability and confirm instantly - no waiting to hear back.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="o_cw_card card p-4 text-center">
+                                <div class="o_cw_card_icon o_cw_info mx-auto">
+                                    <i class="fa fa-check-circle-o"/>
+                                </div>
+                                <h5>3. Show Up &amp; Relax</h5>
+                                <p class="text-muted mb-0">Your bay is reserved. Track every booking anytime from your account.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="container py-5" t-if="branches">
+                    <h2 class="o_cw_section_title text-center">Our Branches</h2>
+                    <p class="o_cw_section_sub text-center">Book at whichever location is closest to you.</p>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <span t-foreach="branches" t-as="branch" class="o_cw_branch_badge">
+                            <i class="fa fa-map-marker"/><t t-esc="branch.name"/>
+                        </span>
+                    </div>
+                </section>
+
+                <section class="o_cw_hero py-5 text-center">
+                    <div class="container position-relative">
+                        <h2 class="mb-3">Ready for a Fresh Clean?</h2>
+                        <a href="/car-wash/book" class="btn btn-light btn-lg">
+                            <i class="fa fa-calendar-check-o me-2"/>Book Your Wash
+                        </a>
+                    </div>
+                </section>
+
+            </div>
+        </t>
+    </template>
+
+    <template id="book_auth_required" name="Log In or Sign Up to Book">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+                <div class="container py-5" style="max-width: 560px;">
+                    <div class="o_cw_form_card card p-5 text-center">
+                        <div class="o_cw_card_icon mx-auto mb-3" style="width:4rem;height:4rem;font-size:2rem;">
+                            <i class="fa fa-user"/>
+                        </div>
+                        <h1 class="h3 mb-2">Ready to Book?</h1>
+                        <p class="text-muted mb-4">
+                            Booking needs an account so we can confirm your slot and keep your
+                            history in one place. Already have one, or new here?
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <a t-attf-href="/web/login?redirect=/car-wash/book" class="btn btn-outline-primary btn-lg w-100">
+                                    <i class="fa fa-sign-in me-2"/>Log In
+                                </a>
+                            </div>
+                            <div class="col-sm-6">
+                                <a t-attf-href="/web/signup?redirect=/car-wash/book" class="btn btn-primary btn-lg w-100">
+                                    <i class="fa fa-user-plus me-2"/>Sign Up
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="book_start_page" name="Book a Car Wash">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+                <div class="container py-5" style="max-width: 640px;">
+                    <t t-call="carwash_website.book_steps"><t t-set="step" t-value="1"/></t>
+                    <h1 class="mb-1">Book a Car Wash</h1>
+                    <p class="text-muted mb-4">Tell us where and what - we'll show you the open times.</p>
+                    <div t-if="error" class="alert alert-warning" t-out="error"/>
+                    <t t-call="carwash_website.book_member_banner"/>
+                    <form action="/car-wash/book/slots" method="get" class="o_cw_form_card card p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="company_id"><i class="fa fa-map-marker me-1 text-muted"/> Branch</label>
+                            <select class="form-select form-select-lg" name="company_id" id="company_id" required="required">
+                                <option value="">Select a branch...</option>
+                                <t t-foreach="branches" t-as="branch">
+                                    <option t-att-value="branch.id" t-esc="branch.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="mb-3" t-if="packages">
+                            <label class="form-label fw-semibold" for="package_id"><i class="fa fa-gift me-1 text-muted"/> Package</label>
+                            <select class="form-select form-select-lg" name="package_id" id="package_id">
+                                <option value="">No package</option>
+                                <t t-foreach="packages" t-as="pkg">
+                                    <option t-att-value="pkg.id" t-att-selected="package and pkg.id == package.id"
+                                            t-esc="'%s - %.2f%s' % (pkg.name, pkg.total_price, (' (save %.2f)' % pkg.saving) if pkg.saving else '')"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="product_id"><i class="fa fa-car me-1 text-muted"/> Service
+                                <span t-if="packages" class="text-muted fw-normal small">(optional with a package - adds an extra service)</span></label>
+                            <select class="form-select form-select-lg" name="product_id" id="product_id">
+                                <option value="" t-esc="'No extra service' if packages else 'Select a service...'"/>
+                                <t t-foreach="services" t-as="srv">
+                                    <option t-att-value="srv.id" t-att-selected="service and srv.id == service.id"
+                                            t-esc="'%s - %.2f%s' % (srv.display_name, srv.list_price,
+                                                   ' (free with your membership)' if membership and membership.washes_remaining != 0 and srv in membership.plan_id.plan_service_ids else '')"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="date"><i class="fa fa-calendar me-1 text-muted"/> Date</label>
+                            <input type="date" class="form-control form-control-lg" name="date" id="date"
+                                   t-att-min="today" required="required"/>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100">See Available Times</button>
+                    </form>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="book_slots_page" name="Choose a Time Slot">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+                <div class="container py-5" style="max-width: 640px;">
+                    <t t-call="carwash_website.book_steps"><t t-set="step" t-value="2"/></t>
+                    <h1 class="mb-1">Choose a Time Slot</h1>
+                    <p class="text-muted mb-4">
+                        <i class="fa fa-map-marker me-1"/><t t-esc="company.name"/>
+                        <t t-if="package">&#160;&#8226;&#160;<i class="fa fa-gift me-1"/><t t-esc="package.name"/>
+                            (<t t-esc="'%.2f' % package.total_price"/>)</t>
+                        <t t-if="service">&#160;&#8226;&#160;<i class="fa fa-car me-1"/><t t-esc="service.display_name"/></t>
+                        &#160;&#8226;&#160;<i class="fa fa-calendar me-1"/><t t-esc="date"/>
+                    </p>
+                    <div t-if="error" class="alert alert-warning" t-out="error"/>
+
+                    <div t-if="not slots" class="alert alert-info">
+                        No available slots on this date. Please go back and try another date.
+                    </div>
+
+                    <form t-if="slots" action="/car-wash/book/confirm" method="post" class="o_cw_form_card card p-4">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="company_id" t-att-value="company.id"/>
+                        <input t-if="service" type="hidden" name="product_id" t-att-value="service.id"/>
+                        <input t-if="package" type="hidden" name="package_id" t-att-value="package.id"/>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="fa fa-clock-o me-1 text-muted"/> Available Times</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <t t-foreach="slots" t-as="slot">
+                                    <input type="radio" class="btn-check" name="slot_start"
+                                           t-att-id="'cw_slot_%d' % slot_index"
+                                           t-att-value="slot['start'].isoformat()"
+                                           required="required" autocomplete="off"/>
+                                    <label class="btn btn-outline-primary o_cw_slot_label" t-att-for="'cw_slot_%d' % slot_index">
+                                        <t t-esc="slot['start'].strftime('%I:%M %p')"/>
+                                        <span class="d-block small fw-normal">
+                                            <t t-esc="slot['bay_count']"/> spot<t t-if="slot['bay_count'] != 1">s</t> open
+                                        </span>
+                                    </label>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="vehicle_id"><i class="fa fa-car me-1 text-muted"/> Vehicle</label>
+                            <select class="form-select form-select-lg" name="vehicle_id" id="vehicle_id">
+                                <option value="">Register a new vehicle...</option>
+                                <t t-foreach="vehicles" t-as="vehicle">
+                                    <option t-att-value="vehicle.id" t-esc="vehicle.license_plate"/>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-4" id="new_vehicle_fields">
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="license_plate" placeholder="License Plate"/>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="make" placeholder="Make"/>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="vehicle_model" placeholder="Model"/>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="vehicle_type">
+                                    <option value="sedan">Sedan</option>
+                                    <option value="hatchback">Hatchback</option>
+                                    <option value="suv">SUV</option>
+                                    <option value="truck">Truck/Pickup</option>
+                                    <option value="van">Van</option>
+                                    <option value="bike">Motorcycle</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div t-if="membership and membership_preview" class="o_cw_member_option card border-0 mb-4 p-3">
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" role="switch" name="use_membership"
+                                       id="use_membership" value="1" checked="checked"/>
+                                <label class="form-check-label fw-semibold" for="use_membership">
+                                    <i class="fa fa-id-card me-1"/> Use my <t t-esc="membership.plan_id.name"/> membership
+                                </label>
+                            </div>
+                            <div class="small text-muted mt-1 ms-5">
+                                <t t-esc="membership.plan_id._benefit_summary()"/>
+                                <t t-if="membership.washes_remaining &gt;= 0"> · <t t-esc="membership.washes_remaining"/> free wash(es) left</t>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-baseline gap-2 mt-2 ms-5 o_cw_member_price">
+                                <span class="text-muted text-decoration-line-through" t-esc="'%.2f' % membership_preview['normal']"/>
+                                <span class="fs-5 fw-bold" t-esc="'%.2f' % membership_preview['member']"/>
+                                <span class="badge text-bg-success">
+                                    <t t-if="membership_preview['free_wash'] and not membership_preview['member']">Free with membership</t>
+                                    <t t-else="">You save <t t-esc="'%.2f' % membership_preview['saving']"/></t>
+                                </span>
+                                <span t-if="membership_preview['free_wash']" class="small text-muted">uses 1 free wash</span>
+                            </div>
+                        </div>
+                        <div t-elif="membership" class="alert alert-light border small mb-4">
+                            <i class="fa fa-id-card me-1"/> Your <t t-esc="membership.plan_id.name"/> membership gives no
+                            benefit on this selection<t t-if="membership.washes_remaining == 0"> (free washes for this cycle are used up)</t>.
+                            Price: <strong t-esc="'%.2f' % normal_amount"/>
+                        </div>
+                        <div t-elif="normal_amount" class="text-muted small mb-3">
+                            Price: <strong t-esc="'%.2f' % normal_amount"/>
+                            <a href="/car-wash/membership" class="ms-2">Members wash for less</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Confirm Booking</button>
+                    </form>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="book_success_page" name="Booking Confirmed">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+                <div class="container py-5" style="max-width: 640px;">
+                    <t t-call="carwash_website.book_steps"><t t-set="step" t-value="3"/></t>
+                    <div class="o_cw_form_card card p-5 text-center">
+                        <div class="o_cw_card_icon o_cw_teal mx-auto mb-3" style="width:4rem;height:4rem;font-size:2rem;">
+                            <i class="fa fa-check"/>
+                        </div>
+                        <h1 class="h3 mb-3">Booking Confirmed!</h1>
+                        <p class="text-muted">
+                            Your booking <strong t-esc="appointment.name"/> is confirmed for
+                            <strong t-esc="appointment.appointment_date.strftime('%B %d, %Y at %I:%M %p')"/>
+                            at <strong t-esc="appointment.company_id.name"/>.
+                        </p>
+                        <p t-if="appointment.membership_id" class="text-success">
+                            <i class="fa fa-id-card me-1"/> Your <t t-esc="appointment.membership_id.plan_id.name"/> membership
+                            was applied - you save <strong t-esc="'%.2f' % appointment.membership_saving"/>
+                            (total <t t-esc="'%.2f' % appointment.amount_total"/>).
+                        </p>
+                        <a href="/my/bookings" class="btn btn-primary btn-lg mt-2">View My Bookings</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

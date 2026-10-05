@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_carwash_dashboard_user,carwash.dashboard.user,model_carwash_dashboard,carwash_base.group_carwash_user,1,0,0,0
+access_carwash_dashboard_washer,carwash.dashboard.washer,model_carwash_dashboard,carwash_jobcard.group_carwash_washer,1,0,0,0
+access_carwash_dashboard_qc,carwash.dashboard.qc,model_carwash_dashboard,carwash_jobcard.group_carwash_qc,1,0,0,0

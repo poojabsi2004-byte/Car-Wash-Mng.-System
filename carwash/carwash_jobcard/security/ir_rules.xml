@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="carwash_jobcard_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: only assigned job cards</field>
+        <field name="model_id" ref="model_carwash_jobcard"/>
+        <field name="domain_force">[('assigned_employee_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+</odoo>

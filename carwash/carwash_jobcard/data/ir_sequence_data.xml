@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_carwash_jobcard" model="ir.sequence">
+        <field name="name">Car Wash Job Card</field>
+        <field name="code">carwash.jobcard</field>
+        <field name="prefix">CWJ/%(y)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_carwash_inspection" model="ir.sequence">
+        <field name="name">Car Wash Inspection</field>
+        <field name="code">carwash.inspection</field>
+        <field name="prefix">CWI/%(y)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

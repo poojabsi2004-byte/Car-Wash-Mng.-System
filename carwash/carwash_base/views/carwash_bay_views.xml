@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_bay_list" model="ir.ui.view">
+        <field name="name">carwash.bay.list</field>
+        <field name="model">carwash.bay</field>
+        <field name="arch" type="xml">
+            <list string="Bays">
+                <field name="name"/>
+                <field name="bay_type"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'free'"
+                       decoration-danger="state == 'occupied'"
+                       decoration-warning="state == 'maintenance'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_bay_form" model="ir.ui.view">
+        <field name="name">carwash.bay.form</field>
+        <field name="model">carwash.bay</field>
+        <field name="arch" type="xml">
+            <form string="Bay">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Bay Name"/></h1>
+                    </div>
+                    <group>
+                        <field name="bay_type"/>
+                        <field name="state"/>
+                    </group>
+                    <field name="notes" placeholder="Notes..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_bay_kanban" model="ir.ui.view">
+        <field name="name">carwash.bay.kanban</field>
+        <field name="model">carwash.bay</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <main t-att-class="'border-start border-4 ps-2 ' + (
+                            record.state.raw_value === 'free' ? 'border-success' :
+                            record.state.raw_value === 'occupied' ? 'border-danger' :
+                            'border-warning'
+                        )">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong><field name="name"/></strong>
+                                <i t-att-class="'fa fa-fw text-muted ' + (
+                                    record.state.raw_value === 'free' ? 'fa-check-circle-o' :
+                                    record.state.raw_value === 'occupied' ? 'fa-lock' :
+                                    'fa-wrench'
+                                )" t-att-title="record.state.raw_value"/>
+                            </div>
+                            <field name="bay_type"/>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_bay_search" model="ir.ui.view">
+        <field name="name">carwash.bay.search</field>
+        <field name="model">carwash.bay</field>
+        <field name="arch" type="xml">
+            <search string="Bays">
+                <field name="name"/>
+                <field name="bay_type"/>
+                <group>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Bay Type" name="group_bay_type" context="{'group_by': 'bay_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_bay" model="ir.actions.act_window">
+        <field name="name">Bays</field>
+        <field name="res_model">carwash.bay</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+</odoo>

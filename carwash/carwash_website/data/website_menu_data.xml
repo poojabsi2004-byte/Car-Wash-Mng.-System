@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="website_menu_book" model="website.menu">
+        <field name="name">Book a Car Wash</field>
+        <field name="url">/car-wash/book</field>
+        <field name="parent_id" ref="website.main_menu"/>
+        <field name="sequence" type="int">15</field>
+    </record>
+    <record id="website_menu_membership" model="website.menu">
+        <field name="name">Membership</field>
+        <field name="url">/car-wash/membership</field>
+        <field name="parent_id" ref="website.main_menu"/>
+        <field name="sequence" type="int">16</field>
+    </record>
+</odoo>

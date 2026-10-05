@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Public plans page: compare plans, join (pay online to activate) -->
+    <template id="membership_plans_page" name="Car Wash Membership">
+        <t t-call="website.layout">
+            <div class="o_cw_site" id="wrap">
+                <section class="o_cw_hero o_cw_member_hero">
+                    <div class="container py-5 text-center">
+                        <h1 class="display-5 fw-bold">Wash more. Pay less.</h1>
+                        <p class="lead mb-0">Join a membership plan - free washes every cycle and member prices on everything else.</p>
+                    </div>
+                </section>
+                <section class="container py-5">
+                    <div t-if="active_membership" class="alert alert-success d-flex align-items-center gap-2">
+                        <i class="fa fa-id-card fa-lg"/>
+                        <div>You're a <strong t-esc="active_membership.plan_id.name"/> member until
+                            <strong t-esc="active_membership.paid_until.strftime('%B %d, %Y') if active_membership.paid_until else ''"/>.
+                            <a href="/my/membership" class="ms-1">View my membership</a></div>
+                    </div>
+                    <div t-elif="pending_membership" class="alert alert-info d-flex align-items-center gap-2">
+                        <i class="fa fa-hourglass-half fa-lg"/>
+                        <div>Your <strong t-esc="pending_membership.plan_id.name"/> membership activates once it's paid.
+                            <a t-if="pending_membership.pending_order_id" t-att-href="pending_membership.pending_order_id.get_portal_url()" class="ms-1">Complete payment</a></div>
+                    </div>
+                    <div t-if="not plans" class="text-center text-muted py-5">Membership plans are coming soon.</div>
+                    <div class="row g-4 justify-content-center">
+                        <div t-foreach="plans" t-as="plan" class="col-md-6 col-lg-4">
+                            <div t-att-class="'card o_cw_card o_cw_plan_card h-100 p-4' + (' o_cw_plan_current' if active_membership and active_membership.plan_id == plan else '')">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h3 class="h4 mb-0" t-esc="plan.name"/>
+                                    <span t-if="active_membership and active_membership.plan_id == plan" class="badge text-bg-success">Your plan</span>
+                                </div>
+                                <div class="o_cw_plan_price mb-3">
+                                    <span class="fs-2 fw-bold" t-esc="'%.2f' % plan.price"/>
+                                    <span class="text-muted">/ <t t-esc="dict(plan._fields['billing_period'].selection)[plan.billing_period].lower()"/></span>
+                                </div>
+                                <p t-if="plan.description" class="text-muted" t-esc="plan.description"/>
+                                <ul class="list-unstyled mb-4">
+                                    <li t-if="plan.plan_service_ids" class="mb-2">
+                                        <i class="fa fa-check text-success me-2"/>
+                                        <strong t-esc="plan.wash_allowance or 'Unlimited'"/> free wash<t t-if="plan.wash_allowance != 1">es</t> per cycle
+                                        <div class="small text-muted ms-4" t-esc="', '.join(plan.plan_service_ids.mapped('name'))"/>
+                                    </li>
+                                    <li t-if="plan.discount_percent" class="mb-2">
+                                        <i class="fa fa-check text-success me-2"/>
+                                        <strong t-esc="('%g' % plan.discount_percent) + '%'"/> off every other service
+                                    </li>
+                                    <li class="mb-2"><i class="fa fa-check text-success me-2"/>Book online and use it in one tap</li>
+                                </ul>
+                                <div class="mt-auto">
+                                    <a t-if="is_public" t-attf-href="/web/login?redirect=/car-wash/membership" class="btn btn-primary w-100">Log in to join</a>
+                                    <a t-elif="active_membership" href="/my/membership" class="btn btn-outline-primary w-100">Manage membership</a>
+                                    <form t-else="" action="/car-wash/membership/join" method="post">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <input type="hidden" name="plan_id" t-att-value="plan.id"/>
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            Join &amp; pay <t t-esc="'%.2f' % plan.price"/>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center text-muted small mt-4">Your membership starts as soon as your payment is received, and renews each billing cycle.</p>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Portal: home tile + My Membership page -->
+    <template id="portal_my_home_carwash_membership" name="My Membership" customize_show="True" inherit_id="portal.portal_my_home" priority="21">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="portal_client_category_enable" t-value="True"/>
+        </xpath>
+        <div id="portal_client_category" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Car Wash Membership</t>
+                <t t-set="url" t-value="'/my/membership'"/>
+                <t t-set="text">Free washes, member prices and billing</t>
+                <t t-set="placeholder_count" t-value="'membership_count'"/>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_my_membership" name="My Membership">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar"><t t-set="title">Membership</t></t>
+            <div t-if="message == 'auto_renew_on'" class="alert alert-success mt-3">
+                Auto-renewal is on - we'll send you the renewal a few days before your membership ends.</div>
+            <div t-if="message == 'auto_renew_off'" class="alert alert-info mt-3">
+                Auto-renewal is off - your membership stays active until the end of the period you've paid for.</div>
+            <div t-if="not memberships" class="alert alert-info mt-3">
+                You don't have a membership yet. <a href="/car-wash/membership">See the plans</a>.
+            </div>
+            <div t-foreach="memberships" t-as="m" class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <h4 class="mb-1"><t t-esc="m.plan_id.name"/> <small class="text-muted" t-esc="m.name"/></h4>
+                            <div class="text-muted" t-esc="m.plan_id._benefit_summary()"/>
+                        </div>
+                        <span t-att-class="'badge fs-6 ' + {'active': 'text-bg-success', 'pending': 'text-bg-info', 'expired': 'text-bg-warning'}.get(m.state, 'text-bg-secondary')"
+                              t-esc="dict(m._fields['state'].selection)[m.state]"/>
+                    </div>
+                    <div class="row mt-3 g-3">
+                        <div class="col-md-4" t-if="m.state == 'active'">
+                            <div class="text-muted small">Active until</div>
+                            <div class="fw-bold" t-esc="m.paid_until.strftime('%B %d, %Y') if m.paid_until else '-'"/>
+                        </div>
+                        <div class="col-md-4" t-if="m.state == 'active' and m.wash_allowance">
+                            <div class="text-muted small">Free washes this cycle</div>
+                            <div class="fw-bold"><t t-esc="m.washes_remaining"/> of <t t-esc="m.wash_allowance"/> left</div>
+                            <div class="progress mt-1" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar"
+                                     t-attf-style="width: #{int(100 * (m.wash_allowance - m.washes_remaining) / m.wash_allowance)}%"/>
+                            </div>
+                        </div>
+                        <div class="col-md-4" t-if="m.discount_percent">
+                            <div class="text-muted small">Member discount</div>
+                            <div class="fw-bold" t-esc="('%g' % m.discount_percent) + '%'"/>
+                        </div>
+                    </div>
+                    <div t-if="m.pending_order_id" class="alert alert-warning d-flex justify-content-between align-items-center mt-3 mb-0">
+                        <span><i class="fa fa-hourglass-half me-1"/>
+                            <t t-if="m.state == 'pending'">Pay to activate your membership.</t>
+                            <t t-else="">Your renewal is due.</t>
+                            <strong t-esc="m.pending_order_id.name"/> -
+                            <span t-field="m.pending_order_id.amount_total"/></span>
+                        <a t-att-href="m.pending_order_id.get_portal_url()" class="btn btn-primary btn-sm">Pay now</a>
+                    </div>
+                    <div t-if="m.state == 'expired' and not m.pending_order_id"
+                         class="alert alert-warning d-flex justify-content-between align-items-center mt-3 mb-0">
+                        <span><i class="fa fa-exclamation-triangle me-1"/>
+                            Your membership expired<t t-if="m.paid_until"> on <t t-esc="m.paid_until.strftime('%B %d, %Y')"/></t>.
+                            Renew to get your member benefits back.</span>
+                        <form t-attf-action="/my/membership/#{m.id}/renew" method="post" class="m-0">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                Renew - <t t-esc="'%.2f' % m.plan_id.price"/></button>
+                        </form>
+                    </div>
+                    <div t-if="m.state == 'active'" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 p-3 bg-light rounded">
+                        <form t-attf-action="/my/membership/#{m.id}/auto-renew" method="post" class="m-0">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="auto_renew" t-att-value="'0' if m.auto_renew else '1'"/>
+                            <span class="me-2">
+                                <i t-att-class="'fa me-1 ' + ('fa-refresh text-success' if m.auto_renew else 'fa-pause text-muted')"/>
+                                Auto-renewal <strong t-esc="'on' if m.auto_renew else 'off'"/>
+                                <span t-if="m.auto_renew and m.next_billing_date" class="text-muted small">
+                                    - next billing <t t-esc="m.next_billing_date.strftime('%d %b %Y')"/></span>
+                                <span t-elif="not m.auto_renew" class="text-muted small">
+                                    - ends <t t-esc="m.paid_until.strftime('%d %b %Y') if m.paid_until else ''"/></span>
+                            </span>
+                            <button type="submit" class="btn btn-link btn-sm p-0"
+                                    t-esc="'Turn off' if m.auto_renew else 'Turn on'"/>
+                        </form>
+                        <form t-if="not m.pending_order_id" t-attf-action="/my/membership/#{m.id}/renew" method="post" class="m-0">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                Pay next period now - <t t-esc="'%.2f' % m.plan_id.price"/></button>
+                        </form>
+                    </div>
+                    <t t-set="member_bookings" t-value="m.appointment_ids.sorted('appointment_date', reverse=True)[:10]"/>
+                    <h6 t-if="member_bookings" class="mt-4">Bookings using this membership</h6>
+                    <table t-if="member_bookings" class="table table-sm mb-0">
+                        <thead><tr><th>Booking</th><th>Date</th><th>Benefit</th><th class="text-end">You saved</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="member_bookings" t-as="booking">
+                                <td><a t-attf-href="/my/bookings/#{booking.id}" t-esc="booking.name"/></td>
+                                <td t-esc="booking.appointment_date.strftime('%d %b %Y')"/>
+                                <td>
+                                    <span t-if="booking.line_ids.filtered('membership_covered')" class="badge text-bg-success">Free wash</span>
+                                    <span t-if="booking.line_ids.filtered('is_discount_line')" class="badge text-bg-info">Member discount</span>
+                                </td>
+                                <td class="text-end" t-esc="'%.2f' % booking.membership_saving"/>
+                                <td t-esc="dict(booking._fields['state'].selection).get(booking.state)"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div t-if="m.state == 'active'" class="mt-3">
+                        <a href="/car-wash/book" class="btn btn-primary btn-sm"><i class="fa fa-calendar-check-o me-1"/>Book a wash with my membership</a>
+                    </div>
+                    <h6 t-if="m.sale_order_ids" class="mt-4">Billing history</h6>
+                    <table t-if="m.sale_order_ids" class="table table-sm mb-0">
+                        <thead><tr><th>Order</th><th>Date</th><th class="text-end">Amount</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="m.sale_order_ids.sorted('id', reverse=True)" t-as="order">
+                                <td><a t-att-href="order.get_portal_url()" t-esc="order.name"/></td>
+                                <td t-esc="order.date_order.strftime('%d %b %Y')"/>
+                                <td class="text-end"><span t-field="order.amount_total"/></td>
+                                <td>
+                                    <span t-if="order.carwash_membership_paid" class="badge text-bg-success">Paid</span>
+                                    <span t-elif="order.state == 'cancel'" class="badge text-bg-secondary">Cancelled</span>
+                                    <span t-else="" class="badge text-bg-warning">Awaiting payment</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-3"><a href="/car-wash/membership">Compare plans</a></div>
+        </t>
+    </template>
+</odoo>

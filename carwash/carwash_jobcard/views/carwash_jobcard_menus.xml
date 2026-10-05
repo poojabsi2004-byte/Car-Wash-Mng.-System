@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_carwash_jobcard_section" name="Job Cards" parent="carwash_base.menu_carwash_root" sequence="20"/>
+    <menuitem id="menu_carwash_jobcard" name="Job Cards" parent="menu_carwash_jobcard_section"
+              action="action_carwash_jobcard" sequence="10"/>
+    <menuitem id="menu_carwash_inspection" name="Inspections" parent="menu_carwash_jobcard_section"
+              action="action_carwash_inspection" sequence="20"/>
+
+    <menuitem id="menu_carwash_dashboard_overview" name="Wash Analysis" parent="carwash_base.menu_carwash_reporting"
+              action="action_carwash_dashboard" sequence="10"/>
+    <menuitem id="menu_carwash_dashboard_productivity" name="Employee Productivity" parent="carwash_base.menu_carwash_reporting"
+              action="action_carwash_jobcard_dashboard" groups="carwash_base.group_carwash_manager" sequence="20"/>
+    <menuitem id="menu_carwash_dashboard_revenue" name="Revenue by Service" parent="carwash_base.menu_carwash_reporting"
+              action="action_carwash_revenue_by_service" groups="carwash_base.group_carwash_manager" sequence="30"/>
+
+    <menuitem id="menu_carwash_config_service_package" name="Service Packages"
+              parent="carwash_base.menu_carwash_config" action="action_carwash_service_package" sequence="20"/>
+    <menuitem id="menu_carwash_config_checklist_template" name="Checklist Templates"
+              parent="carwash_base.menu_carwash_config" action="action_carwash_checklist_template" sequence="30"/>
+
+    <menuitem id="menu_carwash_config_inspection_type" name="Inspection Types"
+              parent="carwash_base.menu_carwash_config" action="action_carwash_inspection_type" sequence="35"/>
+</odoo>

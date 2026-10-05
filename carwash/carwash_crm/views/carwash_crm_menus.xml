@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_carwash_booking_requests" name="Booking Requests" parent="carwash_base.menu_carwash_operations"
+              action="action_carwash_booking_requests" groups="carwash_base.group_carwash_user" sequence="5"/>
+</odoo>

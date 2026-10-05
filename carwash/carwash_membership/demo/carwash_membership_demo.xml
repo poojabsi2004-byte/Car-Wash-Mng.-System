@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="demo_product_plan_silver" model="product.product">
+        <field name="name">Silver Membership Fee</field>
+        <field name="type">service</field>
+        <field name="list_price">49.0</field>
+    </record>
+    <record id="demo_product_plan_gold" model="product.product">
+        <field name="name">Gold Membership Fee</field>
+        <field name="type">service</field>
+        <field name="list_price">89.0</field>
+    </record>
+
+    <record id="demo_plan_silver" model="carwash.membership.plan">
+        <field name="name">Silver Monthly</field>
+        <field name="product_id" ref="demo_product_plan_silver"/>
+        <field name="billing_period">monthly</field>
+        <field name="wash_allowance">2</field>
+        <field name="plan_service_ids" model="product.product" eval="[(6, 0, [
+            obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id,
+        ])]"/>
+    </record>
+
+    <record id="demo_plan_gold" model="carwash.membership.plan">
+        <field name="name">Gold Monthly</field>
+        <field name="product_id" ref="demo_product_plan_gold"/>
+        <field name="billing_period">monthly</field>
+        <field name="wash_allowance">4</field>
+        <field name="plan_service_ids" model="product.product" eval="[(6, 0, [
+            obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_detailing').product_variant_id.id,
+        ])]"/>
+    </record>
+
+    <record id="demo_membership_aisha" model="carwash.membership">
+        <field name="partner_id" ref="carwash_base.demo_customer_2"/>
+        <field name="plan_id" ref="demo_plan_gold"/>
+        <field name="next_billing_date" eval="(datetime.now() + timedelta(days=18)).date()"/>
+        <field name="washes_used">1</field>
+    </record>
+
+    <record id="demo_membership_chen" model="carwash.membership">
+        <field name="partner_id" ref="carwash_base.demo_customer_3"/>
+        <field name="plan_id" ref="demo_plan_silver"/>
+        <field name="next_billing_date" eval="(datetime.now() + timedelta(days=25)).date()"/>
+        <field name="washes_used">0</field>
+    </record>
+
+</odoo>

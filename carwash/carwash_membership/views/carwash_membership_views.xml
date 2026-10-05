@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_membership_list" model="ir.ui.view">
+        <field name="name">carwash.membership.list</field>
+        <field name="model">carwash.membership</field>
+        <field name="arch" type="xml">
+            <list string="Memberships">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="plan_id"/>
+                <field name="valid_until"/>
+                <field name="next_billing_date"/>
+                <field name="auto_renew" optional="hide"/>
+                <field name="washes_used"/>
+                <field name="washes_remaining"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'pending'"
+                       decoration-success="state == 'active'"
+                       decoration-danger="state == 'cancelled'"
+                       decoration-warning="state == 'expired'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_membership_form" model="ir.ui.view">
+        <field name="name">carwash.membership.form</field>
+        <field name="model">carwash.membership</field>
+        <field name="arch" type="xml">
+            <form string="Membership">
+                <header>
+                    <button name="action_request_payment" type="object" string="Request Payment" icon="fa-envelope"
+                            class="btn-primary" invisible="state == 'cancelled'"
+                            groups="carwash_base.group_carwash_user"
+                            help="Email the customer the billing order - they pay online and the membership activates."/>
+                    <button name="action_create_invoice" type="object" string="Create Invoice" icon="fa-file-text-o"
+                            invisible="state == 'cancelled'"
+                            groups="carwash_base.group_carwash_user"
+                            help="Invoice the billing order - registering its payment activates the membership."/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state == 'cancelled'"
+                            groups="carwash_base.group_carwash_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,active,expired"/>
+                </header>
+                <div class="alert alert-info mb-0" role="alert" invisible="state != 'pending'">
+                    <i class="fa fa-info-circle me-1"/> This membership activates as soon as its billing order is paid -
+                    online from the customer portal, or in the backend by registering the invoice payment.
+                </div>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_pending_order" type="object" class="oe_stat_button" icon="fa-hourglass-half"
+                                invisible="not pending_order_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">Awaiting</span>
+                                <span class="o_stat_text">Payment</span>
+                            </div>
+                        </button>
+                        <button name="action_view_sale_orders" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="sale_order_count == 0">
+                            <field name="sale_order_count" widget="statinfo" string="Invoices"/>
+                        </button>
+                        <button name="action_view_appointments" type="object"
+                                class="oe_stat_button" icon="fa-car"
+                                invisible="appointment_count == 0">
+                            <field name="appointment_count" widget="statinfo" string="Bookings"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="plan_id"/>
+                            <field name="pending_order_id" invisible="1"/>
+                            <field name="start_date"/>
+                            <field name="period_start" string="Current Period"/>
+                            <field name="valid_until"/>
+                            <field name="paid_until"/>
+                            <field name="next_billing_date"/>
+                            <field name="auto_renew" widget="boolean_toggle" invisible="state == 'cancelled'"/>
+                        </group>
+                        <group>
+                            <field name="wash_allowance" readonly="1"/>
+                            <field name="washes_used"/>
+                            <field name="washes_reserved"/>
+                            <field name="washes_remaining" invisible="wash_allowance == 0"/>
+                            <field name="discount_percent" invisible="not discount_percent"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_membership_kanban" model="ir.ui.view">
+        <field name="name">carwash.membership.kanban</field>
+        <field name="model">carwash.membership</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <main t-att-class="'border-start border-4 ps-2 ' + (
+                            record.state.raw_value === 'active' ? 'border-success' :
+                            record.state.raw_value === 'pending' ? 'border-info' :
+                            record.state.raw_value === 'expired' ? 'border-warning' :
+                            'border-danger'
+                        )">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong><field name="name"/></strong>
+                                <i t-att-class="'fa fa-fw text-muted ' + (
+                                    record.state.raw_value === 'active' ? 'fa-check-circle-o' :
+                                    record.state.raw_value === 'pending' ? 'fa-hourglass-half' :
+                                    record.state.raw_value === 'expired' ? 'fa-clock-o' :
+                                    'fa-ban'
+                                )" t-att-title="record.state.raw_value"/>
+                            </div>
+                            <field name="partner_id"/>
+                            <field name="plan_id"/>
+                            <div class="text-muted">
+                                Next billing: <field name="next_billing_date"/>
+                            </div>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_membership_search" model="ir.ui.view">
+        <field name="name">carwash.membership.search</field>
+        <field name="model">carwash.membership</field>
+        <field name="arch" type="xml">
+            <search string="Memberships">
+                <field name="partner_id"/>
+                <field name="plan_id"/>
+                <filter string="Active" name="active_only" domain="[('state', '=', 'active')]"/>
+                <filter string="Pending Payment" name="pending" domain="[('state', '=', 'pending')]"/>
+                <group>
+                    <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_membership" model="ir.actions.act_window">
+        <field name="name">Memberships</field>
+        <field name="res_model">carwash.membership</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{}</field>
+    </record>
+</odoo>

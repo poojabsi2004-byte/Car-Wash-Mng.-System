@@ -1,0 +1,215 @@
+.o_cw_site {
+    --cw-primary: #6f42c1;
+    --cw-primary-dark: #4a2d84;
+    --cw-teal: #20c997;
+    --cw-info: #0dcaf0;
+
+    .o_cw_hero {
+        background: linear-gradient(135deg, var(--cw-primary) 0%, var(--cw-primary-dark) 55%, #2f1f52 100%);
+        color: #fff;
+        padding: 5rem 0 6rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .o_cw_hero::after {
+        content: "";
+        position: absolute;
+        right: -6rem;
+        top: -6rem;
+        width: 22rem;
+        height: 22rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+    }
+    .o_cw_hero h1 {
+        font-weight: 700;
+        font-size: 2.75rem;
+    }
+    .o_cw_hero .lead {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 1.15rem;
+    }
+    .o_cw_hero .btn-light {
+        font-weight: 600;
+        padding: 0.75rem 1.75rem;
+        border-radius: 8px;
+    }
+
+    .o_cw_section_title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .o_cw_section_sub {
+        color: var(--bs-secondary-color);
+        margin-bottom: 2.5rem;
+    }
+
+    .o_cw_card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        height: 100%;
+    }
+    .o_cw_card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+    }
+    .o_cw_card_icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        color: #fff;
+        background: var(--cw-primary);
+        margin-bottom: 1rem;
+    }
+    .o_cw_card_icon.o_cw_teal { background: var(--cw-teal); }
+    .o_cw_card_icon.o_cw_info { background: var(--cw-info); }
+
+    .o_cw_step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--bs-secondary-color);
+    }
+    .o_cw_step_num {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        background: #eee;
+        color: var(--bs-secondary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+    .o_cw_step.active .o_cw_step_num {
+        background: var(--cw-primary);
+        color: #fff;
+    }
+    .o_cw_step.active {
+        color: var(--cw-primary);
+        font-weight: 600;
+    }
+    .o_cw_step.done .o_cw_step_num {
+        background: var(--cw-teal);
+        color: #fff;
+    }
+    .o_cw_step_sep {
+        flex: 0 0 2rem;
+        height: 2px;
+        background: #ddd;
+    }
+
+    .o_cw_form_card {
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .o_cw_slot_label {
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        font-weight: 600;
+        border-width: 2px;
+    }
+    .btn-check:checked + .o_cw_slot_label,
+    .btn-check:focus + .o_cw_slot_label {
+        background-color: var(--cw-primary);
+        border-color: var(--cw-primary);
+        color: #fff;
+        box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.2);
+    }
+
+    .o_cw_branch_badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.8rem;
+        color: var(--cw-primary);
+        background: rgba(111, 66, 193, 0.08);
+        border-radius: 20px;
+        padding: 0.2rem 0.7rem;
+    }
+
+    .o_cw_pkg_tabbar {
+        max-width: 960px;
+        border: 1px solid #e5e0f0;
+        border-radius: 10px;
+        padding: 0.35rem;
+        background: #fff;
+    }
+    .o_cw_pkg_tabbar .nav-pills {
+        gap: 0.25rem;
+    }
+    .o_cw_pkg_tabbar .nav-link {
+        border-radius: 8px;
+        color: var(--cw-primary);
+        font-weight: 600;
+        padding: 0.65rem 0.75rem;
+        transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+    }
+    .o_cw_pkg_tabbar .nav-link:hover {
+        background: rgba(111, 66, 193, 0.08);
+    }
+    .o_cw_pkg_tabbar .nav-link.active {
+        background: var(--cw-primary);
+        color: #fff;
+    }
+
+    .o_cw_pkg_tagline {
+        font-style: italic;
+        color: var(--cw-primary-dark);
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .o_cw_pkg_highlights {
+        h1, h2, h3, h4, h5, h6 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            &:first-child { margin-top: 0; }
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 1rem;
+        }
+        ul li {
+            position: relative;
+            padding-left: 1.6rem;
+            margin-bottom: 0.4rem;
+            color: var(--bs-secondary-color);
+        }
+        ul li::before {
+            content: "\2713";
+            position: absolute;
+            left: 0;
+            color: var(--cw-teal);
+            font-weight: 700;
+        }
+    }
+
+    .o_cw_plan_card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .o_cw_plan_card.o_cw_plan_current {
+        border: 2px solid var(--cw-teal);
+    }
+
+    .o_cw_member_option {
+        background: rgba(8, 75, 118, 0.06);
+        border-radius: 12px;
+    }
+}

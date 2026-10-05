@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_carwash_dashboard_client" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">carwash_dashboard</field>
+    </record>
+
+    <!-- First (lowest-sequence) leaf of the app, so opening "Car Wash" lands on the dashboard -->
+    <menuitem id="menu_carwash_dashboard_main" name="Dashboard" parent="carwash_base.menu_carwash_root"
+              action="action_carwash_dashboard_client" sequence="1"/>
+</odoo>
