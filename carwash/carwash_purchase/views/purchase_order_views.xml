@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_carwash" model="ir.ui.view">
+        <field name="name">purchase.order.form.carwash</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_ref']" position="after">
+                <field name="carwash_request_id" invisible="not carwash_request_id"/>
+                <field name="carwash_supply_type" widget="badge" invisible="not carwash_supply_type"
+                       decoration-info="carwash_supply_type == 'consumable'"
+                       decoration-warning="carwash_supply_type == 'equipment'"
+                       decoration-success="carwash_supply_type == 'maintenance'"/>
+                <field name="carwash_payment_state" widget="badge" invisible="state not in ('purchase', 'done')"
+                       decoration-success="carwash_payment_state == 'paid'"
+                       decoration-warning="carwash_payment_state in ('to_pay', 'partial')"
+                       decoration-muted="carwash_payment_state == 'not_billed'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_search_carwash" model="ir.ui.view">
+        <field name="name">purchase.order.search.carwash</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="Consumables" name="carwash_consumable" domain="[('carwash_supply_type', '=', 'consumable')]"/>
+                <filter string="Equipment &amp; Spares" name="carwash_equipment" domain="[('carwash_supply_type', '=', 'equipment')]"/>
+                <filter string="Maintenance" name="carwash_maintenance" domain="[('carwash_supply_type', '=', 'maintenance')]"/>
+                <separator/>
+                <filter string="Waiting for Approval" name="carwash_to_approve" domain="[('state', '=', 'to approve')]"/>
+                <filter string="To Receive" name="carwash_to_receive" domain="[('state', '=', 'purchase'), ('receipt_status', 'in', ('pending', 'partial'))]"/>
+                <filter string="To Bill" name="carwash_to_bill" domain="[('invoice_status', '=', 'to invoice')]"/>
+                <group>
+                    <filter string="Purchase For" name="group_carwash_supply_type" context="{'group_by': 'carwash_supply_type'}"/>
+                    <filter string="Branch" name="group_carwash_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_list_carwash" model="ir.ui.view">
+        <field name="name">purchase.order.list.carwash</field>
+        <field name="model">purchase.order</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Purchases" sample="1" decoration-muted="state == 'cancel'" decoration-info="state in ('draft', 'sent')"
+                  decoration-warning="state == 'to approve'">
+                <field name="priority" optional="show" widget="priority" nolabel="1"/>
+                <field name="name" string="Reference" readonly="1" decoration-bf="1"/>
+                <field name="date_order" string="Date" widget="date" optional="show"/>
+                <field name="partner_id" string="Supplier" widget="many2one_avatar"/>
+                <field name="company_id" string="Branch" groups="base.group_multi_company" optional="show"/>
+                <field name="carwash_supply_type" widget="badge" optional="show"
+                       decoration-info="carwash_supply_type == 'consumable'"
+                       decoration-warning="carwash_supply_type == 'equipment'"
+                       decoration-success="carwash_supply_type == 'maintenance'"/>
+                <field name="origin" string="Source" optional="hide"/>
+                <field name="date_planned" string="Expected" widget="date" optional="show"/>
+                <field name="user_id" string="Buyer" widget="many2one_avatar_user" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_untaxed" string="Untaxed" widget="monetary" sum="Total" optional="hide"/>
+                <field name="amount_total" widget="monetary" sum="Total" decoration-bf="1"/>
+                <field name="state" widget="badge" decoration-success="state in ('purchase', 'done')"
+                       decoration-warning="state == 'to approve'" decoration-info="state in ('draft', 'sent')"
+                       decoration-muted="state == 'cancel'"/>
+                <field name="receipt_status" string="Received" widget="badge" optional="show"
+                       decoration-success="receipt_status == 'full'" decoration-warning="receipt_status == 'partial'"
+                       decoration-info="receipt_status == 'pending'"/>
+                <field name="carwash_payment_state" widget="badge" optional="show" invisible="state not in ('purchase', 'done')"
+                       decoration-success="carwash_payment_state == 'paid'"
+                       decoration-warning="carwash_payment_state in ('to_pay', 'partial')"
+                       decoration-muted="carwash_payment_state == 'not_billed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Car wash purchase kanban (keeps Odoo's purchase dashboard on top) -->
+    <record id="purchase_order_kanban_carwash" model="ir.ui.view">
+        <field name="name">purchase.order.kanban.carwash</field>
+        <field name="model">purchase.order</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban o_kanban_mobile" js_class="purchase_dashboard_kanban" sample="1" quick_create="false">
+                <field name="state"/>
+                <field name="currency_id"/>
+                <field name="receipt_status"/>
+                <field name="carwash_payment_state"/>
+                <field name="carwash_supply_type"/>
+                <field name="date_planned"/>
+                <progressbar field="activity_state" colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
+                <templates>
+                    <t t-name="card">
+                        <span t-att-class="record.state.raw_value == 'cancel' ? 'o_cw_tone_muted'
+                            : record.state.raw_value == 'to approve' ? 'o_cw_tone_warning'
+                            : ['draft', 'sent'].includes(record.state.raw_value) ? 'o_cw_tone_info'
+                            : record.receipt_status.raw_value == 'full' and record.carwash_payment_state.raw_value == 'paid' ? 'o_cw_tone_success'
+                            : 'o_cw_tone_primary'"/>
+                        <div class="o_cw_card_head">
+                            <div class="d-flex align-items-center gap-1 min-w-0">
+                                <field name="priority" widget="priority"/>
+                                <field name="name" class="o_cw_card_title"/>
+                            </div>
+                            <field name="state" widget="badge" class="small flex-shrink-0"
+                                   decoration-success="state in ('purchase', 'done')"
+                                   decoration-warning="state == 'to approve'" decoration-info="state in ('draft', 'sent')"
+                                   decoration-muted="state == 'cancel'"/>
+                        </div>
+                        <div class="o_cw_meta">
+                            <div><i class="fa fa-truck" title="Supplier"/><field name="partner_id"/></div>
+                            <div groups="base.group_multi_company"><i class="fa fa-building" title="Branch"/><field name="company_id"/></div>
+                            <div t-if="record.date_planned.raw_value and record.state.raw_value != 'cancel' and record.receipt_status.raw_value != 'full'">
+                                <i class="fa fa-calendar" title="Expected"/><span>Expected</span><field name="date_planned" widget="remaining_days"/>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            <field name="carwash_supply_type" widget="badge" invisible="not carwash_supply_type"
+                                   decoration-info="carwash_supply_type == 'consumable'"
+                                   decoration-warning="carwash_supply_type == 'equipment'"
+                                   decoration-success="carwash_supply_type == 'maintenance'"/>
+                            <field name="receipt_status" widget="badge" invisible="not receipt_status"
+                                   decoration-success="receipt_status == 'full'" decoration-warning="receipt_status == 'partial'"
+                                   decoration-info="receipt_status == 'pending'"/>
+                            <field name="carwash_payment_state" widget="badge" invisible="state not in ('purchase', 'done')"
+                                   decoration-success="carwash_payment_state == 'paid'"
+                                   decoration-warning="carwash_payment_state in ('to_pay', 'partial')"
+                                   decoration-muted="carwash_payment_state == 'not_billed'"/>
+                        </div>
+                        <footer>
+                            <field name="activity_ids" widget="kanban_activity"/>
+                            <field name="date_order" options="{'show_time': false}"/>
+                            <field name="amount_total" widget="monetary" class="o_cw_kpi ms-auto flex-shrink-0"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_carwash_rfq" model="ir.actions.act_window">
+        <field name="name">Requests for Quotation</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,kanban,form,activity</field>
+        <field name="domain">[('state', 'in', ('draft', 'sent', 'to approve'))]</field>
+        <field name="context">{'quotation_only': True}</field>
+        <field name="search_view_id" ref="purchase.purchase_order_view_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 1, 'view_mode': 'list', 'view_id': ref('purchase_order_list_carwash')}),
+            (0, 0, {'sequence': 2, 'view_mode': 'kanban', 'view_id': ref('purchase_order_kanban_carwash')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Ask a supplier for a quotation</p>
+            <p>Each branch buys for itself. Create an RFQ (or click Create RFQs for Low Stock on the consumables), send it to
+                the supplier, then Confirm Order. Above the branch's approval amount a Manager / Owner approves it.</p>
+        </field>
+    </record>
+
+    <record id="action_carwash_purchase_to_approve" model="ir.actions.act_window">
+        <field name="name">Waiting for Approval</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'to approve')]</field>
+        <field name="search_view_id" ref="purchase.purchase_order_view_search"/>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('purchase_order_list_carwash')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing to approve</p>
+            <p>Purchase orders above the branch's approval amount, raised by Front Desk, wait here for a Manager / Owner.</p>
+        </field>
+    </record>
+
+    <record id="action_carwash_purchase_order" model="ir.actions.act_window">
+        <field name="name">Purchase Orders</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,kanban,form,pivot,graph,activity</field>
+        <field name="domain">[('state', 'in', ('purchase', 'done'))]</field>
+        <field name="search_view_id" ref="purchase.purchase_order_view_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 1, 'view_mode': 'list', 'view_id': ref('purchase_order_list_carwash')}),
+            (0, 0, {'sequence': 2, 'view_mode': 'kanban', 'view_id': ref('purchase_order_kanban_carwash')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No purchase order yet</p>
+            <p>Confirmed orders: receive the goods (Receipt button), then create the bill and pay the supplier.</p>
+        </field>
+    </record>
+
+    <!-- every purchase (smart buttons of bays, requests, suppliers) -->
+    <record id="action_carwash_purchase_all" model="ir.actions.act_window">
+        <field name="name">Purchases</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="purchase.purchase_order_view_search"/>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('purchase_order_list_carwash')})]"/>
+    </record>
+</odoo>

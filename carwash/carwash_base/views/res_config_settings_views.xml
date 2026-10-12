@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_carwash" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.carwash</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="40"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Car Wash" string="Car Wash" name="carwash_base" groups="carwash_base.group_carwash_manager">
+                    <!-- carwash_* modules add their switches to these blocks -->
+                    <block title="Bookings" name="carwash_booking_settings">
+                        <setting id="carwash_time_slots" string="Booking Time Slots"
+                                 help="Pick a booking's time from the branch's free time slots, or type a custom time.">
+                            <field name="group_carwash_time_slot"/>
+                            <div class="mt8" invisible="not group_carwash_time_slot">
+                                <button name="%(action_carwash_time_slot)d" type="action" string="Time Slots"
+                                        icon="oi-arrow-right" class="btn-link"/>
+                            </div>
+                        </setting>
+                        <setting id="carwash_branch_code" string="Branch Code" company_dependent="1"
+                                 help="Each branch numbers its own bookings, job cards, inspections and consumable requests, starting with this code (e.g. CWB1/26/0001, CWB1/JC/26/0001). The token number also counts per branch each day.">
+                            <field name="carwash_branch_code" placeholder="e.g. CWB1"/>
+                        </setting>
+                    </block>
+                    <block title="Operations" name="carwash_operation_settings"/>
+                    <block title="Staff" name="carwash_staff_settings"/>
+                    <block title="Customers" name="carwash_customer_settings"/>
+                    <block title="Printed Reports" name="carwash_report_settings">
+                        <setting id="carwash_report_letterhead" string="Report Letterhead"
+                                 help="Printed at the top of receipts, booking requests, job cards, QC and inspection reports, together with the branch name, address, phone, email, website and GSTIN. Without a logo the Car Wash emblem is used.">
+                            <field name="company_id" invisible="1"/>
+                            <field name="carwash_report_logo" widget="image" class="w-auto" options="{'size': [0, 64]}"/>
+                            <div class="mt8">
+                                <button name="action_carwash_edit_branch" type="object" string="Edit Branch Details"
+                                        icon="oi-arrow-right" class="btn-link"/>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_carwash_config_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_id" ref="res_config_settings_view_form_carwash"/>
+        <field name="view_mode">form</field>
+        <field name="context">{'module': 'carwash_base', 'bin_size': False}</field>
+    </record>
+</odoo>

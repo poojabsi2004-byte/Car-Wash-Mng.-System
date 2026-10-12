@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- The main company's four bays: regular data, so every new database (with or without demo data) can take
+         bookings right away. Rename, archive or add bays as needed - upgrades never change them back. -->
+    <record id="demo_bay_1" model="carwash.bay">
+        <field name="name">Bay 1</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+    </record>
+    <record id="demo_bay_2" model="carwash.bay">
+        <field name="name">Bay 2</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+    </record>
+    <record id="demo_bay_3" model="carwash.bay">
+        <field name="name">Bay 3</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_detail"/>
+    </record>
+    <record id="demo_bay_4" model="carwash.bay">
+        <field name="name">Bay 4</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+    </record>
+
+</odoo>

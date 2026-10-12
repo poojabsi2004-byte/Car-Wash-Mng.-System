@@ -1,6 +1,6 @@
 {
     "name": "Car Wash Multi-Branch",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.7.0",
     "license": "LGPL-3",
     "author": "Botspot Infoware",
     "maintainer": "Botspot Infoware",
@@ -15,11 +15,12 @@ Manager) stay scoped to their own branch's company_id via record rules.""",
     "data": [
         "security/carwash_multibranch_security.xml",
         "security/ir_rules.xml",
+        "data/carwash_branch_data.xml",
     ],
     "demo": [
         "demo/carwash_multibranch_demo.xml",
     ],
     "installable": True,
     "application": False,
-    "auto_install": False,
+    "auto_install": ["carwash_membership", "carwash_jobcard"],  # installed together with Car Wash (chain from carwash_base)
 }

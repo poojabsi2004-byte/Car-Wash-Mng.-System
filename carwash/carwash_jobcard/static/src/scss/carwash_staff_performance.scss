@@ -1,0 +1,214 @@
+// Staff Performance report (printed with wkhtmltopdf: tables, no flex / grid)
+.o_cw_report.o_cw_perf {
+    $cw-teal: #0e7490;
+    $cw-teal-soft: #e6f4f7;
+    $cw-ink: #0b1f33;
+    $cw-muted: #5b7085;
+    $cw-line: #d5e3ea;
+    $cw-good: #13794a;
+    $cw-good-soft: #e7f6ee;
+    $cw-warn: #a15c07;
+    $cw-warn-soft: #fdf3e2;
+    $cw-gold: #b7791f;
+
+    .o_cw_perf_tiles {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 8px 0;
+        margin: 0 -8px 14px;
+
+        .o_cw_perf_tile {
+            border: 1px solid $cw-line;
+            border-radius: 8px;
+            padding: 10px 12px;
+            vertical-align: top;
+            background: #ffffff;
+        }
+
+        .o_cw_perf_tile_main {
+            background: $cw-teal;
+            border-color: $cw-teal;
+            color: #ffffff;
+
+            .o_cw_perf_tile_label,
+            .o_cw_perf_tile_sub {
+                color: #d7eef3;
+            }
+        }
+
+        .o_cw_perf_tile_ok {
+            background: $cw-good-soft;
+            border-color: #b6e2c8;
+
+            .o_cw_perf_tile_value {
+                color: $cw-good;
+            }
+        }
+
+        .o_cw_perf_tile_warn {
+            background: $cw-warn-soft;
+            border-color: #f1d4a5;
+
+            .o_cw_perf_tile_value {
+                color: $cw-warn;
+            }
+        }
+
+        .o_cw_perf_tile_value {
+            font-size: 19px;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+
+        .o_cw_perf_tile_label {
+            margin-top: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: $cw-muted;
+        }
+
+        .o_cw_perf_tile_sub {
+            font-size: 10px;
+            color: $cw-muted;
+        }
+    }
+
+    .o_cw_perf_highlights {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 8px 0;
+        margin: 0 -8px 6px;
+
+        td {
+            width: 25%;
+            padding: 8px 10px;
+            border-left: 3px solid $cw-gold;
+            background: #fbf7ec;
+            vertical-align: top;
+        }
+
+        .o_cw_perf_hl_label {
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: $cw-gold;
+        }
+
+        .o_cw_perf_hl_name {
+            font-weight: 700;
+            font-size: 12.5px;
+        }
+
+        .o_cw_perf_hl_value {
+            font-size: 11px;
+            color: $cw-muted;
+        }
+    }
+
+    .o_cw_perf_table {
+        td {
+            vertical-align: middle;
+        }
+
+        tr.o_cw_perf_top td {
+            background: #fbf7ec;
+        }
+
+        tr.o_cw_perf_idle td {
+            color: $cw-muted;
+        }
+    }
+
+    .o_cw_perf_rank {
+        display: inline-block;
+        min-width: 18px;
+        padding: 1px 5px;
+        border-radius: 9px;
+        background: $cw-teal-soft;
+        color: $cw-teal;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    tr.o_cw_perf_top .o_cw_perf_rank {
+        background: $cw-gold;
+        color: #ffffff;
+    }
+
+    .o_cw_perf_bar {
+        height: 5px;
+        margin-top: 3px;
+        border-radius: 3px;
+        background: $cw-teal-soft;
+
+        span {
+            display: block;
+            height: 5px;
+            border-radius: 3px;
+            background: $cw-teal;
+        }
+    }
+
+    .o_cw_perf_good {
+        color: $cw-good;
+        font-weight: 700;
+    }
+
+    .o_cw_perf_low {
+        color: $cw-warn;
+        font-weight: 700;
+    }
+
+    .o_cw_perf_stars {
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+
+    .o_cw_perf_small {
+        font-size: 9.5px;
+        color: $cw-muted;
+    }
+
+    .o_cw_perf_legend {
+        margin-top: 10px;
+        font-size: 10px;
+    }
+
+    .o_cw_perf_staff_page {
+        page-break-before: always;
+    }
+
+    .o_cw_perf_two {
+        width: 100%;
+        margin-top: 4px;
+
+        > tbody > tr > td,
+        > tr > td {
+            width: 50%;
+            vertical-align: top;
+            padding-right: 10px;
+        }
+    }
+
+    .o_cw_perf_review {
+        padding: 5px 0;
+        border-bottom: 1px solid $cw-line;
+    }
+
+    .o_cw_perf_feedback {
+        font-size: 10.5px;
+        font-style: italic;
+    }
+
+    .o_cw_perf_none {
+        font-size: 10.5px;
+        color: $cw-muted;
+    }
+
+    .o_cw_perf_commission {
+        width: 45%;
+    }
+}

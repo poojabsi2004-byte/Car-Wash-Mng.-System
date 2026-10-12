@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- features start switched on; Car Wash > Configuration > Settings turns them off -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('carwash_base.group_carwash_time_slot'))]"/>
+    </record>
+</odoo>

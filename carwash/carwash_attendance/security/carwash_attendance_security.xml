@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Feature switch (Car Wash > Configuration > Settings > Staff Attendance) -->
+    <record id="group_carwash_attendance" model="res.groups">
+        <field name="name">Car Wash: Staff Attendance</field>
+    </record>
+
+    <!-- Car wash managers run the staff attendance of their branches -->
+    <record id="carwash_base.group_carwash_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('hr_attendance.group_hr_attendance_user'))]"/>
+    </record>
+</odoo>

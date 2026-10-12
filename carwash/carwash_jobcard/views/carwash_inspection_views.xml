@@ -4,15 +4,16 @@
         <field name="name">carwash.inspection.list</field>
         <field name="model">carwash.inspection</field>
         <field name="arch" type="xml">
-            <list string="Inspections">
-                <field name="name"/>
+            <list string="Inspections" sample="1">
+                <field name="name" class="fw-bold"/>
+                <field name="inspection_date" optional="show"/>
                 <field name="appointment_id"/>
-                <field name="vehicle_id"/>
-                <field name="inspection_type_id"/>
-                <field name="inspector_id"/>
-                <field name="inspection_date"/>
+                <field name="vehicle_id" class="o_cw_plate_cell"/>
+                <field name="inspection_type_id" widget="badge" decoration-info="1"/>
+                <field name="inspector_id" widget="many2one_avatar_employee"/>
                 <field name="has_damage" widget="boolean_toggle"/>
-                <field name="checklist_progress" widget="progressbar" optional="show"/>
+                <field name="checklist_progress" widget="progressbar" optional="show" groups="carwash_jobcard.group_carwash_checklist"/>
+                <field name="company_id" string="Branch" optional="hide" groups="base.group_multi_company"/>
                 <field name="state" widget="badge" decoration-success="state == 'done'" decoration-warning="state == 'draft'"/>
             </list>
         </field>
@@ -22,31 +23,64 @@
         <field name="name">carwash.inspection.form</field>
         <field name="model">carwash.inspection</field>
         <field name="arch" type="xml">
-            <form string="Vehicle Inspection">
+            <form string="Vehicle Inspection" class="o_cw_form">
                 <header>
                     <button name="action_complete" type="object" string="Complete Inspection" icon="fa-check"
                             class="btn-primary o_cw_btn_primary" invisible="state != 'draft'"/>
                     <button name="action_reopen" type="object" string="Reopen" invisible="state != 'done'"/>
+                    <button name="action_print_inspection" type="object" string="Print" icon="fa-print"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                    <widget name="web_ribbon" title="Damage Found" bg_color="text-bg-danger" invisible="not has_damage"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="state == 'done'"><i class="fa fa-search" title="Inspection"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_success" invisible="state != 'done'"><i class="fa fa-check" title="Completed"/></span>
+                        <div class="oe_title">
+                            <label for="name" string="Inspection"/>
+                            <h1><field name="name" readonly="1"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip o_cw_chip_info" invisible="not inspection_type_id">
+                                    <i class="fa fa-tag" title="Inspection type"/>
+                                    <field name="inspection_type_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip" invisible="not vehicle_id">
+                                    <i class="fa fa-car" title="Vehicle"/>
+                                    <field name="vehicle_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_danger" invisible="not has_damage">
+                                    <i class="fa fa-exclamation-triangle" title="Damage"/>Damage found
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="has_damage or state != 'done'">
+                                    <i class="fa fa-check-circle" title="No damage"/>No damage
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis" groups="carwash_jobcard.group_carwash_checklist" invisible="not checklist_line_ids">
+                            <div class="o_cw_hero_kpi">
+                                <div class="o_cw_hero_kpi_value"><field name="checklist_progress"/>%</div>
+                                <span class="o_cw_hero_kpi_label">Checklist Done</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="checklist_complete">
+                                <field name="checklist_pending_count" class="o_cw_hero_kpi_value text-danger"/>
+                                <span class="o_cw_hero_kpi_label">Mandatory Left</span>
+                            </div>
+                        </div>
                     </div>
                     <group>
-                        <group>
+                        <group string="Booking" name="booking">
                             <field name="appointment_id" readonly="state == 'done'"/>
                             <field name="vehicle_id" readonly="1"/>
-                            <field name="inspection_type_id" options="{'no_create': True}" readonly="state == 'done'"/>
                         </group>
-                        <group>
-                            <field name="inspector_id" readonly="state == 'done'"/>
+                        <group string="Inspection" name="inspection">
+                            <field name="inspection_type_id" options="{'no_create': True}" readonly="state == 'done'"/>
+                            <field name="inspector_id" widget="many2one_avatar_employee" readonly="state == 'done'"/>
                             <field name="inspection_date" readonly="state == 'done'"/>
                             <field name="has_damage" readonly="state == 'done'"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Checklist" name="checklist">
+                        <page string="Checklist" name="checklist" groups="carwash_jobcard.group_carwash_checklist">
                             <group>
                                 <group>
                                     <field name="checklist_template_id" options="{'no_create': True}"
@@ -90,9 +124,13 @@
                 <filter string="Completed" name="completed" domain="[('state', '=', 'done')]"/>
                 <separator/>
                 <filter string="Damage Found" name="has_damage" domain="[('has_damage', '=', True)]"/>
+                <separator/>
+                <filter string="Inspection Date" name="filter_inspection_date" date="inspection_date"/>
                 <group>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
                     <filter string="Inspection Type" name="group_type" context="{'group_by': 'inspection_type_id'}"/>
                     <filter string="Inspector" name="group_inspector" context="{'group_by': 'inspector_id'}"/>
+                    <filter string="Day" name="group_day" context="{'group_by': 'inspection_date:day'}"/>
                 </group>
             </search>
         </field>
@@ -103,9 +141,9 @@
         <field name="name">carwash.inspection.type.list</field>
         <field name="model">carwash.inspection.type</field>
         <field name="arch" type="xml">
-            <list string="Inspection Types">
+            <list string="Inspection Types" sample="1">
                 <field name="sequence" widget="handle"/>
-                <field name="name"/>
+                <field name="name" class="fw-bold"/>
                 <field name="description"/>
                 <field name="inspection_count"/>
             </list>
@@ -116,7 +154,7 @@
         <field name="name">carwash.inspection.type.form</field>
         <field name="model">carwash.inspection.type</field>
         <field name="arch" type="xml">
-            <form string="Inspection Type">
+            <form string="Inspection Type" class="o_cw_form">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_inspections" type="object" class="oe_stat_button" icon="fa-search">
@@ -124,9 +162,12 @@
                         </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. Pre-Wash"/></h1>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg"><i class="fa fa-search" title="Inspection type"/></span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Pre-Wash"/></h1>
+                        </div>
                     </div>
                     <group>
                         <field name="active" invisible="1"/>
@@ -151,7 +192,7 @@
     <record id="action_carwash_inspection_type" model="ir.actions.act_window">
         <field name="name">Inspection Types</field>
         <field name="res_model">carwash.inspection.type</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Create an inspection type</p>
             <p>e.g. Pre-Wash, Post-Wash, Damage Assessment, Interior Check.</p>
@@ -161,6 +202,6 @@
     <record id="action_carwash_inspection" model="ir.actions.act_window">
         <field name="name">Inspections</field>
         <field name="res_model">carwash.inspection</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
 </odoo>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Three membership plans: the customer joins monthly or yearly; free washes every month (covered
+         services) and a member discount on the other services. Each plan bills through its own product.
+         Regular data, so every new database starts with them (with or without demo data); change prices, archive
+         or add plans as needed - noupdate: upgrades never change them back.
+         forcecreate="0": created on install only - on an upgrade a product can't be made while some modules aren't
+         loaded yet; migrations/19.0.1.14.0/end-migrate.py adds missing plans then. -->
+
+    <record id="demo_product_plan_silver" model="product.product" forcecreate="0">
+        <field name="name">Silver Membership Fee</field>
+        <field name="type">service</field>
+        <field name="list_price">499.0</field>
+    </record>
+    <record id="demo_plan_silver" model="carwash.membership.plan" forcecreate="0">
+        <field name="name">Silver</field>
+        <field name="sequence">10</field>
+        <field name="product_id" ref="demo_product_plan_silver"/>
+        <field name="monthly_price">499.0</field>
+        <field name="yearly_price">4990.0</field>
+        <field name="wash_allowance">2</field>
+        <field name="discount_percent">5</field>
+        <field name="description">Two free washes every month and 5% off every other service. Ideal for a car that's washed now and then.</field>
+        <field name="plan_service_ids" model="product.product" eval="[(6, 0, [
+            obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_tire_detail').product_variant_id.id,
+        ])]"/>
+    </record>
+
+    <record id="demo_product_plan_gold" model="product.product" forcecreate="0">
+        <field name="name">Gold Membership Fee</field>
+        <field name="type">service</field>
+        <field name="list_price">999.0</field>
+    </record>
+    <record id="demo_plan_gold" model="carwash.membership.plan" forcecreate="0">
+        <field name="name">Gold</field>
+        <field name="sequence">20</field>
+        <field name="product_id" ref="demo_product_plan_gold"/>
+        <field name="monthly_price">999.0</field>
+        <field name="yearly_price">9990.0</field>
+        <field name="wash_allowance">4</field>
+        <field name="discount_percent">10</field>
+        <field name="description">A wash every week - basic, premium or waxing - and 10% off everything else.</field>
+        <field name="plan_service_ids" model="product.product" eval="[(6, 0, [
+            obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id,
+        ])]"/>
+    </record>
+
+    <record id="demo_product_plan_platinum" model="product.product" forcecreate="0">
+        <field name="name">Platinum Membership Fee</field>
+        <field name="type">service</field>
+        <field name="list_price">1999.0</field>
+    </record>
+    <record id="demo_plan_platinum" model="carwash.membership.plan" forcecreate="0">
+        <field name="name">Platinum</field>
+        <field name="sequence">30</field>
+        <field name="product_id" ref="demo_product_plan_platinum"/>
+        <field name="monthly_price">1999.0</field>
+        <field name="yearly_price">19990.0</field>
+        <field name="wash_allowance">0</field>
+        <field name="discount_percent">15</field>
+        <field name="description">Unlimited washes, waxing, engine bay cleaning and interior detailing, plus 15% off every other service.</field>
+        <field name="plan_service_ids" model="product.product" eval="[(6, 0, [
+            obj().env.ref('carwash_base.demo_service_basic').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_waxing').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_engine_bay').product_variant_id.id,
+            obj().env.ref('carwash_base.demo_service_detailing').product_variant_id.id,
+        ])]"/>
+    </record>
+
+</odoo>

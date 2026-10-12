@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- The one email sent when a booking is done: the wash is complete + (Customer Ratings on)
+             rate it 1-5 stars and write a review. The star links open /car-wash/rate/<token>/<stars>. -->
+        <record id="mail_template_booking_completed" model="mail.template">
+            <field name="name">Car Wash: Booking Completed - Rate &amp; Review</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Your car wash is complete ({{ object.name }})</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent when a booking is done: the wash is complete, with the services, and asks for a 1-5 star rating and a review.</field>
+            <field name="body_html" type="html">
+<div>
+    <t t-set="currency" t-value="object.company_id.currency_id"/>
+    <t t-set="lines" t-value="object.line_ids.filtered(lambda l: l.product_id or l.description)"/>
+    <table border="0" cellpadding="0" cellspacing="0" width="590" style="width:100%; margin:0px auto;">
+    <tbody>
+        <tr><td valign="top" style="font-size: 13px;">
+            Hello <t t-out="object.customer_id.name or ''">Brandon Freeman</t>,<br/><br/>
+            Your car wash is <strong>complete</strong>.
+            Thank you for visiting <strong t-out="object.company_id.name or ''">YourCompany</strong>
+            <t t-if="object.vehicle_id.license_plate">
+                - your <strong t-out="object.vehicle_id.license_plate or ''">GJ01AB1234</strong> is ready
+            </t>
+            (booking <t t-out="object.name or ''">CW/26/0001</t>).
+        </td></tr>
+
+        <!-- what was done -->
+        <tr t-if="lines"><td style="padding-top: 16px;">
+            <table border="0" cellpadding="6" cellspacing="0" style="width:100%; font-size: 13px; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #dee2e6; color: #6c757d;">
+                    <td style="text-align: left;"><strong>Service</strong></td>
+                    <td style="text-align: right;"><strong>Qty</strong></td>
+                    <td style="text-align: right;"><strong>Amount</strong></td>
+                </tr>
+                <tr t-foreach="lines" t-as="line" style="border-bottom: 1px solid #f1f3f5;">
+                    <td style="text-align: left;" t-out="line.description or line.product_id.display_name or ''">Premium Wash</td>
+                    <td style="text-align: right;" t-out="'%g' % line.quantity">1</td>
+                    <td style="text-align: right;" t-out="format_amount(line.price_subtotal, currency)">₹ 599.00</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align: right;"><strong>Total</strong></td>
+                    <td style="text-align: right;"><strong t-out="format_amount(object.amount_total, currency)">₹ 599.00</strong></td>
+                </tr>
+            </table>
+        </td></tr>
+
+        <!-- rate it and write a review (Customer Ratings switched on, not reviewed yet) -->
+        <tr t-if="object._carwash_ask_review()"><td style="text-align: center; padding: 28px 0 8px 0;">
+            <t t-set="access_token" t-value="object._rating_get_access_token()"/>
+            <div style="font-size: 15px;"><strong>How was your wash? Rate our services</strong></div>
+            <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">Tap a star - you can write a review on the next page</div>
+            <table border="0" cellpadding="0" cellspacing="0" style="margin: 14px auto 0 auto;">
+                <tr>
+                    <td t-foreach="[1, 2, 3, 4, 5]" t-as="stars" style="padding: 0 6px; text-align: center;">
+                        <a t-attf-href="/car-wash/rate/{{ access_token }}/{{ stars }}"
+                           style="font-size: 34px; line-height: 1; color: #f5a623; text-decoration: none;"
+                           t-attf-title="{{ stars }} star(s)">&#9733;</a>
+                        <div style="font-size: 11px; color: #6c757d;" t-out="stars">1</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="font-size: 11px; color: #6c757d; text-align: left;">Very poor</td>
+                    <td></td>
+                    <td colspan="2" style="font-size: 11px; color: #6c757d; text-align: right;">Excellent</td>
+                </tr>
+            </table>
+            <div style="margin-top: 18px;">
+                <a t-attf-href="/car-wash/rate/{{ access_token }}/5"
+                   style="background-color: #084b76; color: #ffffff; padding: 9px 18px; border-radius: 6px; text-decoration: none; font-size: 13px;">
+                    Write a review
+                </a>
+            </div>
+        </td></tr>
+
+        <tr><td valign="top" style="font-size: 13px; padding-top: 18px;">
+            We look forward to seeing you again.<br/><br/>
+            Best regards,<br/>
+            <t t-out="object.company_id.name or ''">YourCompany</t>
+        </td></tr>
+    </tbody>
+    </table>
+</div>
+            </field>
+            <field name="lang">{{ object.customer_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

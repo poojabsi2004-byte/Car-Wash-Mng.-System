@@ -5,20 +5,26 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
+            <!-- the service time right under the price, where it's seen -->
+            <xpath expr="//div[@name='list_price_uom']" position="after">
+                <field name="is_carwash_service" invisible="1"/>
+                <field name="carwash_duration" widget="float_time" invisible="not is_carwash_service"
+                       help="How long the service takes (hh:mm) - sets the booking's length and time slot."/>
+            </xpath>
             <notebook position="inside">
                 <page string="Car Wash" name="carwash" groups="carwash_base.group_carwash_manager">
-                    <group>
-                        <group>
+                    <group name="carwash_settings">
+                        <group name="carwash_service">
                             <field name="is_carwash_service"/>
-                            <field name="carwash_duration" invisible="not is_carwash_service"/>
-                            <field name="carwash_bay_type" invisible="not is_carwash_service"/>
+                            <field name="carwash_bay_type_id" invisible="not is_carwash_service" placeholder="Any bay"/>
                         </group>
                     </group>
+                    <separator string="Consumables Used per Service" invisible="not is_carwash_service"/>
                     <field name="carwash_material_line_ids" invisible="not is_carwash_service">
                         <list editable="bottom">
                             <field name="product_id"/>
                             <field name="quantity"/>
-                            <field name="uom_id"/>
+                            <field name="uom_id" string="Unit"/>
                         </list>
                     </field>
                 </page>
@@ -26,10 +32,81 @@
         </field>
     </record>
 
+    <!-- Car Wash > Configuration > Services: own list / kanban (the standard product views stay as they are) -->
+    <record id="view_carwash_service_list" model="ir.ui.view">
+        <field name="name">product.template.list.carwash.service</field>
+        <field name="model">product.template</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Services" multi_edit="1" sample="1" decoration-muted="not active">
+                <field name="active" column_invisible="1"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="cost_currency_id" column_invisible="1"/>
+                <field name="is_favorite" widget="boolean_favorite" optional="show" nolabel="1"/>
+                <field name="default_code" optional="hide"/>
+                <field name="name" string="Service" class="fw-bold"/>
+                <field name="carwash_bay_type_id" string="Bay Type" widget="badge" optional="show"/>
+                <field name="carwash_duration" string="Est. Service Time" widget="float_time" optional="show"/>
+                <field name="categ_id" optional="hide"/>
+                <field name="taxes_id" widget="many2many_tags" optional="hide"/>
+                <field name="standard_price" string="Cost" widget="monetary" options="{'currency_field': 'cost_currency_id'}"
+                       optional="hide" readonly="1"/>
+                <field name="list_price" string="Price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="company_id" string="Branch" optional="hide" groups="base.group_multi_company"
+                       options="{'no_create': True}"/>
+                <field name="activity_exception_decoration" widget="activity_exception"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_service_kanban" model="ir.ui.view">
+        <field name="name">product.template.kanban.carwash.service</field>
+        <field name="model">product.template</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="active"/>
+                <field name="currency_id"/>
+                <field name="image_128"/>
+                <field name="carwash_duration"/>
+                <field name="carwash_bay_type_id"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <span t-att-class="{'o_cw_tone_muted': !record.active.raw_value}"/>
+                        <aside class="d-flex align-items-start me-3">
+                            <field t-if="record.image_128.raw_value" name="image_128" widget="image"
+                                   options="{'img_class': 'o_cw_tile object-fit-cover p-0'}" alt="Service"/>
+                            <span t-else="" class="o_cw_tile">
+                                <i class="fa fa-tint" role="img" aria-label="Service" title="Service"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <div class="o_cw_card_head">
+                                <field name="name" class="o_cw_card_title"/>
+                                <field name="list_price" widget="monetary" class="fw-bold text-nowrap"/>
+                            </div>
+                            <div t-if="record.default_code.raw_value" class="o_cw_card_sub"><field name="default_code"/></div>
+                            <div class="o_cw_meta">
+                                <div><i class="fa fa-clock-o" title="Estimated service time"/>
+                                    <span><t t-esc="Math.round(record.carwash_duration.raw_value * 60)"/> min</span></div>
+                                <div><i class="fa fa-th-large" title="Bay type"/>
+                                    <field t-if="record.carwash_bay_type_id.raw_value" name="carwash_bay_type_id"/>
+                                    <span t-else="" class="text-muted">Any bay</span></div>
+                            </div>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <record id="action_carwash_service" model="ir.actions.act_window">
         <field name="name">Services</field>
         <field name="res_model">product.template</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_service_list')}),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_carwash_service_kanban')})]"/>
         <field name="domain">[('is_carwash_service', '=', True)]</field>
         <field name="context">{'default_is_carwash_service': 1, 'default_type': 'service'}</field>
     </record>

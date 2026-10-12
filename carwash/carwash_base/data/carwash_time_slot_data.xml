@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Default bookable start times, every 30 minutes, for every branch. Manage them under
+         Configuration > Time Slots: archive the ones you don't offer, add others (e.g. 08:15). -->
+    <record id="time_slot_0000" model="carwash.time.slot"><field name="hour">0</field></record>
+    <record id="time_slot_0030" model="carwash.time.slot"><field name="hour">0.5</field></record>
+    <record id="time_slot_0100" model="carwash.time.slot"><field name="hour">1</field></record>
+    <record id="time_slot_0130" model="carwash.time.slot"><field name="hour">1.5</field></record>
+    <record id="time_slot_0200" model="carwash.time.slot"><field name="hour">2</field></record>
+    <record id="time_slot_0230" model="carwash.time.slot"><field name="hour">2.5</field></record>
+    <record id="time_slot_0300" model="carwash.time.slot"><field name="hour">3</field></record>
+    <record id="time_slot_0330" model="carwash.time.slot"><field name="hour">3.5</field></record>
+    <record id="time_slot_0400" model="carwash.time.slot"><field name="hour">4</field></record>
+    <record id="time_slot_0430" model="carwash.time.slot"><field name="hour">4.5</field></record>
+    <record id="time_slot_0500" model="carwash.time.slot"><field name="hour">5</field></record>
+    <record id="time_slot_0530" model="carwash.time.slot"><field name="hour">5.5</field></record>
+    <record id="time_slot_0600" model="carwash.time.slot"><field name="hour">6</field></record>
+    <record id="time_slot_0630" model="carwash.time.slot"><field name="hour">6.5</field></record>
+    <record id="time_slot_0700" model="carwash.time.slot"><field name="hour">7</field></record>
+    <record id="time_slot_0730" model="carwash.time.slot"><field name="hour">7.5</field></record>
+    <record id="time_slot_0800" model="carwash.time.slot"><field name="hour">8</field></record>
+    <record id="time_slot_0830" model="carwash.time.slot"><field name="hour">8.5</field></record>
+    <record id="time_slot_0900" model="carwash.time.slot"><field name="hour">9</field></record>
+    <record id="time_slot_0930" model="carwash.time.slot"><field name="hour">9.5</field></record>
+    <record id="time_slot_1000" model="carwash.time.slot"><field name="hour">10</field></record>
+    <record id="time_slot_1030" model="carwash.time.slot"><field name="hour">10.5</field></record>
+    <record id="time_slot_1100" model="carwash.time.slot"><field name="hour">11</field></record>
+    <record id="time_slot_1130" model="carwash.time.slot"><field name="hour">11.5</field></record>
+    <record id="time_slot_1200" model="carwash.time.slot"><field name="hour">12</field></record>
+    <record id="time_slot_1230" model="carwash.time.slot"><field name="hour">12.5</field></record>
+    <record id="time_slot_1300" model="carwash.time.slot"><field name="hour">13</field></record>
+    <record id="time_slot_1330" model="carwash.time.slot"><field name="hour">13.5</field></record>
+    <record id="time_slot_1400" model="carwash.time.slot"><field name="hour">14</field></record>
+    <record id="time_slot_1430" model="carwash.time.slot"><field name="hour">14.5</field></record>
+    <record id="time_slot_1500" model="carwash.time.slot"><field name="hour">15</field></record>
+    <record id="time_slot_1530" model="carwash.time.slot"><field name="hour">15.5</field></record>
+    <record id="time_slot_1600" model="carwash.time.slot"><field name="hour">16</field></record>
+    <record id="time_slot_1630" model="carwash.time.slot"><field name="hour">16.5</field></record>
+    <record id="time_slot_1700" model="carwash.time.slot"><field name="hour">17</field></record>
+    <record id="time_slot_1730" model="carwash.time.slot"><field name="hour">17.5</field></record>
+    <record id="time_slot_1800" model="carwash.time.slot"><field name="hour">18</field></record>
+    <record id="time_slot_1830" model="carwash.time.slot"><field name="hour">18.5</field></record>
+    <record id="time_slot_1900" model="carwash.time.slot"><field name="hour">19</field></record>
+    <record id="time_slot_1930" model="carwash.time.slot"><field name="hour">19.5</field></record>
+    <record id="time_slot_2000" model="carwash.time.slot"><field name="hour">20</field></record>
+    <record id="time_slot_2030" model="carwash.time.slot"><field name="hour">20.5</field></record>
+    <record id="time_slot_2100" model="carwash.time.slot"><field name="hour">21</field></record>
+    <record id="time_slot_2130" model="carwash.time.slot"><field name="hour">21.5</field></record>
+    <record id="time_slot_2200" model="carwash.time.slot"><field name="hour">22</field></record>
+    <record id="time_slot_2230" model="carwash.time.slot"><field name="hour">22.5</field></record>
+    <record id="time_slot_2300" model="carwash.time.slot"><field name="hour">23</field></record>
+    <record id="time_slot_2330" model="carwash.time.slot"><field name="hour">23.5</field></record>
+</odoo>

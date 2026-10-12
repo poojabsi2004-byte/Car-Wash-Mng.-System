@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Feature switch (Car Wash > Configuration > Settings > Consumable Management) -->
+    <record id="group_carwash_consumable" model="res.groups">
+        <field name="name">Car Wash: Consumable Management</field>
+    </record>
+
+    <!-- Car wash managers keep the branch store: stock levels, receipts, consumption analysis -->
+    <record id="carwash_base.group_carwash_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+    </record>
+</odoo>

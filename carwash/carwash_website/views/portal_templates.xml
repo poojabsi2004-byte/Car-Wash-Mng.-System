@@ -39,19 +39,30 @@
                         <th class="text-end">Date</th>
                         <th class="text-end">Amount</th>
                         <th class="text-end">Status</th>
+                        <th t-if="review_enabled" class="text-end">Your Rating</th>
                     </tr>
                 </thead>
                 <t t-foreach="appointments" t-as="appointment">
                     <tr>
                         <td><a t-attf-href="/my/bookings/#{appointment.id}"><t t-out="appointment.name"/></a></td>
                         <td><t t-out="appointment.vehicle_id.license_plate"/></td>
-                        <td class="text-end"><span t-field="appointment.appointment_date"/></td>
+                        <td class="text-end" t-esc="appointment._slot_local(appointment.appointment_date).strftime('%d %b, %y %I:%M %p')"/>
                         <td class="text-end">
                             <t t-esc="'%.2f' % appointment.amount_total"/>
                             <span t-if="appointment.membership_id" class="badge text-bg-success ms-1" title="Membership applied">
                                 <i class="fa fa-id-card"/></span>
                         </td>
                         <td class="text-end"><span t-field="appointment.state"/></td>
+                        <td t-if="review_enabled" class="text-end text-nowrap">
+                            <t t-if="appointment.carwash_review_stars">
+                                <t t-set="stars" t-value="int(appointment.carwash_review_stars)"/>
+                                <span class="o_cw_stars" t-att-title="'%s / 5' % stars">
+                                    <i t-foreach="range(5)" t-as="i" t-attf-class="fa fa-star #{'o_cw_star_on' if i &lt; stars else 'o_cw_star_off'}"/>
+                                </span>
+                            </t>
+                            <a t-elif="appointment.state == 'done'" t-attf-href="/my/bookings/#{appointment.id}#carwash_review"
+                               class="btn btn-sm btn-outline-primary"><i class="fa fa-star me-1"/>Rate</a>
+                        </td>
                     </tr>
                 </t>
             </t>
@@ -70,12 +81,14 @@
                     Your membership gives no benefit on these services (or your free washes for this cycle are used up).</div>
                 <div t-if="error == 'no_membership'" class="alert alert-warning">
                     You don't have an active membership. <a href="/car-wash/membership">See the plans</a>.</div>
+                <div t-if="error == 'review_not_done'" class="alert alert-warning">
+                    You can rate this booking once your wash is completed.</div>
                 <div t-if="error == 'locked'" class="alert alert-warning">
                     The service has already started - the membership can't be changed any more.</div>
                 <p>
                     <strong>Branch:</strong> <t t-out="object.company_id.name"/><br/>
                     <strong>Vehicle:</strong> <t t-out="object.vehicle_id.license_plate"/><br/>
-                    <strong>Date:</strong> <span t-field="object.appointment_date"/><br/>
+                    <strong>Date:</strong> <t t-esc="object._slot_local(object.appointment_date).strftime('%d %b, %y %I:%M %p')"/><br/>
                     <strong>Status:</strong> <span t-field="object.state"/>
                 </p>
                 <table class="table" t-if="object.line_ids">
@@ -133,6 +146,30 @@
                         <button t-if="can_apply_membership" type="submit" class="btn btn-primary btn-sm">
                             <i class="fa fa-check me-1"/>Apply my membership</button>
                         <button t-else="" type="submit" class="btn btn-link btn-sm text-danger">Remove membership</button>
+                    </form>
+                </div>
+                <!-- Review & rating: once the service is done (Odoo rating.rating) -->
+                <div t-if="review_enabled and object.state == 'done'" id="carwash_review" class="o_cw_review border-top mt-4 pt-3">
+                    <div t-if="message == 'reviewed'" class="alert alert-success">Thank you for your review!</div>
+                    <div t-if="error == 'review'" class="alert alert-warning">Please choose a rating from 1 to 5 stars.</div>
+                    <t t-set="current_stars" t-value="int(object.carwash_review_stars or 0)"/>
+                    <h5 t-if="current_stars">Your review</h5>
+                    <h5 t-else="">How was your wash?</h5>
+                    <p class="text-muted small mb-2">Rate the service and tell us about your experience.</p>
+                    <form t-attf-action="/my/bookings/#{object.id}/review" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="o_cw_star_input mb-2" role="radiogroup" aria-label="Rating">
+                            <t t-foreach="[5, 4, 3, 2, 1]" t-as="star">
+                                <input type="radio" name="stars" required="required" t-att-id="'cw_star_%s' % star"
+                                       t-att-value="star" t-att-checked="'checked' if current_stars == star else None"/>
+                                <label t-att-for="'cw_star_%s' % star" t-att-title="'%s star%s' % (star, 's' if star &gt; 1 else '')">
+                                    <i class="fa fa-star"/></label>
+                            </t>
+                        </div>
+                        <textarea name="feedback" class="form-control mb-2" rows="3" maxlength="2000"
+                                  placeholder="Your review (optional)"><t t-esc="object.carwash_review_feedback or ''"/></textarea>
+                        <button type="submit" class="btn btn-primary">
+                            <t t-if="current_stars">Update review</t><t t-else="">Submit review</t></button>
                     </form>
                 </div>
             </div>

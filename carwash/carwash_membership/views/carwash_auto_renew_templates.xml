@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Opened from the Auto Renew button of the 'membership ending soon' email -->
+    <template id="carwash_auto_renew_page" name="Membership auto-renewal">
+        <t t-call="web.frontend_layout">
+            <t t-set="currency" t-value="membership.currency_id"/>
+            <t t-set="period" t-value="'year' if membership.billing_period == 'yearly' else 'month'"/>
+            <div class="container py-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6 text-center">
+                        <p class="text-muted mb-1"><t t-out="membership.company_id.name"/> · membership <t t-out="membership.name"/></p>
+                        <h1 class="h3 mb-3"><t t-out="membership.plan_id.name"/> membership</h1>
+
+                        <!-- not running any more: nothing to renew automatically -->
+                        <t t-if="membership.state != 'active'">
+                            <div class="alert alert-info">
+                                This membership isn't active any more, so it can't renew automatically.
+                                You can join again any time.
+                            </div>
+                        </t>
+                        <t t-elif="done or membership.auto_renew">
+                            <div class="display-6 text-success mb-2"><i class="fa fa-check-circle" title="On"/></div>
+                            <h2 class="h4">Auto-renewal is on</h2>
+                            <p>
+                                Your membership runs until <strong t-out="membership.valid_until" t-options="{'widget': 'date'}"/>.
+                                On <strong t-out="membership.expiry_date" t-options="{'widget': 'date'}"/> your renewal of
+                                <strong t-out="membership.amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                                (one <t t-out="period"/>) is paid automatically and your benefits carry on without a break.
+                            </p>
+                            <p class="text-muted small">Changed your mind? Contact us before that date.</p>
+                        </t>
+                        <t t-else="">
+                            <p>
+                                Your membership ends on <strong t-out="membership.valid_until" t-options="{'widget': 'date'}"/>.
+                                Turn on auto-renewal to keep your benefits without a break: on
+                                <strong t-out="membership.expiry_date" t-options="{'widget': 'date'}"/> your renewal of
+                                <strong t-out="membership.amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                                (one <t t-out="period"/>) is paid automatically.
+                            </p>
+                            <p t-if="membership.plan_id._benefit_summary()" class="text-muted small" t-out="membership.plan_id._benefit_summary()"/>
+                            <form t-attf-action="/car-wash/membership/#{membership.id}/auto-renew/#{token}/confirm" method="post" class="mt-4">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fa fa-refresh me-1" title="Auto Renew"/> Turn on Auto Renew
+                                </button>
+                            </form>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

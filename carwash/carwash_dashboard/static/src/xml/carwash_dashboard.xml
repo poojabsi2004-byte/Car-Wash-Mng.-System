@@ -6,24 +6,10 @@
     <span class="o_cwd_count" t-esc="text"/>
   </t>
 
-  <!-- Per-card search box: expects `key` and `placeholder` -->
-  <t t-name="carwash_dashboard.SearchBox">
-    <label class="o_cwd_search" t-att-class="state.search[key] ? 'o_cwd_search_active' : ''">
-      <i class="fa fa-search" aria-hidden="true"/>
-      <input type="search" t-att-placeholder="placeholder" t-att-aria-label="placeholder"
-             t-att-value="state.search[key]"
-             t-on-input="(ev) => this.state.search[key] = ev.target.value"/>
-      <button t-if="state.search[key]" type="button" class="o_cwd_search_clear" title="Clear"
-              t-on-click.prevent="() => this.clearSearch(key)">
-        <i class="fa fa-times"/>
-      </button>
-    </label>
-  </t>
-
-  <!-- Empty state: expects `searchKey` -->
+  <!-- Empty state: expects `emptyText` -->
   <t t-name="carwash_dashboard.Empty">
     <div class="o_cwd_empty">
-      <t t-if="state.search[searchKey] or state.globalSearch">
+      <t t-if="state.globalSearch">
         <i class="fa fa-search-minus"/>
         <span>No matches for your search</span>
       </t>
@@ -208,12 +194,12 @@
                 <div class="o_cwd_hero_tools">
                   <label class="o_cwd_omni">
                     <i class="fa fa-search"/>
-                    <input type="search" t-ref="globalSearch" placeholder="Find plate, customer, service…"
+                    <input type="search" t-ref="globalSearch" placeholder="Search the dashboard: plate, customer, booking, staff, service…"
                            aria-label="Search the whole dashboard"
                            t-att-value="state.globalSearch"
                            t-on-input="(ev) => this.state.globalSearch = ev.target.value"/>
                     <button t-if="state.globalSearch" type="button" class="o_cwd_search_clear" title="Clear"
-                            t-on-click.prevent="() => this.clearSearch('global')"><i class="fa fa-times"/></button>
+                            t-on-click.prevent="() => this.clearSearch()"><i class="fa fa-times"/></button>
                     <kbd t-else="">/</kbd>
                   </label>
                   <button class="o_cwd_icon_btn" t-on-click="toggleTheme"
@@ -256,7 +242,7 @@
               </div>
 
               <div class="o_cwd_hero_actions">
-                <button class="o_cwd_btn o_cwd_btn_primary" t-on-click="openNewAppointment">
+                <button t-if="d.can_create_booking" class="o_cwd_btn o_cwd_btn_primary" t-on-click="openNewAppointment">
                   <i class="fa fa-plus"/> New Booking
                 </button>
                 <button class="o_cwd_btn" t-on-click="openQueue"><i class="fa fa-list-ol"/> Live Queue</button>
@@ -284,14 +270,55 @@
             <i class="fa fa-arrow-right ms-auto"/>
           </button>
 
+          <!-- ============ MY EARNINGS (staff / QC) ============ -->
+          <section t-if="d.my_earnings" class="o_cwd_card o_cwd_span_12 o_cwe" style="--cw-i:1">
+            <t t-set="earn" t-value="d.my_earnings"/>
+            <header class="o_cwd_card_head">
+              <div>
+                <h3><i class="fa fa-money"/> My Earnings</h3>
+                <p>What you earn on the job cards you work on or check as QC</p>
+              </div>
+              <button class="o_cwe_link" t-on-click="() => this.openMyEarnings()">All earnings <i class="fa fa-long-arrow-right"/></button>
+            </header>
+            <div class="o_cwe_stats">
+              <button class="o_cwe_stat o_cwe_stat_due" t-on-click="() => this.openMyEarnings(true)" title="Open what you still receive">
+                <strong t-esc="formatMoney(earn.to_receive)"/>
+                <span>To receive<t t-if="earn.to_receive_count"> · <t t-esc="earn.to_receive_count"/> job(s)</t></span>
+              </button>
+              <div class="o_cwe_stat o_cwe_stat_got">
+                <strong t-esc="formatMoney(earn.received_month)"/><span>Received this month</span>
+              </div>
+              <div class="o_cwe_stat">
+                <strong t-esc="formatMoney(earn.earned_month)"/><span>Earned this month</span>
+              </div>
+              <div class="o_cwe_stat">
+                <strong t-esc="formatMoney(earn.received_total)"/><span>Received in total</span>
+              </div>
+            </div>
+            <div t-if="earn.recent.length" class="o_cwe_list">
+              <button t-foreach="earn.recent" t-as="row" t-key="row.id" class="o_cwe_row" t-att-style="stagger(row_index)"
+                      t-on-click="() => this.openMyEarning(row.id)">
+                <span class="o_cwe_day" t-esc="row.day"/>
+                <span class="o_cwe_job"><strong t-esc="row.jobcard"/><small t-esc="row.booking"/></span>
+                <span class="o_cwe_role" t-esc="row.role"/>
+                <strong class="o_cwe_amount" t-esc="formatMoney(row.amount)"/>
+                <span t-if="row.received" class="o_cwe_badge o_cwe_badge_got"><i class="fa fa-check"/> Received <t t-esc="row.paid_day"/></span>
+                <span t-else="" class="o_cwe_badge o_cwe_badge_due"><i class="fa fa-hourglass-half"/> To receive</span>
+              </button>
+            </div>
+            <div t-else="" class="o_cwd_empty">
+              <i class="fa fa-money"/>
+              <span>No earnings yet - they show here when a job card you worked on passes QC.</span>
+            </div>
+          </section>
+
           <!-- ============ WASH PIPELINE ============ -->
           <section class="o_cwd_card o_cwd_span_12" style="--cw-i:1">
             <header class="o_cwd_card_head">
               <div>
                 <h3><i class="fa fa-road"/> Wash Pipeline</h3>
-                <p>Every vehicle on site, from booking to pickup<t t-if="state.search.pipeline or state.globalSearch"> · <strong t-esc="pipelineMatchCount"/> match(es)</t></p>
+                <p>Every vehicle on site, from booking to pickup<t t-if="state.globalSearch"> · <strong t-esc="pipelineMatchCount"/> match(es)</t></p>
               </div>
-              <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'pipeline'"/><t t-set="placeholder" t-value="'Search plate, customer, bay…'"/></t>
             </header>
             <div class="o_cwd_track">
               <div t-foreach="pipelineStages" t-as="stage" t-key="stage.key"
@@ -340,8 +367,8 @@
                     </div>
                   </div>
                   <div t-if="!cards.length" class="o_cwd_stage_empty">
-                    <i t-att-class="'fa ' + ((state.search.pipeline or state.globalSearch) ? 'fa-search-minus' : 'fa-check')"/>
-                    <span t-esc="(state.search.pipeline or state.globalSearch) ? 'No matches' : 'All clear'"/>
+                    <i t-att-class="'fa ' + (state.globalSearch ? 'fa-search-minus' : 'fa-check')"/>
+                    <span t-esc="state.globalSearch ? 'No matches' : 'All clear'"/>
                   </div>
                 </div>
               </div>
@@ -349,6 +376,43 @@
           </section>
 
           <div class="o_cwd_grid">
+            <!-- ============ BOOKING REQUESTS (new leads, not confirmed yet) ============ -->
+            <section t-if="d.booking_requests" class="o_cwd_card o_cwd_span_12 o_cwd_requests" style="--cw-i:2">
+              <header class="o_cwd_card_head">
+                <div>
+                  <h3><i class="fa fa-inbox"/> New Booking Requests</h3>
+                  <p><t t-esc="d.booking_requests.count"/> waiting to be confirmed · newest first</p>
+                </div>
+                <div class="o_cwd_requests_tools">
+                  <div class="o_cwd_period" role="group" aria-label="Booking requests">
+                    <button class="o_cwd_period_btn" t-on-click="openBookingRequests"><i class="fa fa-list"/> All requests</button>
+                  </div>
+                </div>
+              </header>
+              <div class="o_cwd_jobs">
+                <div t-foreach="filteredRequests" t-as="r" t-key="r.id"
+                     class="o_cwd_job o_cwd_job_request" t-att-style="stagger(r_index)"
+                     t-att-title="'Open booking request ' + r.name" t-on-click="() => this.openRecord('crm.lead', r.id)">
+                  <div class="o_cwd_job_top">
+                    <strong t-esc="r.name"/>
+                    <span class="o_cwd_pill o_cwd_pill_request">New request</span>
+                  </div>
+                  <div class="o_cwd_job_mid">
+                    <t t-if="r.plate" t-call="carwash_dashboard.Plate"><t t-set="plate" t-value="r.plate"/></t>
+                    <span class="o_cwd_job_cust" t-esc="r.customer or r.phone"/>
+                  </div>
+                  <div class="o_cwd_job_foot">
+                    <span class="o_cwd_job_meta" t-if="r.requested"><i class="fa fa-calendar"/> <t t-esc="r.requested"/></span>
+                    <span class="o_cwd_job_meta" t-else="">No date yet</span>
+                    <span class="o_cwd_job_meta o_cwd_requests_services" t-esc="r.services"/>
+                  </div>
+                </div>
+              </div>
+              <t t-if="!filteredRequests.length" t-call="carwash_dashboard.Empty">
+                <t t-set="searchKey" t-value="'requests'"/><t t-set="emptyText" t-value="'No new booking requests - all confirmed'"/>
+              </t>
+            </section>
+
             <!-- ============ BAY MAP ============ -->
             <section class="o_cwd_card o_cwd_span_8" style="--cw-i:2">
               <header class="o_cwd_card_head">
@@ -360,7 +424,6 @@
                     <span class="o_cwd_dot o_cwd_dot_maintenance"/> <t t-esc="d.bay_counts.maintenance"/> maintenance
                   </p>
                 </div>
-                <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'bays'"/><t t-set="placeholder" t-value="'Search bay or plate…'"/></t>
               </header>
               <div class="o_cwd_bays">
                 <div t-foreach="filteredBays" t-as="bay" t-key="bay.id"
@@ -448,7 +511,6 @@
                   <h3><i class="fa fa-clipboard"/> Job Cards in Flight</h3>
                   <p><t t-esc="d.jobcards.length"/> open · checklist progress and crew</p>
                 </div>
-                <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'jobcards'"/><t t-set="placeholder" t-value="'Search job card, plate, staff…'"/></t>
               </header>
               <div class="o_cwd_jobs">
                 <div t-foreach="filteredJobcards" t-as="j" t-key="j.id"
@@ -478,6 +540,79 @@
               <t t-if="!filteredJobcards.length" t-call="carwash_dashboard.Empty">
                 <t t-set="searchKey" t-value="'jobcards'"/><t t-set="emptyText" t-value="'No open job cards - the floor is clear'"/>
               </t>
+            </section>
+
+            <!-- ============ BOOKING CALENDAR ============ -->
+            <section t-if="state.calendar" class="o_cwd_card o_cwd_span_12 o_cwd_calcard" style="--cw-i:5">
+              <t t-set="cal" t-value="state.calendar"/>
+              <header class="o_cwd_card_head">
+                <div>
+                  <h3><i class="fa fa-calendar"/> Booking Calendar</h3>
+                  <p>
+                    <t t-esc="cal.range_label"/> · <t t-esc="cal.total_bookings"/> booking(s)
+                    <t t-if="cal.show_requests"> · <t t-esc="cal.total_requests"/> request(s) to confirm</t>
+                    <t t-if="state.globalSearch"> · <t t-esc="calendarMatchCount"/> match(es)</t>
+                  </p>
+                </div>
+                <div class="o_cwd_cal_tools">
+                  <div class="o_cwd_period" role="group" aria-label="Week">
+                    <button class="o_cwd_period_btn" title="Previous week" t-on-click="() => this.shiftCalendar(-1)">
+                      <i class="fa fa-chevron-left"/>
+                    </button>
+                    <button t-attf-class="o_cwd_period_btn {{cal.is_current ? 'active' : ''}}" t-on-click="() => this.fetchCalendar()">This week</button>
+                    <button class="o_cwd_period_btn" title="Next week" t-on-click="() => this.shiftCalendar(1)">
+                      <i class="fa fa-chevron-right"/>
+                    </button>
+                  </div>
+                  <button class="o_cwd_cal_open" t-on-click="() => this.openFullCalendar()">
+                    <i class="fa fa-calendar-o"/> Bookings calendar
+                  </button>
+                  <button t-if="cal.show_requests" class="o_cwd_cal_open" t-on-click="() => this.openRequestCalendar()">
+                    <i class="fa fa-inbox"/> Requests calendar
+                  </button>
+                </div>
+              </header>
+              <div class="o_cwd_cal">
+                <div t-foreach="calendarDays" t-as="day" t-key="day.date"
+                     t-attf-class="o_cwd_cal_day {{day.is_today ? 'o_cwd_cal_today' : ''}} {{day.is_past ? 'o_cwd_cal_past' : ''}}">
+                  <button class="o_cwd_cal_head" t-on-click="() => this.openFullCalendar(day.date)"
+                          t-att-title="'Open ' + day.label + ' in the calendar'">
+                    <span class="o_cwd_cal_wd" t-esc="day.weekday"/>
+                    <strong t-esc="day.label"/>
+                    <span t-if="day.bookings.length + day.requests.length" class="o_cwd_cal_count"
+                          t-esc="day.bookings.length + day.requests.length"/>
+                  </button>
+                  <div class="o_cwd_cal_events">
+                    <div t-foreach="day.bookings" t-as="b" t-key="'b' + b.id"
+                         t-attf-class="o_cwd_cal_event o_cwd_cal_{{b.state}}"
+                         t-att-title="b.name + ' · ' + b.state_label + (b.services ? ' · ' + b.services : '')"
+                         t-on-click="() => this.openRecord('carwash.appointment', b.id)">
+                      <div class="o_cwd_cal_time"><t t-esc="b.time"/>–<t t-esc="b.end"/><span t-if="b.bay" class="o_cwd_cal_bay" t-esc="b.bay"/></div>
+                      <div class="o_cwd_cal_plate"><i t-attf-class="fa {{b.vehicle_icon}}"/> <t t-esc="b.plate or b.name"/></div>
+                      <div class="o_cwd_cal_cust" t-esc="b.customer"/>
+                    </div>
+                    <div t-foreach="day.requests" t-as="r" t-key="'r' + r.id" class="o_cwd_cal_event o_cwd_cal_request"
+                         t-att-title="'Booking request · ' + r.name" t-on-click="() => this.openRecord('crm.lead', r.id)">
+                      <div class="o_cwd_cal_time"><t t-esc="r.time"/><span class="o_cwd_cal_bay">Request</span></div>
+                      <div class="o_cwd_cal_plate"><i class="fa fa-inbox"/> <t t-esc="r.plate or r.customer"/></div>
+                      <div class="o_cwd_cal_cust" t-esc="r.services or r.customer"/>
+                    </div>
+                    <div t-if="!day.bookings.length and !day.requests.length" class="o_cwd_cal_free">
+                      <t t-if="state.globalSearch">No matches</t>
+                      <t t-else="">Free</t>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="o_cwd_cal_legend">
+                <span class="o_cwd_cal_key o_cwd_cal_confirmed">Booked</span>
+                <span class="o_cwd_cal_key o_cwd_cal_arrived">Arrived</span>
+                <span class="o_cwd_cal_key o_cwd_cal_in_service">Washing</span>
+                <span class="o_cwd_cal_key o_cwd_cal_ready">Ready</span>
+                <span class="o_cwd_cal_key o_cwd_cal_done">Done</span>
+                <span class="o_cwd_cal_key o_cwd_cal_draft">Draft</span>
+                <span t-if="cal.show_requests" class="o_cwd_cal_key o_cwd_cal_request">Request</span>
+              </div>
             </section>
           </div>
 
@@ -535,6 +670,104 @@
               </div>
             </div>
 
+            <!-- ============ PAYMENTS: customers in, staff / QC out ============ -->
+            <section t-if="d.payments" class="o_cwd_card o_cwd_span_12 o_cwpay" style="--cw-i:4">
+              <t t-set="pay" t-value="d.payments"/>
+              <header class="o_cwd_card_head">
+                <div>
+                  <h3><i class="fa fa-exchange"/> Payments</h3>
+                  <p>Money in from customers, out to staff and QC · <t t-esc="periodLabel"/></p>
+                </div>
+              </header>
+
+              <div class="o_cwpay_flow" t-att-class="pay.has_payables ? '' : 'o_cwpay_flow_short'">
+                <div class="o_cwpay_node o_cwpay_node_in">
+                  <div class="o_cwpay_node_head"><span class="o_cwpay_icon"><i class="fa fa-users"/></span>Customers</div>
+                  <button class="o_cwpay_main" t-on-click="openCustomerPayments" title="Customer payments received in the period">
+                    <strong><CwCount value="pay.received" format="formatMoney"/></strong>
+                    <span>Received · <t t-esc="pay.received_count"/> payment(s)</span>
+                  </button>
+                  <button class="o_cwpay_sub" t-att-class="pay.due ? 'o_cwpay_sub_due' : 'o_cwpay_sub_ok'"
+                          t-att-disabled="!pay.due_count" t-on-click="openToCollect">
+                    <t t-if="pay.due"><i class="fa fa-hourglass-half"/> <b t-esc="formatMoney(pay.due)"/> to collect · <t t-esc="pay.due_count"/> booking(s)</t>
+                    <t t-else=""><i class="fa fa-check"/> Nothing to collect</t>
+                  </button>
+                </div>
+
+                <div class="o_cwpay_link"><span class="o_cwpay_link_line"/></div>
+
+                <div class="o_cwpay_node o_cwpay_node_hub">
+                  <div class="o_cwpay_node_head"><span class="o_cwpay_icon"><i class="fa fa-tint"/></span>Car Wash</div>
+                  <div class="o_cwpay_main">
+                    <strong><CwCount value="pay.kept" format="formatMoney"/></strong>
+                    <span>Kept<t t-if="pay.has_payables"> after paying staff &amp; QC</t></span>
+                  </div>
+                  <div t-if="pay.has_payables" class="o_cwpay_sub o_cwpay_sub_hub">
+                    <i class="fa fa-arrow-right"/> <b t-esc="formatMoney(pay.paid_out)"/> paid out
+                  </div>
+                </div>
+
+                <t t-if="pay.has_payables">
+                  <div class="o_cwpay_link o_cwpay_link_out"><span class="o_cwpay_link_line"/></div>
+
+                  <div class="o_cwpay_node o_cwpay_node_out">
+                    <div class="o_cwpay_node_head"><span class="o_cwpay_icon"><i class="fa fa-id-badge"/></span>Staff &amp; QC</div>
+                    <button class="o_cwpay_role o_cwpay_role_staff" t-on-click="() => this.openStaffPayables('staff')">
+                      <span class="o_cwpay_role_name">Staff</span>
+                      <span class="o_cwpay_role_paid"><b t-esc="formatMoney(pay.staff_paid)"/> paid</span>
+                      <span t-if="pay.staff_to_pay" class="o_cwpay_role_due"><t t-esc="formatMoney(pay.staff_to_pay)"/> to pay</span>
+                    </button>
+                    <button class="o_cwpay_role o_cwpay_role_qc" t-on-click="() => this.openStaffPayables('qc')">
+                      <span class="o_cwpay_role_name">QC</span>
+                      <span class="o_cwpay_role_paid"><b t-esc="formatMoney(pay.qc_paid)"/> paid</span>
+                      <span t-if="pay.qc_to_pay" class="o_cwpay_role_due"><t t-esc="formatMoney(pay.qc_to_pay)"/> to pay</span>
+                    </button>
+                  </div>
+                </t>
+              </div>
+
+              <!-- where the money received went -->
+              <t t-if="pay.has_payables and (pay.received or pay.paid_out)">
+                <div class="o_cwpay_split" title="Of the money received from customers in the period">
+                  <span class="o_cwpay_seg o_cwpay_seg_staff" t-attf-style="width: {{pay.split.staff}}%"/>
+                  <span class="o_cwpay_seg o_cwpay_seg_qc" t-attf-style="width: {{pay.split.qc}}%"/>
+                  <span class="o_cwpay_seg o_cwpay_seg_kept" t-attf-style="width: {{pay.split.kept}}%"/>
+                </div>
+                <div class="o_cwpay_legend">
+                  <span><i class="o_cwpay_dot o_cwpay_seg_staff"/>Staff <b><t t-esc="pay.split.staff"/>%</b></span>
+                  <span><i class="o_cwpay_dot o_cwpay_seg_qc"/>QC <b><t t-esc="pay.split.qc"/>%</b></span>
+                  <span><i class="o_cwpay_dot o_cwpay_seg_kept"/>Kept <b><t t-esc="pay.split.kept"/>%</b></span>
+                </div>
+              </t>
+
+              <div class="o_cwpay_lists" t-att-class="pay.has_payables ? '' : 'o_cwpay_lists_one'">
+                <div t-if="pay.has_payables" class="o_cwpay_list">
+                  <h4>Still to pay</h4>
+                  <button t-foreach="pay.owed" t-as="o" t-key="o.key" class="o_cwpay_row" t-att-style="stagger(o_index)"
+                          t-on-click="() => this.openOwed(o)">
+                    <span class="o_cwpay_avatar" t-esc="o.initials"/>
+                    <span class="o_cwpay_row_main"><strong t-esc="o.name"/><small><t t-esc="o.count"/> job(s)</small></span>
+                    <span class="o_cwpay_badge" t-att-class="'o_cwpay_badge_' + o.role" t-esc="o.role_label"/>
+                    <strong class="o_cwpay_amount o_cwpay_amount_out" t-esc="formatMoney(o.amount)"/>
+                  </button>
+                  <div t-if="!pay.owed.length" class="o_cwpay_none"><i class="fa fa-check-circle"/> Everyone is paid</div>
+                </div>
+                <div class="o_cwpay_list">
+                  <h4>Recent payments</h4>
+                  <button t-foreach="pay.recent" t-as="e" t-key="e.key" class="o_cwpay_row" t-att-style="stagger(e_index)"
+                          t-on-click="() => this.openRecord(e.model, e.id)">
+                    <span class="o_cwpay_dir" t-att-class="'o_cwpay_dir_' + e.kind">
+                      <i t-att-class="'fa ' + (e.kind === 'in' ? 'fa-arrow-down' : 'fa-arrow-up')"/>
+                    </span>
+                    <span class="o_cwpay_row_main"><strong t-esc="e.who"/><small><t t-esc="e.day"/> · <t t-esc="e.what"/></small></span>
+                    <strong class="o_cwpay_amount" t-att-class="'o_cwpay_amount_' + e.kind"
+                            t-esc="(e.kind === 'in' ? '+' : '−') + formatMoney(e.amount)"/>
+                  </button>
+                  <div t-if="!pay.recent.length" class="o_cwpay_none">No payments in this period</div>
+                </div>
+              </div>
+            </section>
+
             <div class="o_cwd_grid">
               <section class="o_cwd_card o_cwd_span_8" style="--cw-i:4">
                 <header class="o_cwd_card_head">
@@ -554,7 +787,6 @@
                   </div>
                 </header>
                 <div t-if="d.top_services.length" class="o_cwd_chart" t-ref="servicesChart"/>
-                <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'services'"/><t t-set="placeholder" t-value="'Search service…'"/></t>
                 <ul class="o_cwd_rank">
                   <li t-foreach="filteredServices" t-as="s" t-key="s_index" t-att-style="stagger(s_index)">
                     <span class="o_cwd_rank_name" t-esc="s.name"/>
@@ -574,7 +806,6 @@
                     <h3><i class="fa fa-flask"/> Consumables</h3>
                     <p>Used this period vs. stock on hand</p>
                   </div>
-                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'products'"/><t t-set="placeholder" t-value="'Search consumable…'"/></t>
                 </header>
                 <div class="o_cwd_stock">
                   <div t-foreach="filteredProducts" t-as="p" t-key="p.id" class="o_cwd_stock_row"
@@ -602,7 +833,6 @@
                     <h3><i class="fa fa-flag-checkered"/> Recently Completed</h3>
                     <p>Latest washes handed back</p>
                   </div>
-                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'recent'"/><t t-set="placeholder" t-value="'Search wash…'"/></t>
                 </header>
                 <div class="o_cwd_feed">
                   <div t-foreach="filteredRecent" t-as="r" t-key="r.id" class="o_cwd_feed_row" t-att-style="stagger(r_index)"
@@ -669,7 +899,6 @@
                     <h3><i class="fa fa-building-o"/> Branches</h3>
                     <p>Revenue by branch</p>
                   </div>
-                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'branches'"/><t t-set="placeholder" t-value="'Search branch…'"/></t>
                 </header>
                 <div t-if="d.branch_breakdown.length" class="o_cwd_chart" t-ref="branchChart"/>
                 <ul class="o_cwd_rank">
@@ -690,11 +919,10 @@
                     <h3><i class="fa fa-trophy"/> Crew Leaderboard</h3>
                     <p>Job cards completed</p>
                   </div>
-                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'staff'"/><t t-set="placeholder" t-value="'Search staff…'"/></t>
                 </header>
                 <ol class="o_cwd_leader">
                   <li t-foreach="filteredStaff" t-as="s" t-key="s.name" t-att-style="stagger(s_index)"
-                      t-att-class="!(state.search.staff or state.globalSearch) and s_index lt 3 ? 'o_cwd_medal_' + (s_index + 1) : ''">
+                      t-att-class="!state.globalSearch and s_index lt 3 ? 'o_cwd_medal_' + (s_index + 1) : ''">
                     <span class="o_cwd_leader_pos" t-esc="s_index + 1"/>
                     <span class="o_cwd_avatar o_cwd_avatar_lg" t-esc="s.initials"/>
                     <div class="o_cwd_leader_body">
@@ -715,7 +943,6 @@
                     <h3><i class="fa fa-id-card-o"/> Memberships</h3>
                     <p>Active members, by next billing date</p>
                   </div>
-                  <t t-call="carwash_dashboard.SearchBox"><t t-set="key" t-value="'memberships'"/><t t-set="placeholder" t-value="'Search member, plan…'"/></t>
                 </header>
                 <div class="o_cwd_members">
                   <div t-foreach="filteredMemberships" t-as="m" t-key="m.id" class="o_cwd_member"

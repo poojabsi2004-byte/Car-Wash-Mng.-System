@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_carwash_jobcard" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.carwash.jobcard</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="carwash_base.res_config_settings_view_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='carwash_booking_settings']" position="inside">
+                <setting id="carwash_packages" string="Service Packages"
+                         help="Sell bundles of services at a package price (backend, booking requests and website).">
+                    <field name="group_carwash_package"/>
+                    <div class="mt8" invisible="not group_carwash_package">
+                        <button name="%(action_carwash_service_package)d" type="action" string="Service Packages"
+                                icon="oi-arrow-right" class="btn-link"/>
+                    </div>
+                </setting>
+            </xpath>
+            <xpath expr="//block[@name='carwash_operation_settings']" position="inside">
+                <setting id="carwash_inspections" string="Vehicle Inspections"
+                         help="Pre-wash and post-wash inspections; an open inspection blocks the next step.">
+                    <field name="group_carwash_inspection"/>
+                    <div class="mt8" invisible="not group_carwash_inspection">
+                        <button name="%(action_carwash_inspection_type)d" type="action" string="Inspection Types"
+                                icon="oi-arrow-right" class="btn-link"/>
+                    </div>
+                </setting>
+                <setting id="carwash_checklists" string="Process Checklists"
+                         help="Check-in checklist when the vehicle arrives and inspection checklists; mandatory tasks must be ticked before the next step.">
+                    <field name="group_carwash_checklist"/>
+                    <div class="mt8" invisible="not group_carwash_checklist">
+                        <button name="%(action_carwash_checklist_template)d" type="action" string="Checklist Templates"
+                                icon="oi-arrow-right" class="btn-link"/>
+                    </div>
+                </setting>
+            </xpath>
+            <xpath expr="//block[@name='carwash_staff_settings']" position="inside">
+                <setting id="carwash_commission" string="Staff Payable"
+                         help="Record a staff payable for the staff on a job card when it passes QC (rates per role or per employee).">
+                    <field name="group_carwash_commission"/>
+                    <div class="mt8" invisible="not group_carwash_commission">
+                        <div class="content-group">
+                            <field name="group_carwash_individual_pay" class="oe_inline"/>
+                            <label for="group_carwash_individual_pay" class="o_light_label"/>
+                            <div class="text-muted small">On: a staff member can get their own pay on their employee
+                                (Staff Role tab), used instead of their role's. Off: everyone is paid by their role.</div>
+                        </div>
+                        <button name="%(action_carwash_staff_role)d" type="action" string="Staff Roles"
+                                icon="oi-arrow-right" class="btn-link"/>
+                    </div>
+                </setting>
+            </xpath>
+            <xpath expr="//block[@name='carwash_customer_settings']" position="inside">
+                <setting id="carwash_ratings" string="Customer Ratings"
+                         help="The 'your car wash is complete' email, sent when a booking is done, asks the customer to rate it (1-5 stars) and write a review.">
+                    <field name="group_carwash_rating"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

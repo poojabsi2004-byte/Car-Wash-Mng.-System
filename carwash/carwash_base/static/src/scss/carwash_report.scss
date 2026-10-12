@@ -1,0 +1,438 @@
+// Car Wash printed documents (booking / receipt, booking request, job card, quality check, inspection).
+// wkhtmltopdf renders these: plain blocks and tables only (no flex / grid).
+
+$cw-brand: #0e7490;
+$cw-brand-light: #22b8cf;
+$cw-brand-soft: #e6f4f7;
+$cw-brand-ink: #0b1f33;
+$cw-brand-muted: #5b7085;
+$cw-brand-line: #d5e3ea;
+
+// ---------------------------------------------------------------- letterhead (page header)
+// wkhtmltopdf renders the header and footer as separate pages, so they're styled on their own.
+.o_cw_letterhead {
+    color: $cw-brand-ink;
+
+    .o_cw_lh {
+        width: 100%;
+        margin-bottom: 8px;
+
+        td {
+            vertical-align: middle;
+        }
+    }
+
+    .o_cw_lh_logo {
+        width: 1%;
+        padding-right: 14px;
+        white-space: nowrap;
+
+        .o_cw_lh_img {
+            max-height: 64px;
+            max-width: 210px;
+        }
+
+        .o_cw_lh_emblem {
+            height: 56px;
+            width: 56px;
+            border-radius: 12px;
+        }
+    }
+
+    .o_cw_lh_brand {
+        .o_cw_lh_name {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.15;
+            color: $cw-brand;
+            letter-spacing: 0.2px;
+        }
+
+        .o_cw_lh_tagline {
+            margin-top: 2px;
+            font-size: 11px;
+            font-style: italic;
+            color: $cw-brand-muted;
+        }
+
+        .o_cw_lh_vat {
+            margin-top: 3px;
+            font-size: 10.5px;
+            color: $cw-brand-muted;
+
+            strong {
+                color: $cw-brand-ink;
+            }
+        }
+    }
+
+    .o_cw_lh_contact {
+        width: 42%;
+        text-align: right;
+        font-size: 10.5px;
+        line-height: 1.55;
+        color: $cw-brand-muted;
+
+        .fa {
+            width: 12px;
+            text-align: center;
+            color: $cw-brand;
+        }
+    }
+
+    // two-tone strip under the letterhead
+    .o_cw_lh_bar {
+        height: 4px;
+        background: $cw-brand;
+        border-radius: 2px;
+
+        div {
+            width: 28%;
+            height: 4px;
+            background: $cw-brand-light;
+            border-radius: 2px;
+        }
+    }
+}
+
+// letterhead printed inside the page (wkhtmltopdf without page-header support)
+.o_cw_letterhead_inline {
+    margin-bottom: 16px;
+}
+
+// ---------------------------------------------------------------- page footer
+.o_cw_letterfoot {
+    .o_cw_lf {
+        width: 100%;
+        border-top: 2px solid $cw-brand;
+        font-size: 9.5px;
+        color: $cw-brand-muted;
+
+        td {
+            padding-top: 6px;
+            vertical-align: top;
+        }
+    }
+
+    .o_cw_lf_company {
+        strong {
+            color: $cw-brand;
+            font-size: 10.5px;
+        }
+
+        .fa {
+            color: $cw-brand;
+        }
+    }
+
+    .o_cw_lf_sep {
+        margin: 0 6px;
+        color: $cw-brand-line;
+    }
+
+    .o_cw_lf_note {
+        margin-top: 2px;
+        font-style: italic;
+    }
+
+    .o_cw_lf_page {
+        width: 30%;
+        text-align: right;
+        white-space: nowrap;
+
+        .o_cw_lf_ref {
+            font-weight: 700;
+            color: $cw-brand-ink;
+        }
+    }
+}
+
+.o_cw_report {
+    $cw-teal: #0e7490;
+    $cw-teal-soft: #e6f4f7;
+    $cw-ink: #0b1f33;
+    $cw-muted: #5b7085;
+    $cw-line: #d5e3ea;
+
+    color: $cw-ink;
+    font-size: 12px;
+
+    .o_cw_title {
+        width: 100%;
+        margin-bottom: 14px;
+        border-bottom: 1px solid $cw-line;
+
+        td {
+            vertical-align: bottom;
+            padding-bottom: 8px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: $cw-teal;
+            letter-spacing: 0.3px;
+        }
+
+        .o_cw_ref {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .o_cw_sub {
+            color: $cw-muted;
+        }
+    }
+
+    .o_cw_token {
+        display: inline-block;
+        min-width: 70px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: $cw-teal;
+        color: #ffffff;
+        text-align: center;
+
+        small {
+            display: block;
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        span {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+    }
+
+    .o_cw_badge {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        background: $cw-teal-soft;
+        color: $cw-teal;
+        border: 1px solid $cw-line;
+
+        &.o_cw_badge_ok { background: #e3f6ec; color: #13794a; border-color: #b8e3cb; }
+        &.o_cw_badge_warn { background: #fff4e0; color: #9a5b00; border-color: #f3d39c; }
+        &.o_cw_badge_bad { background: #fde8e8; color: #b42318; border-color: #f4b8b5; }
+    }
+
+    // three info boxes side by side
+    .o_cw_boxes {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 8px 0;
+        margin: 0 -8px 14px;
+
+        > tbody > tr > td {
+            width: 33%;
+            vertical-align: top;
+            padding: 9px 11px;
+            border: 1px solid $cw-line;
+            border-radius: 8px;
+            background: #fbfdfe;
+        }
+
+        h6 {
+            margin: 0 0 5px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: $cw-teal;
+        }
+
+        .o_cw_big {
+            font-size: 14px;
+            font-weight: 700;
+        }
+    }
+
+    .o_cw_kv {
+        width: 100%;
+
+        td {
+            padding: 1px 0;
+            vertical-align: top;
+        }
+
+        td:first-child {
+            width: 42%;
+            color: $cw-muted;
+        }
+    }
+
+    h5.o_cw_section {
+        margin: 18px 0 6px;
+        padding-bottom: 3px;
+        font-size: 13px;
+        font-weight: 700;
+        color: $cw-teal;
+        border-bottom: 1px solid $cw-line;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+
+    table.o_cw_table {
+        width: 100%;
+        margin-bottom: 6px;
+        border-collapse: collapse;
+
+        th {
+            padding: 6px 8px;
+            background: $cw-teal;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: left;
+        }
+
+        td {
+            padding: 5px 8px;
+            border-bottom: 1px solid $cw-line;
+            vertical-align: top;
+        }
+
+        tr.o_cw_discount td {
+            color: #13794a;
+            font-style: italic;
+        }
+
+        .o_cw_note {
+            display: block;
+            color: $cw-muted;
+            font-size: 10px;
+        }
+    }
+
+    .o_cw_totals {
+        width: 45%;
+        margin-left: 55%;
+        border-collapse: collapse;
+
+        td {
+            padding: 4px 8px;
+        }
+
+        tr.o_cw_grand td {
+            border-top: 2px solid $cw-teal;
+            font-size: 15px;
+            font-weight: 800;
+            color: $cw-teal;
+        }
+
+        tr.o_cw_saving td {
+            color: #13794a;
+        }
+    }
+
+    .o_cw_check {
+        color: #13794a;
+        font-weight: 700;
+    }
+
+    .o_cw_cross {
+        color: #b42318;
+        font-weight: 700;
+    }
+
+    .o_cw_callout {
+        display: block;
+        clear: both;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 10px 0;
+        padding: 8px 12px;
+        border-left: 4px solid $cw-teal;
+        background: $cw-teal-soft;
+        border-radius: 4px;
+
+        &.o_cw_callout_warn {
+            border-left-color: #e08a00;
+            background: #fff4e0;
+        }
+
+        &.o_cw_callout_bad {
+            border-left-color: #b42318;
+            background: #fde8e8;
+        }
+    }
+
+    .o_cw_stars {
+        color: #f5b301;
+        font-size: 16px;
+        letter-spacing: 2px;
+
+        .o_cw_star_off {
+            color: #d5dde3;
+        }
+    }
+
+    .o_cw_photos {
+        width: 100%;
+
+        td {
+            width: 33%;
+            padding: 4px;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 170px;
+            border: 1px solid $cw-line;
+            border-radius: 6px;
+        }
+
+        small {
+            display: block;
+            color: $cw-muted;
+        }
+    }
+
+    .o_cw_signatures {
+        width: 100%;
+        margin-top: 34px;
+        page-break-inside: avoid;
+
+        td {
+            width: 50%;
+            padding: 0 18px;
+            text-align: center;
+            color: $cw-muted;
+        }
+
+        .o_cw_sign_line {
+            height: 46px;
+            border-bottom: 1px solid $cw-ink;
+            margin-bottom: 4px;
+        }
+    }
+
+    // keeps the space of the signature lines, which are drawn at the bottom of the last page
+    // (models/carwash_report_footer.py): at least the ~20 mm they take there
+    .o_cw_signatures_space {
+        height: 120px;
+    }
+
+    .o_cw_thanks {
+        margin-top: 22px;
+        text-align: center;
+        color: $cw-muted;
+        font-size: 11px;
+    }
+
+    .o_cw_keep {
+        page-break-inside: avoid;
+    }
+}

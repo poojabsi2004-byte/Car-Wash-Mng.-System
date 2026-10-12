@@ -3,12 +3,39 @@
     <record id="group_carwash_washer" model="res.groups">
         <field name="name">Washer/Detailer</field>
         <field name="privilege_id" ref="carwash_base.res_groups_privilege_carwash"/>
+        <field name="comment">Does the wash: sees only the bookings and job cards they are assigned to, starts / ends the services, submits the job card for QC, checks in / out (My Attendance) and sees their own staff payables.</field>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
     <record id="group_carwash_qc" model="res.groups">
         <field name="name">QC Inspector</field>
         <field name="privilege_id" ref="carwash_base.res_groups_privilege_carwash"/>
+        <field name="comment">Checks the work: sees the job cards they check (and those waiting for QC), QC Pass / QC Fail, inspections, checks in / out (My Attendance) and sees their own staff payables.</field>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Car wash managers run the staff: roles, staff payable, performance (HR Officer rights) -->
+    <record id="carwash_base.group_carwash_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('hr.group_hr_user'))]"/>
+    </record>
+
+    <!-- Feature switches (Car Wash > Configuration > Settings) -->
+    <record id="group_carwash_package" model="res.groups">
+        <field name="name">Car Wash: Service Packages</field>
+    </record>
+    <record id="group_carwash_inspection" model="res.groups">
+        <field name="name">Car Wash: Vehicle Inspections</field>
+    </record>
+    <record id="group_carwash_checklist" model="res.groups">
+        <field name="name">Car Wash: Process Checklists</field>
+    </record>
+    <record id="group_carwash_commission" model="res.groups">
+        <field name="name">Car Wash: Staff Payable</field>
+    </record>
+    <record id="group_carwash_individual_pay" model="res.groups">
+        <field name="name">Car Wash: Individual Staff Pay</field>
+    </record>
+    <record id="group_carwash_rating" model="res.groups">
+        <field name="name">Car Wash: Customer Ratings</field>
     </record>
 </odoo>

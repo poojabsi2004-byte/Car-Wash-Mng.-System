@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_carwash_booking_reminders" model="ir.cron">
+        <field name="name">Car Wash: Visit reminders</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_carwash_booking_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="ir_cron_carwash_membership_expiry_reminders" model="ir.cron">
+        <field name="name">Car Wash: Membership renewal reminders</field>
+        <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_carwash_membership_expiry_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

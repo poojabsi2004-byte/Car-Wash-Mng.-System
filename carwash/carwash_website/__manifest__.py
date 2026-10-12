@@ -1,6 +1,6 @@
 {
     "name": "Car Wash Website Booking",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.7.0",
     "license": "LGPL-3",
     "author": "Botspot Infoware",
     "maintainer": "Botspot Infoware",
@@ -30,5 +30,5 @@ appointments and vehicles appear read-only under My Bookings in the portal.""",
     "post_init_hook": "_set_homepage_url",
     "installable": True,
     "application": False,
-    "auto_install": False,
+    "auto_install": ["carwash_multibranch"],  # installed together with Car Wash (chain from carwash_base)
 }

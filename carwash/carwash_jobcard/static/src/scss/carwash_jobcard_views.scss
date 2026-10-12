@@ -1,0 +1,13 @@
+// =====================================================================================================================
+// Car Wash Job Cards - small additions to the shared Car Wash UI kit (carwash_base/static/src/scss/carwash_ui.scss).
+// =====================================================================================================================
+
+.o_cw_kanban {
+    // long text on a card (a customer review...) kept to three lines
+    .o_cw_clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}

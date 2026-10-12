@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Customer emails of the membership life cycle -->
+    <data noupdate="1">
+
+        <record id="mail_template_membership_payment_request" model="mail.template">
+            <field name="name">Car Wash: Membership Payment Request</field>
+            <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+            <field name="subject">Complete your {{ object.plan_id.name }} membership payment</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p t-if="object.state == 'active'">Your <strong t-out="object.plan_id.name or ''">Gold</strong> membership renews soon -
+        pay the next period to keep your benefits without a break.</p>
+    <p t-else="">Your <strong t-out="object.plan_id.name or ''">Gold</strong> membership is ready - it activates as soon
+        as your payment is received.</p>
+    <p t-if="object.plan_id._benefit_summary()">Benefits: <t t-out="object.plan_id._benefit_summary()"/></p>
+    <p t-if="object.pending_order_id">Amount: <strong t-out="format_amount(object.pending_order_id.amount_total, object.pending_order_id.currency_id)">999</strong></p>
+    <p><a t-att-href="object._carwash_renew_url()"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">Pay now</a></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_activated" model="mail.template">
+            <field name="name">Car Wash: Membership Activated</field>
+            <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+            <field name="subject">Welcome! Your {{ object.plan_id.name }} membership is active</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Thank you for your payment - welcome to <strong t-out="object.plan_id.name or ''">Gold</strong>!
+        Your membership <t t-out="object.name or ''">CWM/26/0001</t> is <strong>active until
+        <t t-out="format_date(object.paid_until) or ''">01/01/2027</t></strong>.</p>
+    <ul>
+        <li t-if="object.plan_id.plan_service_ids">
+            <t t-out="object.plan_id.wash_allowance or 'Unlimited'"/> free wash(es) a month:
+            <t t-out="', '.join(object.plan_id.plan_service_ids.mapped('name'))"/></li>
+        <li t-if="object.plan_id.discount_percent"><t t-out="'%g' % object.plan_id.discount_percent"/>% off every other service</li>
+        <li>Use it when you book online - just keep "Use my membership" switched on.</li>
+    </ul>
+    <p><a t-att-href="object.get_base_url() + '/car-wash/book'"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">Book a wash</a></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_renewed" model="mail.template">
+            <field name="name">Car Wash: Membership Renewed</field>
+            <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+            <field name="subject">Your {{ object.plan_id.name }} membership is renewed</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Thanks for renewing - your <strong t-out="object.plan_id.name or ''">Gold</strong> membership now runs until
+        <strong t-out="format_date(object.paid_until) or ''">01/01/2027</strong>.</p>
+    <p>Thank you for being a member!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_expiring" model="mail.template">
+            <field name="name">Car Wash: Membership Ending Soon (Auto Renew)</field>
+            <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+            <field name="subject">Your {{ object.plan_id.name }} membership ends on {{ format_date(object.valid_until) }}{{ ' - it renews automatically' if object.auto_renew else ' - turn on auto-renew' }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Your <strong t-out="object.plan_id.name or ''">Gold</strong> membership
+        (<t t-out="object.name or ''">CWM/26/0001</t>) ends on <strong t-out="format_date(object.valid_until) or ''">01/01/2027</strong>.</p>
+    <t t-if="object.auto_renew">
+        <p>Auto-renewal is on: on <strong t-out="format_date(object.expiry_date) or ''">02/01/2027</strong> your renewal of
+            <strong t-out="format_amount(object.amount, object.currency_id) or ''">$ 999.00</strong> is paid automatically and your
+            benefits<t t-if="object.plan_id._benefit_summary()"> (<t t-out="object.plan_id._benefit_summary()"/>)</t> carry on
+            without a break. Nothing to do.</p>
+    </t>
+    <t t-else="">
+        <p>Turn on auto-renewal to keep your benefits<t t-if="object.plan_id._benefit_summary()"> (<t t-out="object.plan_id._benefit_summary()"/>)</t>
+            without a break: on <strong t-out="format_date(object.expiry_date) or ''">02/01/2027</strong> your renewal of
+            <strong t-out="format_amount(object.amount, object.currency_id) or ''">$ 999.00</strong> is then paid automatically.</p>
+        <p><a t-att-href="object._carwash_auto_renew_url()"
+              style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">Auto Renew</a></p>
+        <p style="color: #666;">Without auto-renewal your membership ends on that date.</p>
+    </t>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_expired" model="mail.template">
+            <field name="name">Car Wash: Membership Expired</field>
+            <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+            <field name="subject">Your {{ object.plan_id.name }} membership has expired</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Your <strong t-out="object.plan_id.name or ''">Gold</strong> membership ended on
+        <t t-out="format_date(object.paid_until) or ''">01/01/2027</t>. We'd love to have you back!</p>
+    <p><a t-att-href="object._carwash_renew_url()"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">Renew my membership</a></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_membership_cancelled" model="mail.template">
+            <field name="name">Car Wash: Membership Cancelled</field>
+            <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
+            <field name="subject">Your {{ object.plan_id.name }} membership was cancelled</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Your <strong t-out="object.plan_id.name or ''">Gold</strong> membership
+        (<t t-out="object.name or ''">CWM/26/0001</t>) has been cancelled.</p>
+    <p>You can join again any time:
+        <a t-att-href="object.get_base_url() + '/car-wash/membership'">see the membership plans</a>.</p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

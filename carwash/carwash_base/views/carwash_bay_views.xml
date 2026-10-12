@@ -4,9 +4,12 @@
         <field name="name">carwash.bay.list</field>
         <field name="model">carwash.bay</field>
         <field name="arch" type="xml">
-            <list string="Bays">
-                <field name="name"/>
-                <field name="bay_type"/>
+            <list string="Bays" sample="1" decoration-muted="not active">
+                <field name="active" column_invisible="1"/>
+                <field name="name" class="fw-bold"/>
+                <field name="bay_type_id" widget="badge"/>
+                <field name="appointment_count" string="Bookings" optional="show"/>
+                <field name="company_id" string="Branch" groups="base.group_multi_company" optional="show"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'free'"
                        decoration-danger="state == 'occupied'"
@@ -19,18 +22,68 @@
         <field name="name">carwash.bay.form</field>
         <field name="model">carwash.bay</field>
         <field name="arch" type="xml">
-            <form string="Bay">
+            <form string="Bay" class="o_cw_form">
+                <header>
+                    <button name="action_set_free" type="object" string="End Maintenance" class="btn-primary"
+                            invisible="state != 'maintenance'"/>
+                    <button name="action_set_free" type="object" string="Release Bay"
+                            invisible="state != 'occupied'"
+                            confirm="Release this bay? Only do this when no vehicle is being serviced in it."/>
+                    <button name="action_set_maintenance" type="object" string="Start Maintenance"
+                            invisible="state == 'maintenance'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
                 <sheet>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name" placeholder="Bay Name"/></h1>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_appointments" type="object" class="oe_stat_button" icon="fa-calendar">
+                            <field name="appointment_count" widget="statinfo" string="Bookings"/>
+                        </button>
                     </div>
-                    <group>
-                        <field name="bay_type"/>
-                        <field name="state"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_success" invisible="state != 'free'">
+                            <i class="fa fa-car" title="Free"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_danger" invisible="state != 'occupied'">
+                            <i class="fa fa-car" title="Occupied"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="state != 'maintenance'">
+                            <i class="fa fa-wrench" title="Under maintenance"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="Bay Name"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip o_cw_chip_success" invisible="state != 'free'">
+                                    <i class="fa fa-check-circle" title="Status"/> Free
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_danger" invisible="state != 'occupied'">
+                                    <i class="fa fa-lock" title="Status"/> Occupied
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_warning" invisible="state != 'maintenance'">
+                                    <i class="fa fa-wrench" title="Status"/> Under Maintenance
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_info" invisible="not bay_type_id">
+                                    <i class="fa fa-tag" title="Bay type"/>
+                                    <field name="bay_type_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <group name="bay_details">
+                        <group string="Bay" name="bay_info">
+                            <field name="bay_type_id" placeholder="e.g. Hand Wash"/>
+                            <field name="company_id" string="Branch" groups="base.group_multi_company" options="{'no_create': True}"/>
+                        </group>
                     </group>
-                    <field name="notes" placeholder="Notes..."/>
+                    <notebook>
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Equipment, opening hours, notes for the team..."/>
+                        </page>
+                    </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -39,24 +92,40 @@
         <field name="name">carwash.bay.kanban</field>
         <field name="model">carwash.bay</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="state" class="o_kanban_small_column">
+            <kanban default_group_by="state" class="o_kanban_small_column o_cw_kanban" sample="1">
                 <field name="state"/>
+                <field name="bay_type_icon"/>
                 <templates>
-                    <t t-name="card">
-                        <main t-att-class="'border-start border-4 ps-2 ' + (
-                            record.state.raw_value === 'free' ? 'border-success' :
-                            record.state.raw_value === 'occupied' ? 'border-danger' :
-                            'border-warning'
-                        )">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong><field name="name"/></strong>
-                                <i t-att-class="'fa fa-fw text-muted ' + (
-                                    record.state.raw_value === 'free' ? 'fa-check-circle-o' :
-                                    record.state.raw_value === 'occupied' ? 'fa-lock' :
-                                    'fa-wrench'
-                                )" t-att-title="record.state.raw_value"/>
+                    <t t-name="card" class="flex-row">
+                        <!-- coloured left edge by status -->
+                        <span t-att-class="{
+                            'o_cw_tone_success': record.state.raw_value === 'free',
+                            'o_cw_tone_danger': record.state.raw_value === 'occupied',
+                            'o_cw_tone_warning': record.state.raw_value === 'maintenance'
+                        }"/>
+                        <aside class="d-flex align-items-start me-3">
+                            <span t-att-class="'o_cw_tile ' + (
+                                record.state.raw_value === 'free' ? 'o_cw_tile_success' :
+                                record.state.raw_value === 'occupied' ? 'o_cw_tile_danger' : 'o_cw_tile_warning')">
+                                <i t-att-class="'fa ' + (record.state.raw_value === 'maintenance' ? 'fa-wrench' : 'fa-car')"
+                                   role="img" aria-label="Bay" title="Bay"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <div class="o_cw_card_head">
+                                <field name="name" class="o_cw_card_title"/>
+                                <field name="state" widget="badge" class="small"
+                                       decoration-success="state == 'free'"
+                                       decoration-danger="state == 'occupied'"
+                                       decoration-warning="state == 'maintenance'"/>
                             </div>
-                            <field name="bay_type"/>
+                            <div class="o_cw_meta">
+                                <div><i t-attf-class="fa {{record.bay_type_icon.raw_value or 'fa-tag'}}" title="Bay type"/><field name="bay_type_id"/></div>
+                                <div groups="base.group_multi_company"><i class="fa fa-building" title="Branch"/><field name="company_id"/></div>
+                            </div>
+                            <footer>
+                                <span><i class="fa fa-calendar-check-o me-1" title="Bookings"/><field name="appointment_count"/> booking(s)</span>
+                            </footer>
                         </main>
                     </t>
                 </templates>
@@ -70,10 +139,16 @@
         <field name="arch" type="xml">
             <search string="Bays">
                 <field name="name"/>
-                <field name="bay_type"/>
+                <field name="bay_type_id"/>
+                <filter string="Free" name="free" domain="[('state', '=', 'free')]"/>
+                <filter string="Occupied" name="occupied" domain="[('state', '=', 'occupied')]"/>
+                <filter string="Maintenance" name="maintenance" domain="[('state', '=', 'maintenance')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group>
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
-                    <filter string="Bay Type" name="group_bay_type" context="{'group_by': 'bay_type'}"/>
+                    <filter string="Bay Type" name="group_bay_type" context="{'group_by': 'bay_type_id'}"/>
+                    <filter string="Branch" name="group_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
                 </group>
             </search>
         </field>

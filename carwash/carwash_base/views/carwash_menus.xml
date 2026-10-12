@@ -3,23 +3,25 @@
     <!--
         Car Wash app menu layout (other carwash_* modules plug into these sections):
           Dashboard          (carwash_dashboard)
-          Operations         Live Queue / All Bookings / New Booking
+          Operations         Live Queue / All Bookings
           Job Cards          (carwash_jobcard) Job Cards / Inspections
           Customers          Customers / Vehicles / Memberships (carwash_membership)
           Reporting          (carwash_jobcard) Wash Analysis / Employee Productivity / Revenue by Service
-          Configuration      Services / Service Packages / Checklist Templates / Bays / Membership Plans
+          Configuration      Settings, then sections: Services / Operations / Consumables / Staff / Customers
     -->
-    <menuitem id="menu_carwash_root" name="Car Wash" sequence="10"/>
+    <!-- only Car Wash staff see the app (carwash_jobcard adds the Washer and QC roles) -->
+    <menuitem id="menu_carwash_root" name="Car Wash" sequence="10" web_icon="carwash_base,static/description/icon.png"
+              groups="group_carwash_user"/>
 
     <menuitem id="menu_carwash_operations" name="Operations" parent="menu_carwash_root" sequence="10"/>
     <menuitem id="menu_carwash_queue" name="Live Queue" parent="menu_carwash_operations"
               action="action_carwash_appointment_queue" sequence="10"/>
     <menuitem id="menu_carwash_appointment_all" name="All Bookings" parent="menu_carwash_operations"
               action="action_carwash_appointment_all" sequence="20"/>
-    <menuitem id="menu_carwash_appointment_new" name="New Booking" parent="menu_carwash_operations"
-              action="action_carwash_appointment_new" groups="group_carwash_user" sequence="30"/>
 
-    <menuitem id="menu_carwash_customer_vehicle" name="Customers" parent="menu_carwash_root" sequence="30"/>
+    <!-- front desk and up: washers / QC inspectors only work on their own bookings and job cards -->
+    <menuitem id="menu_carwash_customer_vehicle" name="Customers" parent="menu_carwash_root" sequence="30"
+              groups="group_carwash_user"/>
     <menuitem id="menu_carwash_customer" name="Customers" parent="menu_carwash_customer_vehicle"
               action="contacts.action_contacts" sequence="10"/>
     <menuitem id="menu_carwash_vehicle" name="Vehicles" parent="menu_carwash_customer_vehicle"
@@ -29,8 +31,23 @@
 
     <menuitem id="menu_carwash_config" name="Configuration" parent="menu_carwash_root"
               groups="group_carwash_manager" sequence="90"/>
-    <menuitem id="menu_carwash_config_service" name="Services" parent="menu_carwash_config"
+    <menuitem id="menu_carwash_config_settings" name="Settings" parent="menu_carwash_config"
+              action="action_carwash_config_settings" groups="base.group_system" sequence="1"/>
+
+    <!-- Section headers of the Configuration menu; carwash_* modules put their entries under them -->
+    <menuitem id="menu_carwash_config_services_head" name="Services &amp; Booking" parent="menu_carwash_config" sequence="10"/>
+    <menuitem id="menu_carwash_config_operations_head" name="Operations" parent="menu_carwash_config" sequence="20"/>
+    <menuitem id="menu_carwash_config_staff_head" name="Staff" parent="menu_carwash_config" sequence="30"/>
+    <menuitem id="menu_carwash_config_customers_head" name="Customers" parent="menu_carwash_config" sequence="40"/>
+
+    <menuitem id="menu_carwash_config_service" name="Services" parent="menu_carwash_config_services_head"
               action="action_carwash_service" sequence="10"/>
-    <menuitem id="menu_carwash_bay" name="Bays" parent="menu_carwash_config"
-              action="action_carwash_bay" sequence="40"/>
+    <menuitem id="menu_carwash_time_slot" name="Time Slots" parent="menu_carwash_config_services_head"
+              action="action_carwash_time_slot" groups="group_carwash_time_slot" sequence="30"/>
+    <menuitem id="menu_carwash_config_vehicle_type" name="Vehicle Types" parent="menu_carwash_config_customers_head"
+              action="action_carwash_vehicle_type" sequence="5"/>
+    <menuitem id="menu_carwash_bay" name="Bays" parent="menu_carwash_config_operations_head"
+              action="action_carwash_bay" sequence="10"/>
+    <menuitem id="menu_carwash_config_bay_type" name="Bay Types" parent="menu_carwash_config_operations_head"
+              action="action_carwash_bay_type" sequence="11"/>
 </odoo>

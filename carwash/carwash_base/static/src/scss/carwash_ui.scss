@@ -1,0 +1,580 @@
+// =====================================================================================================================
+// Car Wash UI kit - shared look of the car wash list / form / kanban views (all carwash_* modules use these classes).
+//
+// Kanban:  <kanban class="o_cw_kanban"> and in the card:
+//          .o_cw_card_head (title + badge), .o_cw_card_title, .o_cw_card_sub, .o_cw_meta (icon rows), .o_cw_kpi,
+//          .o_cw_tile (icon tile instead of a photo), .o_cw_plate (number plate), .o_cw_token (token bubble),
+//          .o_cw_tone_<success|info|warning|danger|primary|muted> anywhere in the card = coloured left edge.
+// Form:    <form class="o_cw_form"> with an .o_cw_hero header in the sheet (tile / image + title + chips + KPIs).
+// Chips:   .o_cw_chip (soft pill), .o_cw_chip_<tone>.
+// =====================================================================================================================
+
+$cw-brand: #084b76;
+$cw-brand-2: #0077b6;
+$cw-sky: #00b4d8;
+$cw-deep: #0a2540;
+$cw-gradient: linear-gradient(135deg, $cw-brand 0%, $cw-brand-2 55%, $cw-sky 100%);
+$cw-tones: (
+    "primary": $cw-brand,
+    "info": #0096c7,
+    "success": #0f9d58,
+    "warning": #f0a202,
+    "danger": #d64545,
+    "muted": #98a2b3,
+);
+
+// ---------------------------------------------------------------- number plate / token / chips (used everywhere)
+.o_cw_plate {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 8px;
+    border: 1.5px solid $cw-deep;
+    border-radius: 5px;
+    background: #fffdf2;
+    color: $cw-deep;
+    font-family: $font-family-monospace;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.5;
+    font-size: 0.9em;
+}
+
+.o_cw_token {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.1rem;
+    height: 2.1rem;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: $cw-gradient;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    box-shadow: 0 4px 10px -6px rgba($cw-brand, 0.9);
+}
+
+.o_cw_chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 9px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba($cw-brand, 0.09);
+    color: $cw-brand;
+    white-space: nowrap;
+
+    @each $tone, $color in $cw-tones {
+        &.o_cw_chip_#{$tone} {
+            background: rgba($color, 0.12);
+            color: darken($color, 8%);
+        }
+    }
+}
+
+// icon tile (a record without a photo: bay, service, vehicle type...)
+.o_cw_tile {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: $cw-gradient;
+    color: #fff;
+    font-size: 1.45rem;
+    box-shadow: 0 8px 18px -12px rgba($cw-brand, 1);
+
+    &.o_cw_tile_sm {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        font-size: 1.05rem;
+    }
+
+    &.o_cw_tile_lg {
+        width: 84px;
+        height: 84px;
+        border-radius: 20px;
+        font-size: 2.3rem;
+    }
+
+    @each $tone, $color in $cw-tones {
+        &.o_cw_tile_#{$tone} {
+            background: linear-gradient(135deg, darken($color, 6%), lighten($color, 8%));
+        }
+    }
+}
+
+// ---------------------------------------------------------------- kanban
+.o_cw_kanban {
+    // space around and inside the cards (Odoo puts them almost edge to edge)
+    .o_kanban_renderer {
+        --KanbanRecord-margin-v: 20px; // ungrouped: 10px above + 10px below a card
+        --KanbanRecord-margin-h: 10px; // ungrouped: 20px between two cards side by side
+        --KanbanRecord-padding-v: 12px;
+        --KanbanRecord-padding-h: 14px;
+        --KanbanGroup-padding-h: 12px;
+    }
+
+    // grouped (by status...): Odoo stacks the cards with no gap, borders overlapping
+    .o_kanban_group .o_kanban_record:not(.o_kanban_ghost) {
+        margin: 0 0 14px;
+
+        &:first-of-type {
+            margin-top: 4px;
+        }
+    }
+
+    @include media-breakpoint-down(md) {
+        .o_kanban_ungrouped {
+            padding: 12px;
+
+            .o_kanban_record:not(.o_kanban_ghost) {
+                --KanbanRecord-border-width: 1px;
+                margin: 0 0 12px;
+            }
+        }
+    }
+
+    .o_kanban_record:not(.o_kanban_ghost) {
+        border-radius: 12px;
+        border: 1px solid rgba($cw-deep, 0.08);
+        box-shadow: 0 1px 2px rgba($cw-deep, 0.04), 0 6px 18px -14px rgba($cw-deep, 0.35);
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+        overflow: hidden;
+
+        &:hover {
+            box-shadow: 0 2px 4px rgba($cw-deep, 0.06), 0 14px 28px -16px rgba($cw-deep, 0.45);
+            transform: translateY(-1px);
+        }
+
+        // coloured left edge from an .o_cw_tone_* marker in the card
+        @each $tone, $color in $cw-tones {
+            &:has(.o_cw_tone_#{$tone}) {
+                box-shadow: inset 4px 0 0 $color, 0 1px 2px rgba($cw-deep, 0.04), 0 6px 18px -14px rgba($cw-deep, 0.35);
+            }
+        }
+    }
+
+    // the marker itself takes no room
+    [class*="o_cw_tone_"]:empty {
+        display: none;
+    }
+
+    .o_cw_card_head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .o_cw_card_title {
+        font-weight: 700;
+        font-size: 1.02rem;
+        color: $cw-deep;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .o_cw_card_sub {
+        color: $o-gray-600;
+        font-size: 0.85rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_cw_meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 6px 0 2px;
+        font-size: 0.85rem;
+        color: $o-gray-700;
+
+        > div,
+        > span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .fa {
+            width: 16px;
+            text-align: center;
+            color: $cw-brand-2;
+            flex: 0 0 16px;
+        }
+    }
+
+    .o_cw_meta .o_cw_customer {
+        font-weight: 600;
+        color: $cw-deep;
+    }
+
+    .o_cw_kpi {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: $cw-brand;
+        line-height: 1.2;
+    }
+
+    .o_cw_kpi_label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: $o-gray-500;
+    }
+
+    footer {
+        border-top: 1px dashed rgba($cw-deep, 0.1);
+        margin-top: 6px;
+        padding-top: 6px;
+        font-size: 0.82rem;
+        color: $o-gray-600;
+        align-items: center;
+    }
+
+    // grouped kanban: column headers in the brand colour
+    .o_kanban_group .o_kanban_header_title .o_column_title {
+        color: $cw-deep;
+        font-weight: 700;
+    }
+}
+
+// ---------------------------------------------------------------- forms
+.o_cw_form {
+    .o_form_sheet_bg > .o_form_sheet,
+    .o_form_sheet {
+        border-radius: 14px;
+    }
+
+    // hero header: tile / image + title + chips (+ KPIs on the right)
+    .o_cw_hero {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba($cw-deep, 0.08);
+
+        .oe_title {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0;
+
+            h1 {
+                margin-bottom: 4px;
+                color: $cw-deep;
+            }
+        }
+
+        .oe_avatar {
+            float: none;
+            margin: 0;
+            order: -1;
+        }
+
+        .o_cw_hero_chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .o_cw_hero_kpis {
+            display: flex;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+    }
+
+    .o_cw_hero_kpi {
+        min-width: 110px;
+        padding: 8px 14px;
+        border-radius: 12px;
+        background: rgba($cw-brand, 0.06);
+        border: 1px solid rgba($cw-brand, 0.12);
+        text-align: right;
+
+        .o_cw_hero_kpi_value {
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: $cw-brand;
+            line-height: 1.2;
+        }
+
+        .o_cw_hero_kpi_label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: $o-gray-600;
+        }
+    }
+
+    // titled groups read as sections
+    .o_inner_group > .o_horizontal_separator,
+    .o_group .o_horizontal_separator {
+        color: $cw-brand;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 2px solid rgba($cw-brand, 0.12);
+        padding-bottom: 4px;
+    }
+
+    .oe_button_box .oe_stat_button .o_button_icon {
+        color: $cw-brand-2;
+    }
+
+    @include media-breakpoint-down(md) {
+        .o_cw_hero {
+            flex-wrap: wrap;
+
+            .o_cw_hero_kpis {
+                width: 100%;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- status bars (every form)
+// A progress stepper: every step is a circle + its label, joined by a line to the next one - done (green, check),
+// current (filled, coloured by meaning), to come (grey ring). Applies to every form - car wash ones and Odoo's own
+// opened from Car Wash (quotations, invoices, bills, purchase orders, booking requests...).
+// It stretches over the space left next to the header buttons, or takes a full line of its own when that space is
+// too narrow - never folding steps into "..." (on phones Odoo keeps its single dropdown, styled as a pill).
+// Odoo lays the steps out right-to-left in the DOM (flex row-reverse): the steps AFTER the current one in the DOM
+// are the ones already done, and the first one in the DOM (.o_first) is the last step on screen.
+$cw-step-size: 22px;
+$cw-step-done: #0f9d58;
+
+@include media-breakpoint-up(md) {
+    .o_form_renderer .o_form_statusbar {
+        flex-wrap: wrap;
+        row-gap: 10px;
+        column-gap: 24px;
+
+        > .o_field_statusbar {
+            flex: 1 1 auto;
+            min-width: 0;
+
+            > .o_statusbar_status {
+                flex-wrap: nowrap; // its full width decides whether it needs its own line (never folded)
+                width: 100%;
+            }
+        }
+    }
+}
+
+.o_form_renderer .o_form_statusbar .o_field_statusbar > .o_statusbar_status {
+    align-items: center;
+    gap: 0;
+
+    // the "..." of folded steps (phones): a plain pill
+    > .o_arrow_button.dropdown-toggle:not(.d-none) {
+        clip-path: none;
+        margin-left: 0;
+        padding: 4px 12px;
+        border: 1px solid $o-gray-300;
+        border-radius: 999px;
+        background: $o-view-background-color;
+        color: $o-gray-600;
+        font-size: 0.8rem;
+        font-weight: 600;
+
+        &::before {
+            content: none;
+        }
+    }
+
+    > .o_arrow_button:not(.d-none):not(.dropdown-toggle) {
+        display: inline-flex;
+        flex: 1 1 auto;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        clip-path: none;
+        margin: 0;
+        padding: 4px 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: $o-gray-600 !important;
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+
+        // the step's circle (Odoo's arrow outline)
+        &::before {
+            content: "";
+            position: static;
+            inset: auto;
+            clip-path: none;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: $cw-step-size;
+            height: $cw-step-size;
+            border: 2px solid $o-gray-300;
+            border-radius: 50%;
+            background: $o-view-background-color;
+            // a small grey dot inside the ring
+            background-image: radial-gradient(circle, $o-gray-300 0 3px, transparent 3.5px);
+            transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        // the line to the next step (not after the last one)
+        &::after {
+            content: "";
+            flex: 1 1 24px;
+            min-width: 16px;
+            height: 2px;
+            margin: 0 6px 0 4px;
+            border-radius: 2px;
+            background: $o-gray-200;
+        }
+
+        &.o_first::after {
+            content: none;
+        }
+
+        &.o_first {
+            flex: 0 0 auto;
+        }
+
+        &:not(:disabled):hover {
+            color: $cw-brand !important;
+
+            &::before {
+                border-color: $cw-brand-2;
+            }
+        }
+
+        // the current step
+        &.o_arrow_button_current {
+            color: $cw-brand !important;
+            font-weight: 700;
+
+            &::before {
+                border-color: transparent;
+                background: $cw-gradient;
+                background-image: radial-gradient(circle, #ffffff 0 3.5px, transparent 4px), $cw-gradient;
+                box-shadow: 0 0 0 4px rgba($cw-brand, 0.15);
+            }
+
+            &[data-value="done"],
+            &[data-value="paid"],
+            &[data-value="issued"],
+            &[data-value="active"],
+            &[data-value="purchase"],
+            &[data-value="sale"],
+            &[data-value="posted"],
+            &[data-value="won"] {
+                color: darken($cw-step-done, 8%) !important;
+
+                &::before {
+                    background-image: radial-gradient(circle, #ffffff 0 3.5px, transparent 4px),
+                        linear-gradient(135deg, #0b8a4c, #2cb67d);
+                    box-shadow: 0 0 0 4px rgba($cw-step-done, 0.16);
+                }
+            }
+
+            &[data-value="qc"],
+            &[data-value="expired"],
+            &[data-value="to approve"] {
+                color: #a86400 !important;
+
+                &::before {
+                    background-image: radial-gradient(circle, #ffffff 0 3.5px, transparent 4px),
+                        linear-gradient(135deg, #d98e00, #f5b83d);
+                    box-shadow: 0 0 0 4px rgba(#f0a202, 0.18);
+                }
+            }
+
+            &[data-value="cancel"],
+            &[data-value="cancelled"],
+            &[data-value="no_show"],
+            &[data-value="rejected"],
+            &[data-value="refused"],
+            &[data-value="lost"] {
+                color: #b42318 !important;
+
+                &::before {
+                    background-image: radial-gradient(circle, #ffffff 0 3.5px, transparent 4px),
+                        linear-gradient(135deg, #c23b3b, #e86a6a);
+                    box-shadow: 0 0 0 4px rgba(#d64545, 0.16);
+                }
+            }
+        }
+
+        // the steps already done: green circle with a check, green line on to the next step
+        &.o_arrow_button_current ~ .o_arrow_button:not(.dropdown-toggle),
+        &.o_arrow_button_current ~ .o_arrow_button:not(.dropdown-toggle):disabled {
+            color: darken($cw-step-done, 6%) !important;
+
+            &::before {
+                content: "\f00c";
+                border-color: $cw-step-done;
+                background: $cw-step-done;
+                background-image: none;
+                color: #ffffff;
+                font-family: FontAwesome;
+                font-size: 0.66rem;
+                font-weight: normal;
+                line-height: 1;
+            }
+
+            &::after {
+                background: $cw-step-done;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- lists
+.o_list_renderer .o_list_table {
+    // a number plate column reads like one
+    td.o_cw_plate_cell {
+        font-family: $font-family-monospace;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: $cw-deep;
+    }
+}
+
+// ---------------------------------------------------------------- user form: Access Rights
+// A right the user has through another one (a role, a Car Wash feature) is shown as included: a plain solid tick
+// and a normal value, like the rights ticked by hand - not Odoo's outline tick / grey text, which read like empty
+// placeholders. Where it comes from: the (i) button next to it (developer mode). Conflicting rights stay red.
+.o_form_renderer .o_field_res_user_group_ids_privilege {
+    .o_is_implied:not(.o_is_disjoint) .o-checkbox > input {
+        border-color: $form-check-input-checked-border-color;
+        background-color: $form-check-input-checked-bg-color;
+        background-image: escape-svg($form-check-input-checked-bg-image) !important;
+    }
+
+    .o_is_implied:not(.o_is_disjoint) .o_select_menu {
+        input::placeholder {
+            color: $o-main-text-color;
+            opacity: 1;
+        }
+
+        .o_select_menu_toggler_slot .text-muted {
+            color: $o-main-text-color !important;
+        }
+    }
+}

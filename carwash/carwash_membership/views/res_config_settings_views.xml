@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_carwash_membership" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.carwash.membership</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="carwash_base.res_config_settings_view_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='carwash_customer_settings']" position="inside">
+                <setting id="carwash_memberships" string="Memberships"
+                         help="Membership plans with free washes and member prices (backend, booking requests, website and portal). Uses Odoo pricelists.">
+                    <field name="group_carwash_membership"/>
+                    <div class="mt8" invisible="not group_carwash_membership">
+                        <button name="%(action_carwash_membership_plan)d" type="action" string="Membership Plans"
+                                icon="oi-arrow-right" class="btn-link"/>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

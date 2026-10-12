@@ -1,0 +1,57 @@
+// =====================================================================================================================
+// Car Wash base views - small additions to the shared UI kit (carwash_ui.scss) for the booking / bay / config views.
+// =====================================================================================================================
+
+$cw-bv-deep: #0a2540;
+
+.o_cw_form {
+    // Booking form: the title block itself is the hero header (other modules anchor on
+    // //sheet/div[hasclass('oe_title')]), so the usual .oe_title width limit is lifted here.
+    .oe_title.o_cw_hero {
+        max-width: none;
+
+        .o_cw_hero_main {
+            flex: 1 1 auto;
+            min-width: 0;
+
+            h1 {
+                margin: 0 0 4px;
+                color: $cw-bv-deep;
+            }
+        }
+
+        // char / date fields in the chips keep their natural width (oe_title stretches them in edit mode)
+        .o_cw_hero_chips .o_field_widget {
+            width: auto;
+        }
+    }
+
+    // token number tile: small caption over the big number
+    .o_cw_tile.o_cw_tile_token {
+        align-content: center;
+        gap: 2px;
+
+        .o_cw_tile_caption {
+            font-size: 0.6rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        .o_cw_tile_number,
+        .o_cw_tile_number span {
+            color: inherit;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+    }
+
+    // "2 / 3" made of two fields in one KPI
+    .o_cw_hero_kpi .o_cw_kpi_part {
+        display: inline-block;
+        width: auto;
+    }
+}

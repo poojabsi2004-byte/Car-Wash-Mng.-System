@@ -1,6 +1,6 @@
 {
     "name": "Car Wash Interactive Dashboard",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.4.0",
     "license": "LGPL-3",
     "author": "Botspot Infoware",
     "maintainer": "Botspot Infoware",
@@ -28,5 +28,5 @@ ApexCharts (MIT licensed, vendored under static/src/js/lib).""",
     },
     "installable": True,
     "application": False,
-    "auto_install": False,
+    "auto_install": ["carwash_multibranch"],  # installed together with Car Wash (chain from carwash_base)
 }

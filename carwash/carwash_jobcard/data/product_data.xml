@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- The booking line that charges the extra consumables used on a job card (Consumption tab, Extra) -->
+    <record id="product_extra_consumables" model="product.product">
+        <field name="name">Extra Consumables</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="purchase_ok" eval="False"/>
+        <field name="default_code">CW-EXTRA</field>
+        <field name="description_sale">Consumables used on top of the services (car wash job card).</field>
+    </record>
+</odoo>

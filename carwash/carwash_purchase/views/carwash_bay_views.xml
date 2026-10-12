@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_bay_form_purchase" model="ir.ui.view">
+        <field name="name">carwash.bay.form.purchase</field>
+        <field name="model">carwash.bay</field>
+        <field name="inherit_id" ref="carwash_base.view_carwash_bay_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_carwash_order_repair" type="object" string="Order Repair / Parts" icon="fa-wrench"
+                        groups="purchase.group_purchase_user"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_carwash_view_purchases" type="object" class="oe_stat_button" icon="fa-wrench"
+                        groups="purchase.group_purchase_user">
+                    <div class="o_stat_info">
+                        <field name="carwash_currency_id" invisible="1"/>
+                        <span class="o_stat_value"><field name="carwash_maintenance_cost" widget="monetary" options="{'currency_field': 'carwash_currency_id'}"/></span>
+                        <span class="o_stat_text">Maintenance (<field name="carwash_purchase_count"/>)</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

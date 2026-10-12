@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_carwash_purchase" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.carwash.purchase</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="carwash_base.res_config_settings_view_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='carwash_operation_settings']" position="after">
+                <block title="Purchases" name="carwash_purchase_settings">
+                    <setting id="carwash_purchase" string="Purchases"
+                             help="RFQs and purchase orders, receipts, returns, vendor bills, payments and GST - for consumables, equipment and maintenance.">
+                        <field name="group_carwash_purchase"/>
+                        <div class="mt8" invisible="not group_carwash_purchase">
+                            <button name="%(action_carwash_purchase_product)d" type="action" string="Purchase Products" icon="oi-arrow-right" class="btn-link"/>
+                        </div>
+                    </setting>
+                    <setting id="carwash_purchase_approval" string="Purchase Approval" invisible="not group_carwash_purchase"
+                             company_dependent="1"
+                             help="Orders above the amount wait in To Approve when confirmed (whoever raised them) until a Car Wash Manager or the Owner clicks Approve Order. Saved on the main company it applies to all its branches.">
+                        <field name="po_order_approval"/>
+                        <div class="content-group" invisible="not po_order_approval">
+                            <field name="company_currency_id" invisible="1"/>
+                            <div class="row mt16">
+                                <label for="po_double_validation_amount" string="Approval above" class="col-lg-4 o_light_label"/>
+                                <field name="po_double_validation_amount"/>
+                            </div>
+                        </div>
+                    </setting>
+                    <setting id="carwash_auto_rfq" string="Automatic RFQs for Low Stock" invisible="not group_carwash_purchase"
+                             company_dependent="1"
+                             help="Off: the manager clicks Create RFQs for Low Stock (consumables / dashboard). On: when a consumable drops below its minimum at this branch, an RFQ to its preferred supplier is created right away (and by the daily scheduler).">
+                        <field name="carwash_auto_rfq"/>
+                    </setting>
+                    <setting id="carwash_gst" string="GST (India)" invisible="not group_carwash_purchase" company_dependent="1"
+                             help="Indian accounting for this branch: chart of accounts with GST (CGST + SGST within the state, IGST between states), rupees, and 18% GST on the car wash purchases.">
+                        <div class="content-group">
+                            <div class="row mt8">
+                                <label for="carwash_company_state_id" string="State" class="col-lg-4 o_light_label"/>
+                                <field name="carwash_company_state_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="carwash_company_gstin" string="GSTIN" class="col-lg-4 o_light_label"/>
+                                <field name="carwash_company_gstin" placeholder="e.g. 24AAACC1206D1ZM"/>
+                            </div>
+                            <div class="mt8">
+                                <span invisible="not carwash_gst_ready" class="text-success">
+                                    <i class="fa fa-check-circle"/> GST accounting is set up for this branch.
+                                </span>
+                                <button name="action_carwash_setup_gst" type="object" string="Set Up GST Accounting" icon="fa-cogs"
+                                        class="btn-secondary" invisible="carwash_gst_ready" groups="base.group_system"
+                                        confirm="Load the Indian chart of accounts with GST for this branch and switch it to rupees (INR)? This is possible only while the branch has no accounting entries."/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

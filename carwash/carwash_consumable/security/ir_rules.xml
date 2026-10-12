@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Branch isolation (global): requests of the branches the user works in -->
+    <record id="carwash_consumable_request_rule_branch" model="ir.rule">
+        <field name="name">Consumable Request: Branch Isolation</field>
+        <field name="model_id" ref="model_carwash_consumable_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="carwash_consumable_request_line_rule_branch" model="ir.rule">
+        <field name="name">Consumable Request Line: Branch Isolation</field>
+        <field name="model_id" ref="model_carwash_consumable_request_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Washers / QC see their own requests; Front Desk and Managers the whole branch -->
+    <record id="carwash_consumable_request_rule_own" model="ir.rule">
+        <field name="name">Consumable Request: own (washer / QC)</field>
+        <field name="model_id" ref="model_carwash_consumable_request"/>
+        <field name="domain_force">['|', ('requested_by_id', '=', user.id), ('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('carwash_jobcard.group_carwash_washer')), (4, ref('carwash_jobcard.group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_consumable_request_rule_all" model="ir.rule">
+        <field name="name">Consumable Request: all of the branch (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_consumable_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+</odoo>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ actions -->
+    <record id="action_report_carwash_purchase_order" model="ir.actions.report">
+        <field name="name">Purchase Order</field>
+        <field name="model">purchase.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_purchase.report_carwash_purchase_order</field>
+        <field name="report_file">carwash_purchase.report_carwash_purchase_order</field>
+        <field name="print_report_name">('Purchase Order - %s' % object.name) if object.state in ('purchase', 'done') else ('Request for Quotation - %s' % object.name)</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_carwash_rfq" model="ir.actions.report">
+        <field name="name">Request for Quotation</field>
+        <field name="model">purchase.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_purchase.report_carwash_rfq</field>
+        <field name="report_file">carwash_purchase.report_carwash_rfq</field>
+        <field name="print_report_name">'Request for Quotation - %s' % object.name</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- the car wash printouts replace the standard ones (Print menu, emails to the supplier) -->
+    <record id="purchase.action_report_purchase_order" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="purchase.report_purchase_quotation" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="purchase.email_template_edi_purchase" model="mail.template">
+        <field name="report_template_ids" eval="[(6, 0, [ref('action_report_carwash_rfq')])]"/>
+    </record>
+    <record id="purchase.email_template_edi_purchase_done" model="mail.template">
+        <field name="report_template_ids" eval="[(6, 0, [ref('action_report_carwash_purchase_order')])]"/>
+    </record>
+    <record id="purchase.email_template_edi_purchase_reminder" model="mail.template">
+        <field name="report_template_ids" eval="[(6, 0, [ref('action_report_carwash_purchase_order')])]"/>
+    </record>
+
+    <!-- ============================================================ document -->
+    <template id="report_carwash_purchase_order_page">
+        <t t-call="carwash_base.carwash_external_layout">
+            <t t-set="is_rfq" t-value="cw_rfq or o.state in ('draft', 'sent', 'to approve')"/>
+            <t t-set="state_label" t-value="dict(o._fields['state']._description_selection(o.env))[o.state]"/>
+            <t t-set="branch" t-value="o.company_id"/>
+            <t t-set="ship_to" t-value="o.picking_type_id.warehouse_id.partner_id or branch.partner_id"/>
+            <t t-set="lines" t-value="o.order_line.filtered(lambda l: l.display_type or l.product_qty)"/>
+            <div class="page o_cw_report">
+                <table class="o_cw_title">
+                    <tr>
+                        <td>
+                            <h2 t-esc="'Request for Quotation' if is_rfq else 'Purchase Order'"/>
+                            <div class="o_cw_ref" t-esc="o.name"/>
+                            <div class="o_cw_sub">
+                                <t t-if="is_rfq">Please quote your best price and delivery date for the items below.</t>
+                                <t t-else="">Please supply the items below to <t t-esc="branch.name"/>.</t>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <span t-attf-class="o_cw_badge {{'o_cw_badge_ok' if o.state in ('purchase', 'done') else 'o_cw_badge_bad' if o.state == 'cancel' else 'o_cw_badge_warn' if o.state == 'to approve' else ''}}"
+                                  t-esc="state_label"/>
+                        </td>
+                    </tr>
+                </table>
+
+                <table class="o_cw_boxes">
+                    <tr>
+                        <td>
+                            <h6>Supplier</h6>
+                            <div class="o_cw_big" t-esc="o.partner_id.commercial_partner_id.name"/>
+                            <div t-if="o.partner_id.parent_id" t-esc="o.partner_id.name"/>
+                            <div class="text-muted small"
+                                 t-esc="', '.join(filter(None, [o.partner_id.street, o.partner_id.street2, o.partner_id.city, o.partner_id.state_id.name, o.partner_id.zip]))"/>
+                            <div t-if="o.partner_id.commercial_partner_id.vat">GSTIN: <strong t-esc="o.partner_id.commercial_partner_id.vat"/></div>
+                            <div t-if="o.partner_id.phone" t-esc="o.partner_id.phone"/>
+                            <div t-if="o.partner_id.email" t-esc="o.partner_id.email"/>
+                        </td>
+                        <td>
+                            <h6>Deliver To</h6>
+                            <div class="o_cw_big" t-esc="branch.name"/>
+                            <div class="text-muted small"
+                                 t-esc="', '.join(filter(None, [ship_to.street, ship_to.street2, ship_to.city, ship_to.state_id.name, ship_to.zip]))"/>
+                            <div t-if="branch.vat">GSTIN: <strong t-esc="branch.vat"/></div>
+                            <div t-if="branch.state_id" class="text-muted small">Place of supply: <t t-esc="branch.state_id.name"/></div>
+                        </td>
+                        <td>
+                            <h6><t t-if="is_rfq">Quotation</t><t t-else="">Order</t></h6>
+                            <table class="o_cw_kv">
+                                <tr><td>Date</td><td t-esc="o.date_order and o.date_order.strftime('%d %b, %y')"/></tr>
+                                <tr t-if="o.date_planned"><td>Expected</td><td t-esc="o.date_planned.strftime('%d %b, %y')"/></tr>
+                                <tr t-if="o.user_id"><td>Buyer</td><td t-esc="o.user_id.name"/></tr>
+                                <tr t-if="o.partner_ref"><td>Your ref.</td><td t-esc="o.partner_ref"/></tr>
+                                <tr t-if="o.payment_term_id and not is_rfq"><td>Payment</td><td t-esc="o.payment_term_id.name"/></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <h5 class="o_cw_section">Items</h5>
+                <table class="o_cw_table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">#</th>
+                            <th>Product</th>
+                            <th style="width: 11%">HSN / SAC</th>
+                            <th style="width: 12%" class="text-end">Quantity</th>
+                            <t t-if="is_rfq">
+                                <th style="width: 16%" class="text-end">Needed By</th>
+                            </t>
+                            <t t-else="">
+                                <th style="width: 12%" class="text-end">Unit Price</th>
+                                <th style="width: 13%" class="text-end">GST</th>
+                                <th style="width: 14%" class="text-end">Amount</th>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="line_no" t-value="0"/>
+                        <t t-foreach="lines" t-as="line">
+                            <tr t-if="line.display_type in ('line_section', 'line_subsection')">
+                                <td colspan="99"><strong t-esc="line.name"/></td>
+                            </tr>
+                            <tr t-elif="line.display_type == 'line_note'">
+                                <td colspan="99" class="fst-italic" t-esc="line.name"/>
+                            </tr>
+                            <tr t-else="">
+                                <t t-set="line_no" t-value="line_no + 1"/>
+                                <td t-esc="line_no"/>
+                                <td>
+                                    <strong t-esc="line.product_id.display_name"/>
+                                    <span t-if="line.name and line.name != line.product_id.display_name" class="o_cw_note" t-esc="line.name"/>
+                                </td>
+                                <td t-esc="line.product_id.l10n_in_hsn_code or ''"/>
+                                <td class="text-end"><t t-esc="'%g' % line.product_qty"/> <t t-esc="line.product_uom_id.name"/></td>
+                                <t t-if="is_rfq">
+                                    <td class="text-end" t-esc="line.date_planned and line.date_planned.strftime('%d %b, %y')"/>
+                                </t>
+                                <t t-else="">
+                                    <td class="text-end" t-esc="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    <td class="text-end" t-esc="', '.join(tax.tax_label or tax.name for tax in line.tax_ids)"/>
+                                    <td class="text-end" t-esc="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                </t>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+
+                <table t-if="not is_rfq" class="o_cw_totals" name="totals">
+                    <t t-call="purchase.document_tax_totals">
+                        <t t-set="tax_totals" t-value="o.tax_totals"/>
+                        <t t-set="currency" t-value="o.currency_id"/>
+                    </t>
+                </table>
+
+                <div t-if="not is_html_empty(o.note)" class="o_cw_callout">
+                    <strong>Notes:</strong> <span t-field="o.note"/>
+                </div>
+                <div t-if="is_rfq" class="o_cw_callout">
+                    Please send your quotation with prices, GST and delivery date, quoting <strong t-esc="o.name"/>.
+                </div>
+
+                <table class="o_cw_signatures">
+                    <tr>
+                        <td><div class="o_cw_sign_line"/>Prepared by<t t-if="o.user_id"> - <t t-esc="o.user_id.name"/></t></td>
+                        <td t-if="not is_rfq"><div class="o_cw_sign_line"/>Approved by (Manager / Owner)</td>
+                        <td><div class="o_cw_sign_line"/>Supplier</td>
+                    </tr>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_carwash_purchase_order">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="cw_rfq" t-value="False"/>
+                <t t-call="carwash_purchase.report_carwash_purchase_order_page" t-lang="o.partner_id.lang"/>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_carwash_rfq">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="cw_rfq" t-value="True"/>
+                <t t-call="carwash_purchase.report_carwash_purchase_order_page" t-lang="o.partner_id.lang"/>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Standard bay types (editable / extendable in Configuration > Operations > Bay Types) -->
+    <record id="bay_type_hand" model="carwash.bay.type">
+        <field name="name">Hand Wash</field><field name="code">hand</field><field name="sequence">10</field><field name="icon">fa-hand-paper-o</field>
+    </record>
+    <record id="bay_type_tunnel" model="carwash.bay.type">
+        <field name="name">Tunnel</field><field name="code">tunnel</field><field name="sequence">20</field><field name="icon">fa-road</field>
+    </record>
+    <record id="bay_type_detail" model="carwash.bay.type">
+        <field name="name">Detailing</field><field name="code">detail</field><field name="sequence">30</field><field name="icon">fa-diamond</field>
+    </record>
+</odoo>

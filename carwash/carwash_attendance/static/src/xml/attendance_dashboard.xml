@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- "Staff Attendance" at the end of the Car Wash dashboard (managers / owner) -->
+  <t t-name="carwash_attendance.Dashboard" t-inherit="carwash_dashboard.Dashboard" t-inherit-mode="extension">
+    <!-- "My Attendance": the logged-in staff member checks in / out (staff, QC, front desk...) -->
+    <xpath expr="//div[hasclass('o_cwd_banner_row')]" position="before">
+      <section t-if="d.my_attendance" class="o_cwd_card o_cwd_span_12 o_cwa_me" style="--cw-i:0"
+               t-att-class="d.my_attendance.checked_in ? 'o_cwa_me_on' : ''">
+        <t t-set="me" t-value="d.my_attendance"/>
+        <span class="o_cwa_me_icon"><i t-att-class="'fa ' + (me.checked_in ? 'fa-user-circle' : 'fa-user-circle-o')"/></span>
+        <div class="o_cwa_me_text">
+          <h3>My Attendance</h3>
+          <p t-if="me.no_employee">Your user isn't linked to an employee yet - ask a manager to add you as staff
+            (Staff › New Staff Member), then check in here.</p>
+          <p t-elif="me.checked_in">Checked in since <strong t-esc="me.since"/> · <t t-esc="me.today"/> today</p>
+          <p t-else="">Not checked in<t t-if="me.today != '0h 00m'"> · <t t-esc="me.today"/> today</t></p>
+        </div>
+        <div t-if="me.recent.length" class="o_cwa_me_recent">
+          <span t-foreach="me.recent" t-as="shift" t-key="shift.id" class="o_cwa_me_shift"
+                t-att-title="shift.day + ': ' + shift.check_in + ' - ' + shift.check_out">
+            <b t-esc="shift.day"/> <t t-esc="shift.check_in"/>-<t t-esc="shift.check_out"/> · <t t-esc="shift.hours"/>
+          </span>
+          <button class="o_cwa_link" t-on-click="openMyAttendance">All <i class="fa fa-long-arrow-right"/></button>
+        </div>
+        <button t-if="!me.no_employee" class="o_cwd_btn o_cwa_me_btn" t-att-class="me.checked_in ? 'o_cwa_me_btn_out' : 'o_cwd_btn_primary'"
+                t-att-disabled="state.attendanceBusy" t-on-click="checkInOut">
+          <i t-att-class="'fa ' + (me.checked_in ? 'fa-sign-out' : 'fa-sign-in')"/>
+          <t t-esc="me.checked_in ? 'Check Out' : 'Check In'"/>
+        </button>
+      </section>
+    </xpath>
+    <xpath expr="//footer[hasclass('o_cwd_footer')]" position="before">
+      <div t-if="d.attendance" class="o_cwd_grid">
+        <t t-set="att" t-value="d.attendance"/>
+        <section class="o_cwd_card o_cwd_span_12 o_cwa" style="--cw-i:8">
+          <header class="o_cwd_card_head">
+            <div>
+              <h3><i class="fa fa-id-badge"/> Staff Attendance</h3>
+              <p>Today at <t t-esc="d.company_name"/> · who is checked in right now</p>
+            </div>
+            <div class="o_cwa_actions">
+              <div t-if="att.present.length gt attendanceVisible" class="o_cwa_nav">
+                <button class="o_cwa_arrow" title="Previous" aria-label="Previous staff" t-on-click="() => this.scrollAttendance(-1)">
+                  <i class="fa fa-chevron-left"/>
+                </button>
+                <button class="o_cwa_arrow" title="Next" aria-label="Next staff" t-on-click="() => this.scrollAttendance(1)">
+                  <i class="fa fa-chevron-right"/>
+                </button>
+              </div>
+              <button class="o_cwa_link" t-on-click="openAttendances">All attendances <i class="fa fa-long-arrow-right"/></button>
+            </div>
+          </header>
+
+          <div class="o_cwa_stats">
+            <button class="o_cwa_stat o_cwa_stat_in" t-on-click="openCheckedIn">
+              <strong t-esc="att.counts.present"/><span>Checked in</span>
+            </button>
+            <div class="o_cwa_stat o_cwa_stat_out">
+              <strong t-esc="att.counts.checked_out"/><span>Checked out</span>
+            </div>
+            <div class="o_cwa_stat o_cwa_stat_absent">
+              <strong t-esc="att.counts.absent"/><span>Not in today</span>
+            </div>
+            <div class="o_cwa_stat">
+              <strong><t t-esc="att.hours_today"/>h</strong><span>Worked today</span>
+            </div>
+          </div>
+
+          <div t-if="att.present.length" class="o_cwa_track" t-ref="attendanceTrack"
+               t-att-class="att.present.length gt attendanceVisible ? 'o_cwa_track_more' : ''">
+            <div t-foreach="att.present" t-as="p" t-key="p.attendance_id" class="o_cwa_card"
+                 t-att-style="stagger(p_index)" t-att-title="'Open ' + p.name"
+                 t-on-click="() => this.openRecord('hr.employee', p.id)">
+              <div class="o_cwa_card_top">
+                <span class="o_cwa_avatar" t-esc="p.initials"/>
+                <span class="o_cwa_live" title="Checked in"><span/></span>
+              </div>
+              <strong class="o_cwa_name" t-esc="p.name"/>
+              <span class="o_cwa_role" t-esc="p.roles or '—'"/>
+              <div class="o_cwa_time">
+                <i class="fa fa-sign-in"/> <t t-esc="p.check_in"/><t t-if="p.since_yesterday"> (yesterday)</t>
+                <span class="o_cwa_dur" t-esc="p.duration"/>
+              </div>
+              <span t-if="p.branch" class="o_cwa_branch"><i class="fa fa-map-marker"/> <t t-esc="p.branch"/></span>
+            </div>
+          </div>
+          <div t-else="" class="o_cwd_empty">
+            <i class="fa fa-moon-o"/>
+            <span>Nobody is checked in right now</span>
+          </div>
+        </section>
+      </div>
+    </xpath>
+  </t>
+</templates>

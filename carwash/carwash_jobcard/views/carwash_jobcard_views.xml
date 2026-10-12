@@ -4,13 +4,14 @@
         <field name="name">carwash.jobcard.form</field>
         <field name="model">carwash.jobcard</field>
         <field name="arch" type="xml">
-            <form string="Job Card">
+            <form string="Job Card" class="o_cw_form">
                 <header>
                     <button name="action_start" type="object" string="Start"
                             class="btn-primary" invisible="stages != 'draft'"
                             groups="carwash_jobcard.group_carwash_washer,carwash_base.group_carwash_manager"/>
+                    <field name="services_ended" invisible="1"/>
                     <button name="action_submit_qc" type="object" string="Submit for QC"
-                            class="btn-primary" invisible="stages != 'in_progress'"
+                            class="btn-primary" invisible="stages != 'in_progress' or not services_ended"
                             groups="carwash_jobcard.group_carwash_washer,carwash_base.group_carwash_manager"/>
                     <button name="action_qc_pass" type="object" string="QC Pass"
                             class="btn-primary" invisible="stages != 'qc'"
@@ -21,49 +22,237 @@
                     <button name="action_cancel" type="object" string="Cancel"
                             invisible="stages not in ('draft', 'in_progress')"
                             groups="carwash_base.group_carwash_manager"/>
+                    <!-- QC passed and the booking's service ended (End Service): the admin takes the customer's
+                         payment and pays the staff and the QC -->
+                    <field name="booking_payment_state" invisible="1"/>
+                    <field name="staff_to_pay" invisible="1"/>
+                    <field name="qc_to_pay" invisible="1"/>
+                    <button name="action_customer_payment" type="object" string="Customer Payment" icon="fa-money"
+                            class="btn-primary" invisible="stages != 'done' or booking_state not in ('ready', 'done') or booking_payment_state == 'paid'"
+                            groups="carwash_base.group_carwash_manager"
+                            help="Take the customer's payment for the booking - the invoice is created first when needed."/>
+                    <button name="action_pay_staff" type="object" string="Pay Staff" icon="fa-users"
+                            invisible="stages != 'done' or booking_state not in ('ready', 'done') or not staff_to_pay" groups="carwash_base.group_carwash_manager"
+                            help="Pay the crew: their bill is created when needed, then the payment (Cash by default)."/>
+                    <button name="action_pay_qc" type="object" string="Pay QC" icon="fa-check-square-o"
+                            invisible="stages != 'done' or booking_state not in ('ready', 'done') or not qc_to_pay" groups="carwash_base.group_carwash_manager"
+                            help="Pay the QC inspector: the bill is created when needed, then the payment (Cash by default)."/>
+                    <!-- the booking has services that are on no job card yet -->
+                    <field name="unassigned_service_count" invisible="1"/>
+                    <button name="action_create_remaining_jobcard" type="object" string="Create Job Card" icon="fa-plus"
+                            class="btn-secondary" invisible="not unassigned_service_count"
+                            groups="carwash_base.group_carwash_manager"
+                            help="The booking has services that aren't on any job card yet - create a job card for them."/>
+                    <button name="action_print_jobcard" type="object" string="Print Job Card" icon="fa-print"
+                            invisible="stages == 'cancel'"/>
+                    <button name="action_print_quality_check" type="object" string="Print QC Report" icon="fa-print"
+                            invisible="stages not in ('qc', 'done')"/>
                     <field name="stages" widget="statusbar" statusbar_visible="draft,in_progress,qc,done"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_task" type="object" class="oe_stat_button" icon="fa-tasks"
-                                invisible="not task_id">
+                        <button name="action_view_booking" type="object" class="oe_stat_button" icon="fa-calendar-check-o"
+                                invisible="not appointment_id" help="Open the booking of this job card.">
                             <div class="o_stat_info">
-                                <span class="o_stat_text">Time Tracking</span>
+                                <span class="o_stat_value"><field name="appointment_id" readonly="1" options="{'no_open': True}"/></span>
+                                <span class="o_stat_text">Booking</span>
+                            </div>
+                        </button>
+                        <button name="action_view_task" type="object" class="oe_stat_button" icon="fa-clock-o"
+                                invisible="not task_id" help="The staff timesheet of this job card: the time logged per staff member.">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="timesheet_hours" widget="float_time"/> Hours</span>
+                                <span class="o_stat_text">Staff Timesheet</span>
                             </div>
                         </button>
                     </div>
-                    <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-danger" invisible="stages != 'cancel'"/>
+                    <div class="o_cw_hero">
+                        <!-- the tile follows the stage -->
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_muted" invisible="stages != 'draft'">
+                            <i class="fa fa-clipboard" title="New"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_info" invisible="stages != 'in_progress'">
+                            <i class="fa fa-tint" title="In Progress"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="stages != 'qc'">
+                            <i class="fa fa-search" title="Quality Check"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_success" invisible="stages != 'done'">
+                            <i class="fa fa-check" title="Completed"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_danger" invisible="stages != 'cancel'">
+                            <i class="fa fa-ban" title="Cancelled"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="name" string="Job Card"/>
+                            <h1><field name="name" readonly="1"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip" invisible="not appointment_id">
+                                    <i class="fa fa-calendar-check-o" title="Booking"/>
+                                    <field name="appointment_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip" invisible="not vehicle_id">
+                                    <i class="fa fa-car" title="Vehicle"/>
+                                    <field name="vehicle_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip" invisible="not customer_id">
+                                    <i class="fa fa-user" title="Customer"/>
+                                    <field name="customer_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_info" invisible="not bay_id">
+                                    <i class="fa fa-map-marker" title="Bay"/>
+                                    <field name="bay_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_warning" invisible="not rework_count">
+                                    <i class="fa fa-repeat" title="Reworks"/>Sent back for rework
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi" invisible="not checklist_line_ids">
+                                <div class="o_cw_hero_kpi_value"><field name="checklist_progress"/>%</div>
+                                <span class="o_cw_hero_kpi_label">Tasks Done</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not rework_count">
+                                <field name="rework_count" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Reworks</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not commission_ids" groups="carwash_base.group_carwash_manager">
+                                <field name="commission_total" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Staff Payable</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mb-3" role="status" invisible="stages != 'in_progress' or services_ended">
+                        <i class="fa fa-info-circle me-1" title="Info"/>End every service on the <b>Services</b> tab to submit this job card for QC.
                     </div>
                     <group>
-                        <group>
+                        <group string="Booking" name="booking">
                             <field name="appointment_id"/>
-                            <field name="customer_id" readonly="1"/>
+                            <field name="customer_id" readonly="1" widget="many2one_avatar"/>
                             <field name="vehicle_id" readonly="1"/>
                             <field name="bay_id" readonly="1"/>
                         </group>
-                        <group>
-                            <field name="assigned_employee_ids" widget="many2many_avatar_employee"/>
+                        <group string="Crew" name="crew">
+                            <!-- the staff lists only offer staff of the job card's branch -->
+                            <field name="company_id" invisible="1"/>
+                            <!-- both are needed before the work starts -->
+                            <field name="assigned_employee_ids" widget="many2many_avatar_employee"
+                                   readonly="stages in ('done', 'cancel')" required="stages in ('draft', 'in_progress', 'qc')"
+                                   options="{'no_create': True}"/>
+                            <field name="qc_inspector_id" widget="many2one_avatar_employee" options="{'no_create': True}"
+                                   readonly="stages in ('done', 'cancel')" required="stages in ('draft', 'in_progress', 'qc')"
+                                   placeholder="Assign the QC inspector"/>
                             <field name="start_time" readonly="1"/>
                             <field name="end_time" readonly="1"/>
-                            <field name="qc_inspector_id" readonly="1" widget="many2one_avatar_employee"/>
+                            <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
                     <notebook>
+                        <page string="Services" name="services">
+                            <field name="taken_service_line_ids" invisible="1"/>
+                            <field name="service_line_ids" invisible="1"/>
+                            <field name="jobcard_service_ids" readonly="stages in ('done', 'cancel')">
+                                <list editable="bottom" decoration-muted="service_state == 'done'">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="appointment_line_id" options="{'no_create': True, 'no_open': True}"
+                                           readonly="appointment_line_id and service_state not in (False, 'pending')" force_save="1"
+                                           domain="[('appointment_id', '=', parent.appointment_id), ('is_discount_line', '=', False), ('jobcard_consumption_id', '=', False),
+                                                    ('id', 'not in', parent.taken_service_line_ids), ('id', 'not in', parent.service_line_ids)]"
+                                           placeholder="Pick a service of the booking"/>
+                                    <field name="package_id" widget="badge" optional="show"/>
+                                    <field name="quantity"/>
+                                    <field name="service_state" widget="badge"
+                                           decoration-info="service_state == 'in_progress'" decoration-success="service_state == 'done'"/>
+                                    <field name="start_time" optional="show"/>
+                                    <field name="end_time" optional="show"/>
+                                    <field name="actual_duration" optional="show"/>
+                                    <field name="appointment_state" column_invisible="1"/>
+                                    <button name="action_start_line" type="object" string="Start" icon="fa-play"
+                                            class="btn-link text-success"
+                                            invisible="service_state != 'pending' or appointment_state != 'in_service'"/>
+                                    <button name="action_end_line" type="object" string="End" icon="fa-stop"
+                                            class="btn-link text-danger" invisible="service_state != 'in_progress'"/>
+                                </list>
+                            </field>
+                            <div class="text-muted small mt-2">
+                                <i class="fa fa-info-circle me-1" title="Info"/>A service is on one job card only. <b>Add a line</b> and pick the
+                                service: the list offers the booking's services that no other job card covers yet. Remove a
+                                service here to move it to another job card.
+                            </div>
+                        </page>
                         <page string="Tasks" name="tasks">
-                            <field name="checklist_template_id"/>
-                            <label for="checklist_progress" string="Progress"/>
-                            <field name="checklist_progress" widget="progressbar"/>
+                            <group>
+                                <group>
+                                    <field name="checklist_template_id"/>
+                                </group>
+                                <group>
+                                    <label for="checklist_progress" string="Progress"/>
+                                    <field name="checklist_progress" widget="progressbar" nolabel="1"/>
+                                </group>
+                            </group>
                             <field name="checklist_line_ids">
-                                <list editable="bottom">
+                                <list editable="bottom" decoration-muted="is_check">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
-                                    <field name="is_check"/>
+                                    <!-- a toggle, like the booking / inspection checklists: one click ticks the task -->
+                                    <field name="is_check" widget="boolean_toggle"/>
                                 </list>
                             </field>
                         </page>
+                        <page string="Consumption" name="consumption">
+                            <field name="booking_state" invisible="1"/>
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+                                <span class="text-muted small">
+                                    <i class="fa fa-cubes me-1" title="Consumables"/>Products used on this job card, filled in from the services' consumables. Adjust the
+                                    quantities or <b>Add a line</b> for anything else used - also once the job card is
+                                    completed. A line you add is <b>Extra</b>: its amount is charged to the customer
+                                    (added to the booking total). They are booked out of stock when the booking is
+                                    completed; a line added after that is booked out right away.
+                                </span>
+                                <button name="action_reload_consumption" type="object" string="Load from Services"
+                                        icon="fa-refresh" class="btn-secondary btn-sm text-nowrap"
+                                        invisible="stages == 'cancel' or booking_state == 'done'"
+                                        confirm="Replace the lines by the consumables of this job card's services?"/>
+                            </div>
+                            <field name="consumption_line_ids" readonly="stages == 'cancel'" context="{'default_is_extra': True}">
+                                <list editable="bottom" decoration-muted="booked_out" decoration-info="is_extra and not booked_out">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" options="{'no_create': True}" readonly="booked_out"/>
+                                    <field name="service_id" options="{'no_create': True}" optional="show" readonly="booked_out"/>
+                                    <field name="quantity" readonly="booked_out"/>
+                                    <field name="uom_id" string="Unit"/>
+                                    <field name="is_extra" string="Extra" widget="boolean_toggle" readonly="booked_out"/>
+                                    <field name="price_unit" invisible="not is_extra" readonly="booked_out"/>
+                                    <field name="amount" invisible="not is_extra" sum="Extra Charged"/>
+                                    <field name="booked_out" readonly="1" optional="show"/>
+                                </list>
+                            </field>
+                            <div class="d-flex justify-content-end align-items-baseline gap-2 mt-2" invisible="not consumption_extra_amount">
+                                <span class="text-muted">Extra consumables charged on the booking:</span>
+                                <field name="consumption_extra_amount" class="fw-bold"/>
+                            </div>
+                        </page>
                         <page string="Quality Check" name="qc">
                             <field name="qc_notes" placeholder="QC notes / rework reason..."/>
+                        </page>
+                        <page string="Staff Payable" name="commission" invisible="not commission_ids"
+                              groups="carwash_base.group_carwash_manager">
+                            <field name="commission_ids" readonly="1">
+                                <list>
+                                    <field name="employee_id" widget="many2one_avatar_employee"/>
+                                    <field name="payable_role" widget="badge" decoration-info="payable_role == 'qc'"/>
+                                    <field name="commission_type"/>
+                                    <field name="base_amount"/>
+                                    <field name="rate"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="state" widget="badge" decoration-warning="state == 'to_pay'"
+                                           decoration-success="state == 'paid'"/>
+                                    <field name="bill_id" optional="show"/>
+                                </list>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>
@@ -76,16 +265,24 @@
         <field name="name">carwash.jobcard.list</field>
         <field name="model">carwash.jobcard</field>
         <field name="arch" type="xml">
-            <list string="Job Cards">
-                <field name="name"/>
-                <field name="customer_id"/>
-                <field name="vehicle_id"/>
+            <list string="Job Cards" sample="1" decoration-muted="stages == 'cancel'">
+                <field name="name" class="fw-bold"/>
+                <field name="appointment_id" optional="show"/>
+                <field name="vehicle_id" class="o_cw_plate_cell"/>
+                <field name="customer_id" widget="many2one_avatar"/>
+                <field name="bay_id" optional="hide"/>
                 <field name="assigned_employee_ids" widget="many2many_avatar_employee"/>
+                <field name="qc_inspector_id" widget="many2one_avatar_employee" optional="hide"/>
+                <field name="start_time" optional="hide"/>
+                <field name="end_time" optional="hide"/>
+                <field name="rework_count" optional="hide"/>
                 <field name="checklist_progress" widget="progressbar"/>
+                <field name="company_id" string="Branch" optional="hide" groups="base.group_multi_company"/>
                 <field name="stages" widget="badge"
+                       decoration-info="stages == 'in_progress'"
+                       decoration-warning="stages == 'qc'"
                        decoration-success="stages == 'done'"
-                       decoration-danger="stages == 'cancel'"
-                       decoration-info="stages in ('in_progress', 'qc')"/>
+                       decoration-danger="stages == 'cancel'"/>
             </list>
         </field>
     </record>
@@ -94,36 +291,57 @@
         <field name="name">carwash.jobcard.kanban</field>
         <field name="model">carwash.jobcard</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="stages" class="o_kanban_small_column">
+            <kanban default_group_by="stages" class="o_kanban_small_column o_cw_kanban" sample="1" quick_create="false">
                 <field name="stages"/>
+                <field name="company_id"/>
                 <field name="checklist_progress"/>
+                <field name="vehicle_id"/>
+                <field name="bay_id"/>
+                <field name="rework_count"/>
+                <field name="start_time"/>
+                <progressbar field="stages"
+                             colors='{"draft": "200", "in_progress": "info", "qc": "warning", "done": "success", "cancel": "danger"}'/>
                 <templates>
                     <t t-name="card">
-                        <main t-att-class="'border-start border-4 ps-2 ' + (stages == 'cancel' ? 'opacity-50 border-danger' :
-                            stages == 'in_progress' ? 'border-info' :
-                            stages == 'qc' ? 'border-warning' :
-                            stages == 'done' ? 'border-success' :
-                            'border-secondary'
-                        )">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <strong><field name="name"/></strong>
-                                <div class="d-flex align-items-center gap-1">
-                                    <i t-att-class="'fa fa-fw text-muted ' + (
-                                        stages == 'in_progress' ? 'fa-wrench' :
-                                        stages == 'qc' ? 'fa-search' :
-                                        stages == 'done' ? 'fa-check' :
-                                        stages == 'cancel' ? 'fa-ban' :
-                                        'fa-file-o'
-                                    )" t-att-title="stages"/>
-                                    <field name="stages" widget="label_selection"
-                                           options="{'classes': {'draft': 'default', 'in_progress': 'info', 'qc': 'warning', 'done': 'success', 'cancel': 'danger'}}"/>
+                        <!-- coloured left edge by stage -->
+                        <span t-att-class="{
+                            'o_cw_tone_muted': record.stages.raw_value == 'draft',
+                            'o_cw_tone_info': record.stages.raw_value == 'in_progress',
+                            'o_cw_tone_warning': record.stages.raw_value == 'qc',
+                            'o_cw_tone_success': record.stages.raw_value == 'done',
+                            'o_cw_tone_danger': record.stages.raw_value == 'cancel'
+                        }"/>
+                        <main t-att-class="record.stages.raw_value == 'cancel' ? 'opacity-50' : ''">
+                            <div class="o_cw_card_head">
+                                <div class="min-w-0">
+                                    <field name="name" class="o_cw_card_title"/>
+                                    <div class="o_cw_card_sub"><field name="appointment_id"/></div>
                                 </div>
+                                <field name="stages" widget="badge" class="small text-nowrap"
+                                       decoration-info="stages == 'in_progress'"
+                                       decoration-warning="stages == 'qc'"
+                                       decoration-success="stages == 'done'"
+                                       decoration-danger="stages == 'cancel'"/>
                             </div>
-                            <field name="vehicle_id"/>
-                            <field name="customer_id"/>
-                            <field name="assigned_employee_ids" widget="many2many_avatar_employee"/>
-                            <field name="checklist_progress" widget="progressbar"
+                            <div class="o_cw_meta">
+                                <div t-if="record.vehicle_id.raw_value">
+                                    <i class="fa fa-car" title="Vehicle"/><field name="vehicle_id" class="o_cw_plate"/>
+                                </div>
+                                <div><i class="fa fa-user" title="Customer"/><field name="customer_id"/></div>
+                                <div t-if="record.bay_id.raw_value"><i class="fa fa-map-marker" title="Bay"/><field name="bay_id"/></div>
+                            </div>
+                            <field name="checklist_progress" widget="progressbar" title="Tasks"
                                    invisible="stages in ('draft', 'cancel')"/>
+                            <footer>
+                                <span t-if="record.rework_count.raw_value" class="o_cw_chip o_cw_chip_warning">
+                                    <i class="fa fa-repeat" title="Reworks"/><field name="rework_count"/> rework(s)
+                                </span>
+                                <span t-elif="record.start_time.raw_value" class="text-nowrap">
+                                    <i class="fa fa-clock-o me-1" title="Started"/><field name="start_time" widget="datetime"/>
+                                </span>
+                                <field name="assigned_employee_ids" widget="many2many_avatar_employee" class="ms-auto"
+                                       readonly="stages in ('done', 'cancel')" options="{'no_create': True}"/>
+                            </footer>
                         </main>
                     </t>
                 </templates>
@@ -137,13 +355,28 @@
         <field name="arch" type="xml">
             <search string="Job Cards">
                 <field name="name"/>
+                <field name="appointment_id"/>
                 <field name="vehicle_id"/>
                 <field name="customer_id"/>
                 <field name="assigned_employee_ids"/>
+                <field name="qc_inspector_id"/>
                 <filter string="Open" name="open" domain="[('stages', 'not in', ('done', 'cancel'))]"/>
+                <filter string="My Job Cards" name="my_jobcards" domain="[('assigned_employee_ids.user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="New" name="stage_draft" domain="[('stages', '=', 'draft')]"/>
+                <filter string="In Progress" name="stage_in_progress" domain="[('stages', '=', 'in_progress')]"/>
+                <filter string="Quality Check" name="stage_qc" domain="[('stages', '=', 'qc')]"/>
+                <filter string="Completed" name="stage_done" domain="[('stages', '=', 'done')]"/>
+                <separator/>
+                <filter string="Sent Back for Rework" name="reworked" domain="[('rework_count', '&gt;', 0)]"/>
+                <separator/>
+                <filter string="Started" name="filter_start_time" date="start_time"/>
                 <group>
                     <filter string="Status" name="group_stages" context="{'group_by': 'stages'}"/>
                     <filter string="Staff" name="group_employee" context="{'group_by': 'assigned_employee_ids'}"/>
+                    <filter string="QC Inspector" name="group_qc_inspector" context="{'group_by': 'qc_inspector_id'}"/>
+                    <filter string="Bay" name="group_bay" context="{'group_by': 'bay_id'}"/>
+                    <filter string="Start Date" name="group_start_date" context="{'group_by': 'start_time:day'}"/>
                 </group>
             </search>
         </field>

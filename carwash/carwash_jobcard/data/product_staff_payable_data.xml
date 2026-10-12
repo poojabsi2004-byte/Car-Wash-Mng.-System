@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Billed by the staff member when their staff payable is paid out (Pay Staff / Mark as Paid) -->
+        <record id="product_staff_payable" model="product.product">
+            <field name="name">Staff Payable</field>
+            <field name="default_code">CW-STAFF-PAY</field>
+            <field name="type">service</field>
+            <field name="sale_ok" eval="False"/>
+            <field name="purchase_ok" eval="True"/>
+            <field name="list_price">0.0</field>
+            <field name="standard_price">0.0</field>
+            <field name="taxes_id" eval="[(5, 0, 0)]"/>
+            <field name="supplier_taxes_id" eval="[(5, 0, 0)]"/>
+            <field name="description">Amount paid to a car wash staff member for their work on job cards.</field>
+        </record>
+    </data>
+</odoo>

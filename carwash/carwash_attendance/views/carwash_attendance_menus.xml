@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- every car wash user with the feature on: managers see everyone (filter "My Attendances" for their own),
+         staff / QC / front desk only their own shifts -->
+    <menuitem id="menu_carwash_my_attendance" name="Attendance" parent="carwash_base.menu_carwash_root"
+              action="action_carwash_my_attendance" groups="group_carwash_attendance" sequence="25"/>
+
+    <menuitem id="menu_carwash_staff_attendance" name="Attendance" parent="carwash_jobcard.menu_carwash_staff_section"
+              action="action_carwash_attendance" groups="group_carwash_attendance" sequence="15"/>
+
+    <!-- Configuration > Staff > Attendance (everyone's attendance, by branch) -->
+    <menuitem id="menu_carwash_config_attendance" name="Attendance" parent="carwash_base.menu_carwash_config_staff_head"
+              action="action_carwash_attendance" groups="group_carwash_attendance" sequence="20"/>
+</odoo>

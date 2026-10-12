@@ -5,15 +5,14 @@ class ProductTemplate(models.Model):
     _inherit = "product.template"
 
     is_carwash_service = fields.Boolean(string="Car Wash Service", default=False)
-    carwash_duration = fields.Float(string="Estimated Duration (hours)", default=0.5)
-    carwash_bay_type = fields.Selection(
-        [
-            ("any", "Any Bay"),
-            ("hand", "Hand Wash"),
-            ("tunnel", "Tunnel"),
-            ("detail", "Detailing"),
-        ],
-        default="any",
+    carwash_duration = fields.Float(
+        string="Estimated Service Time", default=0.5,
+        help="How long the service takes (hours:minutes). It sets the booking's length, its time slot and the "
+        "calendar, and is compared with the actual time taken on the job card.",
+    )
+    carwash_bay_type_id = fields.Many2one(
+        "carwash.bay.type", string="Bay Type Needed", ondelete="set null",
+        help="Kind of bay this service is done in. Leave empty when any bay will do.",
     )
     carwash_material_line_ids = fields.One2many(
         "carwash.service.material.line", "product_tmpl_id", string="Consumables / Materials"

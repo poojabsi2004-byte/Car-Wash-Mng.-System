@@ -4,8 +4,9 @@ from odoo.exceptions import UserError
 
 class CrmLead(models.Model):
     _name = "crm.lead"
-    _inherit = ["crm.lead", "carwash.checklist.mixin"]
-    _checklist_type = "lead"
+    _inherit = ["crm.lead", "carwash.booking.slot.mixin"]
+    _slot_datetime_field = "carwash_booking_date"
+    _slot_bay_field = "carwash_bay_id"
 
     is_carwash_booking = fields.Boolean(string="Car Wash Booking", index=True)
     carwash_booking_date = fields.Datetime(string="Requested Date")
@@ -29,10 +30,16 @@ class CrmLead(models.Model):
     carwash_vehicle_id = fields.Many2one(
         "carwash.vehicle", string="Vehicle", domain="[('customer_id', '=', partner_id)]"
     )
+    carwash_partner_has_vehicle = fields.Boolean(
+        compute="_compute_carwash_partner_has_vehicle",
+        help="The customer already has a vehicle - otherwise (first booking) the vehicle is entered by its plate.",
+    )
     carwash_license_plate = fields.Char(string="Licence Plate")
     carwash_vehicle_make = fields.Char(string="Make")
     carwash_vehicle_model = fields.Char(string="Model")
-    carwash_vehicle_type = fields.Selection(selection="_selection_carwash_vehicle_type", string="Vehicle Type", default="sedan")
+    carwash_vehicle_type_id = fields.Many2one(
+        "carwash.vehicle.type", string="Vehicle Type", default=lambda self: self.env["carwash.vehicle.type"]._default_type(),
+    )
     carwash_bay_id = fields.Many2one("carwash.bay", string="Preferred Bay", domain="[('company_id', '=', company_id)]")
     carwash_use_membership = fields.Boolean(
         string="Use Membership", help="Apply the customer's active membership (free covered services / member discount)."
@@ -45,15 +52,30 @@ class CrmLead(models.Model):
     carwash_member_amount = fields.Float(compute="_compute_carwash_member_amount", string="Member Price")
     carwash_member_saving = fields.Float(compute="_compute_carwash_member_amount", string="Member Saving")
     carwash_appointment_id = fields.Many2one("carwash.appointment", string="Booking", readonly=True, copy=False)
-    checklist_line_ids = fields.One2many("carwash.checklist.line", "lead_id", string="Request Checklist")
+    carwash_duration = fields.Float(compute="_compute_carwash_duration", string="Duration (hours)",
+                                    help="Package + extra services - the length shown in the calendar.")
     carwash_appointment_state = fields.Selection(related="carwash_appointment_id.state", string="Booking Status")
 
-    def _checklist_needs_auto_apply(self):
-        return self.is_carwash_booking
+    @api.depends("partner_id")
+    def _compute_carwash_partner_has_vehicle(self):
+        partners = self.partner_id
+        counts = dict(self.env["carwash.vehicle"]._read_group(
+            [("customer_id", "in", partners.ids)], ["customer_id"], ["__count"]
+        )) if partners else {}
+        for lead in self:
+            lead.carwash_partner_has_vehicle = bool(counts.get(lead.partner_id))
 
-    @api.model
-    def _selection_carwash_vehicle_type(self):
-        return self.env["carwash.vehicle"]._fields["vehicle_type"].selection
+    @api.depends("carwash_package_id", "carwash_service_ids")
+    def _compute_carwash_duration(self):
+        for lead in self:
+            lead.carwash_duration = lead._slot_duration()
+
+    def _slot_duration(self):
+        extras = self._carwash_extra_services()
+        return (self.carwash_package_id.duration + sum(extras.mapped("carwash_duration"))) or 0.5
+
+    def _slot_extra_depends(self):
+        return ["carwash_package_id", "carwash_service_ids"]
 
     @api.onchange("carwash_vehicle_id")
     def _onchange_carwash_vehicle_id(self):
@@ -62,7 +84,7 @@ class CrmLead(models.Model):
             lead.carwash_license_plate = vehicle.license_plate
             lead.carwash_vehicle_make = vehicle.make
             lead.carwash_vehicle_model = vehicle.vehicle_model
-            lead.carwash_vehicle_type = vehicle.vehicle_type
+            lead.carwash_vehicle_type_id = vehicle.vehicle_type_id
 
     @api.depends("partner_id")
     def _compute_carwash_membership_id(self):
@@ -140,9 +162,12 @@ class CrmLead(models.Model):
                 "company_id": company.id,
                 "make": self.carwash_vehicle_make or "",
                 "vehicle_model": self.carwash_vehicle_model or "",
-                "vehicle_type": self.carwash_vehicle_type or "sedan",
+                "vehicle_type_id": (self.carwash_vehicle_type_id or Vehicle.vehicle_type_id._default_type()).id,
             }
         )
+
+    def action_print_carwash_request(self):
+        return self.env.ref("carwash_crm.action_report_carwash_booking_request").report_action(self, config=False)
 
     def action_confirm_carwash_booking(self):
         """Confirm the request: create + confirm the booking, mark the lead Won, link both."""
@@ -155,7 +180,12 @@ class CrmLead(models.Model):
             raise UserError(self.env._("Add a package or at least one requested service before confirming."))
         if not self.carwash_booking_date:
             raise UserError(self.env._("Set the requested date and time before confirming."))
-        self._check_checklist_complete(self.env._("confirm the booking"))
+        # a bay picked on the request must be free when the request is confirmed
+        busy = self.env["carwash.appointment"]._carwash_bay_busy_reason(self.carwash_bay_id)
+        if busy:
+            raise UserError(self.env._(
+                "%s Pick a free bay on the request, or clear Preferred Bay to have a free one assigned.", busy
+            ))
 
         if not self.partner_id:
             # sudo: confirming a request must be able to register a brand-new customer even
@@ -170,7 +200,8 @@ class CrmLead(models.Model):
         extras = self._carwash_extra_services()
         duration = (self.carwash_package_id.duration + sum(extras.mapped("carwash_duration"))) or 0.5
         bay = self.carwash_bay_id or Appointment._carwash_find_free_bay(company, self.carwash_booking_date, duration)
-        appointment = Appointment.create(
+        # the package's services are added right after creating the booking
+        appointment = Appointment.with_context(carwash_services_pending=True).create(
             {
                 "customer_id": partner.id,
                 "vehicle_id": vehicle.id,
@@ -180,7 +211,7 @@ class CrmLead(models.Model):
                 "lead_id": self.id,
                 "line_ids": [(0, 0, {"product_id": service.id, "quantity": 1}) for service in extras],
             }
-        )
+        ).with_context(carwash_services_pending=False)
         if self.carwash_package_id:
             appointment._apply_service_package(self.carwash_package_id)
         if self.carwash_use_membership:

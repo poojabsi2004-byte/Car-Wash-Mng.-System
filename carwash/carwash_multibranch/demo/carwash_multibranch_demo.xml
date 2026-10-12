@@ -1,70 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
 
-    <record id="demo_company_downtown" model="res.company">
-        <field name="name">Downtown Branch</field>
-    </record>
-
-    <record id="demo_warehouse_downtown" model="stock.warehouse">
-        <field name="name">Downtown Branch</field>
-        <field name="code">DTB</field>
-        <field name="company_id" ref="demo_company_downtown"/>
-        <field name="partner_id" model="res.company" eval="obj(ref('demo_company_downtown')).partner_id.id"/>
-    </record>
-
-    <record id="demo_bay_downtown_1" model="carwash.bay">
-        <field name="name">DT Bay 1</field>
-        <field name="bay_type">hand</field>
-        <field name="company_id" ref="demo_company_downtown"/>
-    </record>
-    <record id="demo_bay_downtown_2" model="carwash.bay">
-        <field name="name">DT Bay 2</field>
-        <field name="bay_type">tunnel</field>
-        <field name="company_id" ref="demo_company_downtown"/>
-    </record>
-
-    <record id="demo_customer_downtown" model="res.partner">
+    <!-- ============================================================ a customer and a booking at a branch -->
+    <record id="demo_customer_satellite" model="res.partner">
         <field name="name">Marcus Tan</field>
         <field name="email">marcus.tan@example.com</field>
-        <field name="company_id" ref="demo_company_downtown"/>
+        <field name="company_id" ref="demo_company_satellite"/>
     </record>
-    <record id="demo_vehicle_downtown" model="carwash.vehicle">
-        <field name="license_plate">SGD1122F</field>
-        <field name="customer_id" ref="demo_customer_downtown"/>
+    <record id="demo_vehicle_satellite" model="carwash.vehicle">
+        <field name="license_plate">GJ01AB1122</field>
+        <field name="customer_id" ref="demo_customer_satellite"/>
         <field name="make">Kia</field>
         <field name="vehicle_model">Sportage</field>
-        <field name="vehicle_type">suv</field>
+        <field name="vehicle_type_id" ref="carwash_base.vehicle_type_suv"/>
         <field name="color">Blue</field>
-        <field name="company_id" ref="demo_company_downtown"/>
+        <field name="company_id" ref="demo_company_satellite"/>
     </record>
-
-    <record id="demo_appointment_downtown_1" model="carwash.appointment">
-        <field name="customer_id" ref="demo_customer_downtown"/>
-        <field name="vehicle_id" ref="demo_vehicle_downtown"/>
-        <field name="company_id" ref="demo_company_downtown"/>
-        <field name="bay_id" ref="demo_bay_downtown_1"/>
+    <record id="demo_appointment_satellite_1" model="carwash.appointment">
+        <field name="customer_id" ref="demo_customer_satellite"/>
+        <field name="vehicle_id" ref="demo_vehicle_satellite"/>
+        <field name="company_id" ref="demo_company_satellite"/>
+        <field name="bay_id" ref="demo_bay_satellite_1"/>
         <field name="line_ids" model="product.product" eval="[
             (0, 0, {'product_id': obj().env.ref('carwash_base.demo_service_premium').product_variant_id.id, 'quantity': 1}),
         ]"/>
     </record>
-    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_downtown_1')]]"/>
-    <function model="carwash.appointment" name="action_arrive" eval="[[ref('demo_appointment_downtown_1')]]"/>
+    <function model="carwash.appointment" name="action_confirm" eval="[[ref('demo_appointment_satellite_1')]]"/>
+    <function model="carwash.appointment" name="action_arrive" eval="[[ref('demo_appointment_satellite_1')]]"/>
 
+    <!-- ============================================================ users -->
     <record id="demo_user_owner" model="res.users">
         <field name="name">Owner Account</field>
         <field name="login">owner@carwash.example.com</field>
         <field name="email">owner@carwash.example.com</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="company_ids" eval="[(6, 0, [ref('base.main_company'), ref('demo_company_downtown')])]"/>
+        <field name="company_ids" eval="[(6, 0, [ref('base.main_company'), ref('demo_company_satellite'),
+                                                 ref('demo_company_navrangpura'), ref('demo_company_sg_highway'),
+                                                 ref('demo_company_maninagar'), ref('demo_company_vastrapur')])]"/>
         <field name="group_ids" eval="[(4, ref('group_carwash_owner'))]"/>
     </record>
 
-    <record id="demo_user_downtown_manager" model="res.users">
-        <field name="name">Downtown Branch Manager</field>
-        <field name="login">downtown.manager@carwash.example.com</field>
-        <field name="email">downtown.manager@carwash.example.com</field>
-        <field name="company_id" ref="demo_company_downtown"/>
-        <field name="company_ids" eval="[(6, 0, [ref('demo_company_downtown')])]"/>
+    <record id="demo_user_satellite_manager" model="res.users">
+        <field name="name">Satellite Branch Manager</field>
+        <field name="login">satellite.manager@carwash.example.com</field>
+        <field name="email">satellite.manager@carwash.example.com</field>
+        <field name="company_id" ref="demo_company_satellite"/>
+        <field name="company_ids" eval="[(6, 0, [ref('demo_company_satellite')])]"/>
         <field name="group_ids" eval="[(4, ref('carwash_base.group_carwash_manager'))]"/>
     </record>
 

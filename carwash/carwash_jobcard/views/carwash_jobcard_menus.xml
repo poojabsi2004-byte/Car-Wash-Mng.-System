@@ -1,10 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Washers and QC inspectors use the Car Wash app too (the root menu is limited to Car Wash staff) -->
+    <record id="carwash_base.menu_carwash_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(4, ref('carwash_jobcard.group_carwash_washer')), (4, ref('carwash_jobcard.group_carwash_qc'))]"/>
+    </record>
     <menuitem id="menu_carwash_jobcard_section" name="Job Cards" parent="carwash_base.menu_carwash_root" sequence="20"/>
     <menuitem id="menu_carwash_jobcard" name="Job Cards" parent="menu_carwash_jobcard_section"
               action="action_carwash_jobcard" sequence="10"/>
     <menuitem id="menu_carwash_inspection" name="Inspections" parent="menu_carwash_jobcard_section"
-              action="action_carwash_inspection" sequence="20"/>
+              action="action_carwash_inspection" groups="carwash_jobcard.group_carwash_inspection" sequence="20"/>
+
+    <menuitem id="menu_carwash_staff_section" name="Staff" parent="carwash_base.menu_carwash_root" sequence="35"
+              groups="carwash_base.group_carwash_manager"/>
+    <menuitem id="menu_carwash_staff" name="Staff" parent="menu_carwash_staff_section"
+              action="action_carwash_staff" sequence="10"/>
+    <menuitem id="menu_carwash_staff_new" name="New Staff Member" parent="menu_carwash_staff_section"
+              action="action_carwash_staff_new" sequence="11"/>
+    <menuitem id="menu_carwash_staff_commission" name="Staff Payables" parent="menu_carwash_staff_section"
+              action="action_carwash_staff_commission" sequence="20"
+              groups="-carwash_base.group_carwash_manager,carwash_jobcard.group_carwash_commission"/>
+
+    <!-- Configuration > Customers -->
+    <menuitem id="menu_carwash_rating" name="Reviews &amp; Ratings" parent="carwash_base.menu_carwash_config_customers_head"
+              action="action_carwash_rating" groups="carwash_jobcard.group_carwash_rating" sequence="30"/>
 
     <menuitem id="menu_carwash_dashboard_overview" name="Wash Analysis" parent="carwash_base.menu_carwash_reporting"
               action="action_carwash_dashboard" sequence="10"/>
@@ -14,10 +32,15 @@
               action="action_carwash_revenue_by_service" groups="carwash_base.group_carwash_manager" sequence="30"/>
 
     <menuitem id="menu_carwash_config_service_package" name="Service Packages"
-              parent="carwash_base.menu_carwash_config" action="action_carwash_service_package" sequence="20"/>
+              parent="carwash_base.menu_carwash_config_services_head" action="action_carwash_service_package" groups="carwash_jobcard.group_carwash_package" sequence="20"/>
+    <menuitem id="menu_carwash_config_checklist_type" name="Checklist Types"
+              parent="carwash_base.menu_carwash_config_operations_head" action="action_carwash_checklist_type" sequence="19"/>
     <menuitem id="menu_carwash_config_checklist_template" name="Checklist Templates"
-              parent="carwash_base.menu_carwash_config" action="action_carwash_checklist_template" sequence="30"/>
+              parent="carwash_base.menu_carwash_config_operations_head" action="action_carwash_checklist_template" sequence="20"/>
+
+    <menuitem id="menu_carwash_config_staff_role" name="Staff Roles"
+              parent="carwash_base.menu_carwash_config_staff_head" action="action_carwash_staff_role" sequence="10"/>
 
     <menuitem id="menu_carwash_config_inspection_type" name="Inspection Types"
-              parent="carwash_base.menu_carwash_config" action="action_carwash_inspection_type" sequence="35"/>
+              parent="carwash_base.menu_carwash_config_operations_head" action="action_carwash_inspection_type" groups="carwash_jobcard.group_carwash_inspection" sequence="30"/>
 </odoo>

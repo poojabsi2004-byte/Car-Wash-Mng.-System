@@ -14,6 +14,9 @@ import {
     useState,
 } from "@odoo/owl";
 
+/** Axis label for counts - ApexCharts may hand over non-finite values for empty series. */
+const countLabel = (v) => (Number.isFinite(v) ? Math.round(v) : "");
+
 const AUTO_REFRESH_MS = 60000;
 const THEME_KEY = "carwash_dashboard_theme";
 
@@ -133,6 +136,7 @@ export class CarwashDashboard extends Component {
         }));
         this.state = useState({
             data: null,
+            calendar: null,
             period: "week",
             customFrom: "",
             customTo: "",
@@ -141,17 +145,6 @@ export class CarwashDashboard extends Component {
             theme: readStoredTheme(),
             clock: this.currentClock(),
             globalSearch: "",
-            search: {
-                pipeline: "",
-                bays: "",
-                jobcards: "",
-                services: "",
-                products: "",
-                recent: "",
-                branches: "",
-                staff: "",
-                memberships: "",
-            },
         });
         this.formatMoney = this.formatMoney.bind(this);
         this.formatPercent = (v) => `${Math.round(v)}%`;
@@ -169,10 +162,13 @@ export class CarwashDashboard extends Component {
         this.chartsDirty = true;
         this.onKeydown = this.onKeydown.bind(this);
 
-        onWillStart(() => this.fetchData());
+        onWillStart(() => Promise.all([this.fetchData(), this.fetchCalendar()]));
         onMounted(() => {
             this.renderCharts();
-            this.refreshTimer = setInterval(() => this.fetchData(), AUTO_REFRESH_MS);
+            this.refreshTimer = setInterval(() => {
+                this.fetchData();
+                this.fetchCalendar(this.state.calendar && this.state.calendar.start);
+            }, AUTO_REFRESH_MS);
             this.clockTimer = setInterval(() => (this.state.clock = this.currentClock()), 15000);
             document.addEventListener("keydown", this.onKeydown);
         });
@@ -208,6 +204,51 @@ export class CarwashDashboard extends Component {
         }
     }
 
+    // ------------------------------------------------------------------
+    // Booking calendar (a week of bookings + open booking requests)
+    // ------------------------------------------------------------------
+    async fetchCalendar(start = false) {
+        this.state.calendar = await this.orm.call("carwash.dashboard", "get_calendar_data", [start || false]);
+    }
+
+    shiftCalendar(weeks) {
+        const day = new Date(`${this.state.calendar.start}T00:00:00`);
+        day.setDate(day.getDate() + 7 * weeks);
+        const pad = (n) => String(n).padStart(2, "0");
+        this.fetchCalendar(`${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`);
+    }
+
+    get calendarDays() {
+        const keys = ["name", "plate", "customer", "bay", "services", "state_label"];
+        return (this.state.calendar ? this.state.calendar.days : []).map((day) => ({
+            ...day,
+            bookings: this.filterList(day.bookings, keys),
+            requests: this.filterList(day.requests, keys),
+        }));
+    }
+
+    get calendarMatchCount() {
+        return this.calendarDays.reduce((sum, day) => sum + day.bookings.length + day.requests.length, 0);
+    }
+
+    openFullCalendar(date) {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            name: "Booking Calendar",
+            res_model: "carwash.appointment",
+            views: [[false, "calendar"], [false, "list"], [false, "form"]],
+            domain: [["state", "not in", ["cancelled", "no_show"]]],
+            context: { initial_date: date || this.state.calendar.start },
+        });
+    }
+
+    openRequestCalendar() {
+        this.actionService.doAction("carwash_crm.action_carwash_booking_requests", {
+            viewType: "calendar",
+            additionalContext: { initial_date: this.state.calendar.start, search_default_carwash_to_confirm: 0 },
+        });
+    }
+
     async setPeriod(period) {
         this.state.period = period;
         if (period !== "custom") {
@@ -232,7 +273,7 @@ export class CarwashDashboard extends Component {
     }
 
     // ------------------------------------------------------------------
-    // Search - every card has its own box; the hero search narrows all cards.
+    // Search - one box at the top narrows every card.
     // ------------------------------------------------------------------
     onKeydown(ev) {
         const target = ev.target;
@@ -243,18 +284,12 @@ export class CarwashDashboard extends Component {
         }
     }
 
-    clearSearch(key) {
-        if (key === "global") {
-            this.state.globalSearch = "";
-        } else {
-            this.state.search[key] = "";
-        }
+    clearSearch() {
+        this.state.globalSearch = "";
     }
 
-    matches(item, keys, cardKey) {
-        const terms = [this.state.globalSearch, this.state.search[cardKey]]
-            .map((t) => (t || "").trim().toLowerCase())
-            .filter(Boolean);
+    matches(item, keys) {
+        const terms = (this.state.globalSearch || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
         if (!terms.length) {
             return true;
         }
@@ -266,15 +301,14 @@ export class CarwashDashboard extends Component {
         return terms.every((term) => haystack.includes(term));
     }
 
-    filterList(list, keys, cardKey) {
-        return (list || []).filter((item) => this.matches(item, keys, cardKey));
+    filterList(list, keys) {
+        return (list || []).filter((item) => this.matches(item, keys));
     }
 
     pipelineCards(stage) {
         return this.filterList(
             this.state.data.pipeline[stage],
-            ["plate", "customer", "vehicle", "services", "bay", "name", "token"],
-            "pipeline"
+            ["plate", "customer", "vehicle", "services", "bay", "name", "token"]
         );
     }
 
@@ -293,8 +327,7 @@ export class CarwashDashboard extends Component {
                     customer: bay.current && bay.current.customer,
                     next: bay.next && bay.next.plate,
                 },
-                ["name", "type", "state", "plate", "customer", "next"],
-                "bays"
+                ["name", "type", "state", "plate", "customer", "next"]
             )
         );
     }
@@ -302,33 +335,39 @@ export class CarwashDashboard extends Component {
     get filteredJobcards() {
         return this.filterList(
             (this.state.data.jobcards || []).map((j) => ({ ...j, staffNames: j.staff.map((s) => s.name).join(" ") })),
-            ["name", "plate", "customer", "bay", "stage_label", "staffNames"],
-            "jobcards"
+            ["name", "plate", "customer", "bay", "stage_label", "staffNames"]
         );
     }
 
     get filteredServices() {
-        return this.filterList(this.state.data.top_services, ["name"], "services");
+        return this.filterList(this.state.data.top_services, ["name"]);
     }
 
     get filteredProducts() {
-        return this.filterList(this.state.data.top_products, ["name", "uom"], "products");
+        return this.filterList(this.state.data.top_products, ["name", "uom"]);
+    }
+
+    get filteredRequests() {
+        return this.filterList(
+            this.state.data.booking_requests && this.state.data.booking_requests.items,
+            ["name", "customer", "phone", "plate", "services", "requested"]
+        );
     }
 
     get filteredRecent() {
-        return this.filterList(this.state.data.recent_done, ["name", "plate", "customer", "services"], "recent");
+        return this.filterList(this.state.data.recent_done, ["name", "plate", "customer", "services"]);
     }
 
     get filteredBranches() {
-        return this.filterList(this.state.data.branch_breakdown, ["name"], "branches");
+        return this.filterList(this.state.data.branch_breakdown, ["name"]);
     }
 
     get filteredStaff() {
-        return this.filterList(this.state.data.staff_leaderboard, ["name"], "staff");
+        return this.filterList(this.state.data.staff_leaderboard, ["name"]);
     }
 
     get filteredMemberships() {
-        return this.filterList(this.state.data.memberships, ["name", "customer", "plan", "next_billing"], "memberships");
+        return this.filterList(this.state.data.memberships, ["name", "customer", "plan", "next_billing"]);
     }
 
     get maxServiceRevenue() {
@@ -454,7 +493,13 @@ export class CarwashDashboard extends Component {
                 ...base,
                 series: [{ name: "Vehicles", data: data.hourly_load.values }],
                 xaxis: { categories: data.hourly_load.labels, labels: { rotate: 0, hideOverlappingLabels: true } },
-                yaxis: { labels: { formatter: (v) => Math.round(v) }, forceNiceScale: true, min: 0 },
+                // all-zero series: give the axis a fixed top, otherwise the nice scale ends up at "Infinity"
+                yaxis: {
+                    labels: { formatter: countLabel },
+                    forceNiceScale: true,
+                    min: 0,
+                    ...(Math.max(0, ...data.hourly_load.values) > 0 ? {} : { max: 1, tickAmount: 1 }),
+                },
                 plotOptions: { bar: { borderRadius: 6, columnWidth: "55%" } },
                 fill: {
                     type: "gradient",
@@ -483,7 +528,13 @@ export class CarwashDashboard extends Component {
                 xaxis: { categories: data.revenue_trend.labels, labels: { hideOverlappingLabels: true } },
                 yaxis: [
                     { labels: { formatter: (v) => this.formatMoney(v) } },
-                    { opposite: true, labels: { formatter: (v) => Math.round(v) }, min: 0, forceNiceScale: true },
+                    {
+                        opposite: true,
+                        labels: { formatter: countLabel },
+                        min: 0,
+                        forceNiceScale: true,
+                        ...(Math.max(0, ...data.revenue_trend.washes) > 0 ? {} : { max: 1, tickAmount: 1 }),
+                    },
                 ],
                 legend: { ...base.legend, position: "top", horizontalAlign: "right" },
                 markers: { size: 0, hover: { size: 5 } },
@@ -554,6 +605,16 @@ export class CarwashDashboard extends Component {
         });
     }
 
+    openBookingRequests() {
+        const requests = this.state.data.booking_requests || {};
+        if (requests.action_id) {
+            this.actionService.doAction(requests.action_id);
+        } else {
+            this.openAction("crm.lead", [["is_carwash_booking", "=", true], ["carwash_appointment_id", "=", false]],
+                "Booking Requests", [[false, "list"], [false, "form"]]);
+        }
+    }
+
     openNewAppointment() {
         this.actionService.doAction("carwash_base.action_carwash_appointment_new");
     }
@@ -577,6 +638,59 @@ export class CarwashDashboard extends Component {
 
     openBays(state) {
         this.openAction("carwash.bay", state ? [["state", "=", state]] : [], "Bays", [[false, "kanban"], [false, "list"], [false, "form"]]);
+    }
+
+    // Payments (manager): customers in, staff / QC out
+    openCustomerPayments() {
+        const pay = this.state.data.payments;
+        this.openAction("account.payment", [["id", "in", pay.received_ids]], `Customer Payments (${this.periodLabel})`,
+            [[false, "list"], [false, "form"]]);
+    }
+
+    openToCollect() {
+        const pay = this.state.data.payments;
+        this.openAction("carwash.appointment", [["id", "in", pay.due_booking_ids]], "Bookings to Collect",
+            [[false, "list"], [false, "form"]]);
+    }
+
+    /** Staff payables of `role` (staff / qc): still to pay, plus those paid in the period. */
+    openStaffPayables(role) {
+        const data = this.state.data;
+        this.openAction(
+            "carwash.staff.commission",
+            ["&", ["payable_role", "=", role], "|", ["state", "=", "to_pay"],
+             "&", "&", ["state", "=", "paid"], ["paid_date", ">=", data.period_from], ["paid_date", "<=", data.period_to]],
+            role === "qc" ? "QC Payables" : "Staff Payables",
+            [[false, "list"], [false, "form"]],
+        );
+    }
+
+    openOwed(row) {
+        this.openAction(
+            "carwash.staff.commission",
+            [["employee_id", "=", row.employee_id], ["payable_role", "=", row.role], ["state", "=", "to_pay"]],
+            `To Pay: ${row.name}`,
+            [[false, "list"], [false, "form"]],
+        );
+    }
+
+    /** My Earnings (staff / QC): the full list - only what is still to receive when `toReceive`. */
+    openMyEarnings(toReceive = false) {
+        this.actionService.doAction("carwash_jobcard.action_carwash_my_earnings", {
+            additionalContext: toReceive ? { search_default_to_receive: 1 } : {},
+        });
+    }
+
+    /** One earning, in the staff member's own (read-only) view. */
+    openMyEarning(id) {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            name: "My Earnings",
+            res_model: "carwash.staff.commission",
+            res_id: id,
+            views: [[this.state.data.my_earnings.form_view_id, "form"]],
+            target: "current",
+        });
     }
 
     openJobcards(stage) {

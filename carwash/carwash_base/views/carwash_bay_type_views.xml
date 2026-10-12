@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_bay_type_list" model="ir.ui.view">
+        <field name="name">carwash.bay.type.list</field>
+        <field name="model">carwash.bay.type</field>
+        <field name="arch" type="xml">
+            <list string="Bay Types" editable="bottom" multi_edit="1" sample="1" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name" class="fw-bold"/>
+                <field name="icon"/>
+                <field name="bay_count" string="Bays"/>
+                <field name="service_count" string="Services"/>
+                <field name="code" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_bay_type_form" model="ir.ui.view">
+        <field name="name">carwash.bay.type.form</field>
+        <field name="model">carwash.bay.type</field>
+        <field name="arch" type="xml">
+            <form string="Bay Type" class="o_cw_form">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_bays" type="object" class="oe_stat_button" icon="fa-th-large">
+                            <field name="bay_count" widget="statinfo" string="Bays"/>
+                        </button>
+                        <button name="action_view_services" type="object" class="oe_stat_button" icon="fa-tint">
+                            <field name="service_count" widget="statinfo" string="Services"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="o_cw_hero">
+                        <!-- the tile previews the icon picked below -->
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-hand-paper-o'"><i class="fa fa-hand-paper-o" title="Hand Wash"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-road'"><i class="fa fa-road" title="Tunnel / Conveyor"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-diamond'"><i class="fa fa-diamond" title="Detailing"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-tint'"><i class="fa fa-tint" title="Water / Rinse"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-shower'"><i class="fa fa-shower" title="Pressure Wash"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-magic'"><i class="fa fa-magic" title="Polish / Coating"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-wrench'"><i class="fa fa-wrench" title="Service / Repair"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-car'"><i class="fa fa-car" title="General"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon"><i class="fa fa-tint" title="Bay type"/></span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Ceramic Coating"/></h1>
+                        </div>
+                    </div>
+                    <group name="bay_type_details">
+                        <group string="Display" name="display">
+                            <field name="icon"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Technical" name="technical" groups="base.group_no_one">
+                            <field name="code"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" placeholder="What this bay is used for, equipment, notes for staff..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_bay_type_kanban" model="ir.ui.view">
+        <field name="name">carwash.bay.type.kanban</field>
+        <field name="model">carwash.bay.type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="icon"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="card" class="flex-row align-items-center">
+                        <span t-att-class="{'o_cw_tone_muted': !record.active.raw_value}"/>
+                        <aside class="me-3">
+                            <span t-att-class="'o_cw_tile' + (record.active.raw_value ? '' : ' o_cw_tile_muted')">
+                                <i t-attf-class="fa {{record.icon.raw_value or 'fa-tint'}}" role="img" aria-label="Icon" title="Bay type"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <field name="name" class="o_cw_card_title"/>
+                            <div class="o_cw_meta">
+                                <div><i class="fa fa-th-large" title="Bays"/><span><field name="bay_count"/> bay(s)</span></div>
+                                <div><i class="fa fa-tint" title="Services"/><span><field name="service_count"/> service(s)</span></div>
+                            </div>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_bay_type_search" model="ir.ui.view">
+        <field name="name">carwash.bay.type.search</field>
+        <field name="model">carwash.bay.type</field>
+        <field name="arch" type="xml">
+            <search string="Bay Types">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_bay_type" model="ir.actions.act_window">
+        <field name="name">Bay Types</field>
+        <field name="res_model">carwash.bay.type</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a bay type</p>
+            <p>The kinds of bays you have (Hand Wash, Tunnel, Detailing...). Each bay has a type, and a service can say which type of bay it needs.</p>
+        </field>
+    </record>
+</odoo>

@@ -32,7 +32,7 @@ class CarwashCrmBookingController(CarwashBookingController):
                 "carwash_license_plate": vehicle.license_plate,
                 "carwash_vehicle_make": vehicle.make,
                 "carwash_vehicle_model": vehicle.vehicle_model,
-                "carwash_vehicle_type": vehicle.vehicle_type,
+                "carwash_vehicle_type_id": vehicle.vehicle_type_id.id,
                 "carwash_bay_id": bay.id if bay else False,
                 "expected_revenue": package.total_price + sum(extra.mapped("list_price")),
                 "description": request.env._("Requested online via the website booking page."),

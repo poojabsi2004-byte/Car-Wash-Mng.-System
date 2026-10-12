@@ -5,22 +5,29 @@ from odoo.exceptions import UserError
 class CarwashChecklistTemplate(models.Model):
     _name = "carwash.checklist.template"
     _description = "Car Wash Checklist Template"
-    _order = "checklist_type, sequence, id"
+    _order = "checklist_type_id, sequence, id"
 
     name = fields.Char(required=True)
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
-    checklist_type = fields.Selection(
-        [("jobcard", "Job Card"), ("booking", "Booking Check-in"), ("inspection", "Inspection")],
-        string="Used On",
-        default="jobcard",
-        required=True,
-        help="Which step of the process this checklist belongs to.",
+    checklist_type_id = fields.Many2one(
+        "carwash.checklist.type", string="Used On", required=True, ondelete="restrict", index=True,
+        default=lambda self: self.env["carwash.checklist.type"]._default_for("jobcard"),
+        help="Which kind of checklist this is - and so which step of the process it belongs to "
+        "(Configuration > Operations > Checklist Types).",
     )
+    # technical key of the step (booking / inspection / jobcard) the process logic works with
+    checklist_type = fields.Selection(related="checklist_type_id.applies_to", store=True, string="Applies To")
     inspection_type_id = fields.Many2one(
         "carwash.inspection.type",
         string="Inspection Type",
         help="Only offer this checklist on inspections of this type (empty = any inspection).",
+    )
+    vehicle_type_ids = fields.Many2many(
+        "carwash.vehicle.type", "carwash_checklist_template_vehicle_type_rel", "template_id", "vehicle_type_id",
+        string="Vehicle Types",
+        help="Only use this checklist for these kinds of vehicle (empty = any vehicle). When both a "
+        "matching and a general checklist apply automatically, the matching one wins.",
     )
     is_default = fields.Boolean(
         string="Apply Automatically",
@@ -29,6 +36,53 @@ class CarwashChecklistTemplate(models.Model):
     )
     description = fields.Text()
     item_ids = fields.One2many("carwash.checklist.template.item", "template_id", string="Tasks")
+    usage_count = fields.Integer(compute="_compute_usage_count", string="Used On Records")
+
+    # where each kind of checklist is used: checklist type -> (model, list title)
+    _USAGE_MODELS = {
+        "booking": ("carwash.appointment", "Bookings"),
+        "inspection": ("carwash.inspection", "Inspections"),
+        "jobcard": ("carwash.jobcard", "Job Cards"),
+    }
+
+    def _compute_usage_count(self):
+        for checklist_type, (model, _title) in self._USAGE_MODELS.items():
+            templates = self.filtered(lambda t: t.checklist_type == checklist_type and t._origin)
+            counts = dict(self.env[model]._read_group(
+                [("checklist_template_id", "in", templates._origin.ids)], ["checklist_template_id"], ["__count"]
+            )) if templates else {}
+            for template in self.filtered(lambda t: t.checklist_type == checklist_type):
+                template.usage_count = counts.get(template._origin, 0)
+
+    def action_view_usage(self):
+        """Smart button: the bookings / inspections / job cards that use this checklist."""
+        self.ensure_one()
+        model, title = self._USAGE_MODELS[self.checklist_type]
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.env._("%(title)s - %(checklist)s", title=self.env._(title), checklist=self.name),
+            "res_model": model,
+            "view_mode": "list,form",
+            "domain": [("checklist_template_id", "=", self.id)],
+            "context": {"create": False},
+        }
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._checklist_type_from_key(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._checklist_type_from_key(vals)
+        return super().write(vals)
+
+    @api.model
+    def _checklist_type_from_key(self, vals):
+        """Still accept the step's technical key (data files, imports): it picks that step's checklist type."""
+        key = vals.pop("checklist_type", None)
+        if key and not vals.get("checklist_type_id"):
+            vals["checklist_type_id"] = self.env["carwash.checklist.type"]._default_for(key).id
 
     def _prepare_checklist_line_vals(self):
         self.ensure_one()
@@ -52,7 +106,7 @@ class CarwashChecklistTemplateItem(models.Model):
 
 
 class CarwashChecklistLine(models.Model):
-    """One task of a process checklist (booking check-in, inspection, booking request).
+    """One task of a process checklist (vehicle check-in or inspection).
 
     Each owner model points here through its own many2one, so a line always belongs to
     exactly one record and is deleted with it.
@@ -139,19 +193,32 @@ class CarwashChecklistMixin(models.AbstractModel):
             record.checklist_pending_count = len(lines.filtered(lambda line: line.is_required and not line.is_done))
             record.checklist_complete = not record.checklist_pending_count
 
+    def _checklist_vehicle_type(self):
+        """Vehicle type (carwash.vehicle.type) of this record, used to pick a vehicle-specific checklist."""
+        return self.env["carwash.vehicle.type"]
+
     def _checklist_template_domain(self):
-        return [("checklist_type", "=", self._checklist_type)]
+        vehicle_type = self._checklist_vehicle_type()
+        return [
+            ("checklist_type", "=", self._checklist_type),
+            "|", ("vehicle_type_ids", "=", False), ("vehicle_type_ids", "in", vehicle_type.ids),
+        ]
 
     def _checklist_default_template(self):
+        """The automatic checklist of this step - one made for this vehicle type beats a general one."""
         self.ensure_one()
-        return self.env["carwash.checklist.template"].search(
-            self._checklist_template_domain() + [("is_default", "=", True)], limit=1
+        templates = self.env["carwash.checklist.template"].search(
+            self._checklist_template_domain() + [("is_default", "=", True)]
         )
+        return templates.sorted(lambda t: (not t.vehicle_type_ids, t.sequence, t.id))[:1]
 
     def _checklist_needs_auto_apply(self):
         """Whether this record should get the default checklist when it's created."""
         self.ensure_one()
         return True
+
+    def _checklist_enabled(self):
+        return self.env["carwash.feature"]._enabled("carwash_jobcard.group_carwash_checklist")
 
     @api.onchange("checklist_template_id")
     def _onchange_checklist_template_id(self):
@@ -172,6 +239,8 @@ class CarwashChecklistMixin(models.AbstractModel):
             )
 
     def _checklist_auto_apply(self):
+        if not self._checklist_enabled():
+            return
         for record in self:
             if record.checklist_line_ids or not record._checklist_needs_auto_apply():
                 continue
@@ -195,6 +264,8 @@ class CarwashChecklistMixin(models.AbstractModel):
 
     def _check_checklist_complete(self, step):
         """Raise unless every mandatory task is ticked; `step` names what's being blocked."""
+        if not self._checklist_enabled():
+            return
         for record in self:
             pending = record.checklist_line_ids.filtered(lambda line: line.is_required and not line.is_done)
             if pending:

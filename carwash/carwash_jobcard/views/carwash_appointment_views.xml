@@ -8,42 +8,112 @@
             <!-- Vehicle arrived: pre-wash inspection comes before starting the service -->
             <xpath expr="//button[@name='action_start_service']" position="before">
                 <field name="has_pre_inspection" invisible="1"/>
+                <field name="inspection_feature_enabled" invisible="1"/>
                 <button name="action_open_inspection" type="object" string="Inspection" icon="fa-search"
-                        class="btn-primary o_cw_btn_primary" invisible="state != 'arrived' or has_pre_inspection"
+                        class="btn-primary o_cw_btn_primary" invisible="state != 'arrived' or has_pre_inspection or not inspection_feature_enabled"
                         groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
                 <button name="action_open_inspection" type="object" string="View Inspection" icon="fa-eye"
-                        class="btn-secondary" invisible="state != 'arrived' or not has_pre_inspection"
+                        class="btn-secondary" invisible="state != 'arrived' or not has_pre_inspection or not inspection_feature_enabled"
                         groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
             </xpath>
             <!-- Once the main service has ended (all services done), the post-wash inspection is next -->
             <xpath expr="//button[@name='action_done']" position="before">
                 <field name="has_post_inspection" invisible="1"/>
                 <button name="action_open_inspection" type="object" string="Inspection" icon="fa-search"
-                        class="btn-primary o_cw_btn_primary" invisible="state != 'ready' or has_post_inspection"
+                        class="btn-primary o_cw_btn_primary" invisible="state != 'ready' or has_post_inspection or not inspection_feature_enabled"
                         groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
                 <button name="action_open_inspection" type="object" string="View Inspection" icon="fa-eye"
-                        class="btn-secondary" invisible="state != 'ready' or not has_post_inspection"
+                        class="btn-secondary" invisible="state != 'ready' or not has_post_inspection or not inspection_feature_enabled"
                         groups="carwash_base.group_carwash_user,carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
             </xpath>
+            <xpath expr="//header/field[@name='state']" position="before">
+                <field name="carwash_review_id" invisible="1"/>
+                <button name="action_add_review" type="object" string="Add Review" icon="fa-star"
+                        class="btn-primary o_cw_btn_primary"
+                        invisible="state != 'done' or not rating_feature_enabled or carwash_review_id" groups="carwash_base.group_carwash_user"
+                        help="Record the customer's rating (1-5 stars) and review of this wash."/>
+                <button name="action_add_review" type="object" string="Edit Review" icon="fa-star"
+                        invisible="state != 'done' or not rating_feature_enabled or not carwash_review_id" groups="carwash_base.group_carwash_user"/>
+            </xpath>
+            <!-- work passed QC / done: pay what the crew and the QC earned on the booking (a bill per person, paid from Cash) -->
+            <xpath expr="//button[@name='action_send_invoice']" position="after">
+                <field name="staff_to_pay" invisible="1"/>
+                <field name="qc_to_pay" invisible="1"/>
+                <button name="action_pay_staff" type="object" string="Pay Staff" icon="fa-users"
+                        invisible="not can_bill or not staff_to_pay" groups="carwash_base.group_carwash_manager"
+                        help="Pay what the crew earned on this booking: bills created when needed, then the payment (Cash by default)."/>
+                <button name="action_pay_qc" type="object" string="Pay QC" icon="fa-check-square-o"
+                        invisible="not can_bill or not qc_to_pay" groups="carwash_base.group_carwash_manager"
+                        help="Pay what the QC inspectors earned on this booking: bills created when needed, then the payment (Cash by default)."/>
+            </xpath>
+            <!-- Payments tab: the staff side -->
+            <xpath expr="//group[@name='staff_payment']" position="attributes">
+                <attribute name="groups">carwash_jobcard.group_carwash_commission</attribute>
+            </xpath>
+            <xpath expr="//group[@name='staff_payment']" position="inside">
+                <field name="staff_payable_total" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="qc_payable_total" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="staff_paid" widget="monetary" options="{'currency_field': 'currency_id'}"
+                       decoration-success="staff_paid"/>
+                <field name="staff_to_pay" widget="monetary" options="{'currency_field': 'currency_id'}"
+                       decoration-warning="staff_to_pay" decoration-bf="staff_to_pay"/>
+                <field name="qc_to_pay" widget="monetary" options="{'currency_field': 'currency_id'}"
+                       decoration-warning="qc_to_pay" decoration-bf="qc_to_pay"/>
+                <field name="amount_kept" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                <div class="text-muted small" colspan="2">
+                    <i class="fa fa-info-circle me-1" title="Info"/>The staff and QC payables are recorded when a job card
+                    passes QC. After End Service, <b>Pay Staff</b> / <b>Pay QC</b> create the bill per person (when needed) and open
+                    the payment.
+                </div>
+            </xpath>
+            <xpath expr="//page[@name='payments']" position="inside">
+                <separator string="Staff Payables" groups="carwash_jobcard.group_carwash_commission"/>
+                <field name="staff_payable_ids" nolabel="1" readonly="1" groups="carwash_jobcard.group_carwash_commission">
+                    <list create="0" delete="0" decoration-muted="state == 'cancelled'" decoration-success="state == 'paid'">
+                        <field name="employee_id" widget="many2one_avatar_employee"/>
+                        <field name="payable_role" widget="badge" decoration-info="payable_role == 'qc'"/>
+                        <field name="jobcard_id"/>
+                        <field name="commission_type" string="Type" optional="show"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="amount" sum="Total" widget="monetary"/>
+                        <field name="state" widget="badge" decoration-warning="state == 'to_pay'" decoration-success="state == 'paid'"/>
+                        <field name="paid_date" optional="show"/>
+                        <field name="bill_id" optional="show"/>
+                    </list>
+                </field>
+            </xpath>
             <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_staff_bills" type="object" class="oe_stat_button" icon="fa-users"
+                        invisible="not staff_bill_count" groups="carwash_base.group_carwash_manager">
+                    <field name="staff_bill_count" widget="statinfo" string="Staff Bills"/>
+                </button>
+                <field name="rating_feature_enabled" invisible="1"/>
+                <button name="action_view_ratings" type="object" class="oe_stat_button" icon="fa-smile-o"
+                        invisible="not rating_count" groups="carwash_jobcard.group_carwash_rating">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="rating_avg" digits="[16, 1]"/> / 5</span>
+                        <span class="o_stat_text">Customer Rating</span>
+                    </div>
+                    <field name="rating_count" invisible="1"/>
+                </button>
                 <button name="action_view_jobcards" type="object" class="oe_stat_button" icon="fa-wrench"
                         invisible="jobcard_count == 0">
                     <field name="jobcard_count" widget="statinfo" string="Job Cards"/>
                 </button>
-                <button name="action_view_inspections" type="object" class="oe_stat_button" icon="fa-search"
+                <button name="action_view_inspections" type="object" class="oe_stat_button" icon="fa-search" groups="carwash_jobcard.group_carwash_inspection"
                         invisible="inspection_count == 0">
                     <field name="inspection_count" widget="statinfo" string="Inspections"/>
                 </button>
             </xpath>
             <!-- Package: picked up front, fills the Services list at the package price -->
             <xpath expr="//field[@name='vehicle_id']" position="after">
-                <field name="service_package_id" placeholder="Select a package (optional)"
+                <field name="service_package_id" placeholder="Select a package (optional)" groups="carwash_jobcard.group_carwash_package"
                        options="{'no_create': True}"
                        readonly="state not in ('draft', 'confirmed', 'arrived') or not can_manage_details"/>
             </xpath>
             <xpath expr="//page[@name='services']/field[@name='line_ids']" position="before">
-                <div class="o_cw_package_card" invisible="not service_package_id">
-                    <div class="o_cw_package_card_icon"><i class="fa fa-gift"/></div>
+                <div class="o_cw_package_card" invisible="not service_package_id" groups="carwash_jobcard.group_carwash_package">
+                    <div class="o_cw_package_card_icon"><i class="fa fa-gift" title="Service package"/></div>
                     <div class="o_cw_package_card_body">
                         <div class="o_cw_package_card_title">
                             <field name="service_package_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
@@ -73,22 +143,35 @@
                 <attribute name="force_save">1</attribute>
             </xpath>
             <xpath expr="//page[@name='services']/field[@name='line_ids']/list/field[@name='price_unit']" position="attributes">
-                <attribute name="readonly">package_id</attribute>
+                <attribute name="readonly">package_id or jobcard_consumption_id</attribute>
                 <attribute name="force_save">1</attribute>
             </xpath>
             <xpath expr="//page[@name='services']/field[@name='line_ids']/list/field[@name='product_id']" position="after">
+                <field name="jobcard_consumption_id" column_invisible="1"/>
                 <field name="package_id" widget="badge" optional="show" decoration-info="package_id" force_save="1"/>
+                <field name="jobcard_id" optional="show" readonly="1" options="{'no_open': True}"
+                       column_invisible="parent.state in ('draft', 'confirmed', 'arrived')"/>
             </xpath>
             <xpath expr="//page[@name='services']/field[@name='line_ids']" position="after">
                 <group class="oe_subtotal_footer" invisible="not line_ids">
-                    <field name="package_amount" string="Package" invisible="not service_package_id"/>
-                    <field name="extra_services_amount" string="Extra Services" invisible="not service_package_id"/>
+                    <field name="package_amount" string="Package" invisible="not service_package_id" groups="carwash_jobcard.group_carwash_package"/>
+                    <field name="extra_services_amount" string="Extra Services" invisible="not service_package_id" groups="carwash_jobcard.group_carwash_package"/>
                     <field name="amount_total" string="Total" class="oe_subtotal_footer_separator"/>
                 </group>
             </xpath>
             <!-- Check-in checklist: mandatory tasks must be ticked before the service can start -->
             <xpath expr="//page[@name='services']" position="after">
-                <page string="Check-in Checklist" name="checklist">
+                <page string="Customer Review" name="customer_review" invisible="not carwash_review_id or not rating_feature_enabled"
+                      groups="carwash_jobcard.group_carwash_rating">
+                    <group>
+                        <group>
+                            <field name="carwash_review_stars" widget="priority" readonly="1"/>
+                            <field name="carwash_review_feedback" readonly="1" placeholder="No written review"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Check-in Checklist" name="checklist" groups="carwash_jobcard.group_carwash_checklist"
+                      invisible="state in ('draft', 'confirmed', 'cancelled', 'no_show') and not checklist_line_ids">
                     <group>
                         <group>
                             <field name="checklist_template_id" options="{'no_create': True}" placeholder="Pick a checklist"
@@ -108,11 +191,11 @@
                 <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert"
                      invisible="state != 'arrived' or (checklist_complete and not open_inspection_count)">
                     <i class="fa fa-list-ul"/>
-                    <span invisible="checklist_complete">
+                    <span invisible="checklist_complete" groups="carwash_jobcard.group_carwash_checklist">
                         <strong>Check-in pending:</strong>&#160;<field name="checklist_pending_count" class="o_cw_inline"/> mandatory task(s) left on the
                         <em>Check-in Checklist</em> tab.
                     </span>
-                    <span invisible="not open_inspection_count">
+                    <span invisible="not open_inspection_count" groups="carwash_jobcard.group_carwash_inspection">
                         <strong>Inspection in progress</strong> - complete it before starting the service.
                     </span>
                 </div>

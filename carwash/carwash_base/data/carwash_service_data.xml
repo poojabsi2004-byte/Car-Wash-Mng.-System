@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Starter catalogue, loaded on every install (with or without demo data): the consumables the services use
+         and the car wash services. Edit, archive or add your own under Configuration > Services &amp; Booking > Services. -->
+    <record id="demo_material_shampoo" model="product.product">
+        <field name="name">Car Shampoo</field>
+        <field name="type">consu</field>
+        <field name="is_storable">True</field>
+        <field name="list_price">5.0</field>
+        <field name="uom_id" ref="uom.product_uom_litre"/>
+    </record>
+
+    <record id="demo_material_wax" model="product.product">
+        <field name="name">Wax Polish</field>
+        <field name="type">consu</field>
+        <field name="is_storable">True</field>
+        <field name="list_price">8.0</field>
+        <field name="uom_id" ref="uom.product_uom_litre"/>
+    </record>
+
+    <record id="demo_material_cloth" model="product.product">
+        <field name="name">Microfiber Cloth</field>
+        <field name="type">consu</field>
+        <field name="is_storable">True</field>
+        <field name="list_price">1.5</field>
+        <field name="uom_id" ref="uom.product_uom_unit"/>
+    </record>
+
+    <record id="demo_material_tire_shine" model="product.product">
+        <field name="name">Tire Shine Gel</field>
+        <field name="type">consu</field>
+        <field name="is_storable">True</field>
+        <field name="list_price">6.0</field>
+        <field name="uom_id" ref="uom.product_uom_litre"/>
+    </record>
+
+    <record id="demo_material_headlight_compound" model="product.product">
+        <field name="name">Headlight Polish Compound</field>
+        <field name="type">consu</field>
+        <field name="is_storable">True</field>
+        <field name="list_price">4.0</field>
+        <field name="uom_id" ref="uom.product_uom_unit"/>
+    </record>
+
+    <record id="demo_service_basic" model="product.template">
+        <field name="name">Basic Wash</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">0.3</field>
+        <field name="carwash_bay_type_id" ref="bay_type_hand"/>
+        <field name="list_price">299.0</field>
+    </record>
+
+    <record id="demo_service_premium" model="product.template">
+        <field name="name">Premium Wash</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">0.75</field>
+        <field name="carwash_bay_type_id" ref="bay_type_tunnel"/>
+        <field name="list_price">599.0</field>
+        <field name="carwash_material_line_ids" eval="[
+            (0, 0, {'product_id': ref('demo_material_shampoo'), 'quantity': 0.2}),
+            (0, 0, {'product_id': ref('demo_material_wax'), 'quantity': 0.1}),
+        ]"/>
+    </record>
+
+    <record id="demo_service_detailing" model="product.template">
+        <field name="name">Interior Detailing</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">1.0</field>
+        <field name="carwash_bay_type_id" ref="bay_type_detail"/>
+        <field name="list_price">999.0</field>
+        <field name="carwash_material_line_ids" eval="[
+            (0, 0, {'product_id': ref('demo_material_cloth'), 'quantity': 1.0}),
+        ]"/>
+    </record>
+
+    <record id="demo_service_waxing" model="product.template">
+        <field name="name">Waxing</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">0.4</field>
+        <field name="carwash_bay_type_id" ref="bay_type_hand"/>
+        <field name="list_price">499.0</field>
+        <field name="carwash_material_line_ids" eval="[
+            (0, 0, {'product_id': ref('demo_material_wax'), 'quantity': 0.15}),
+        ]"/>
+    </record>
+
+    <record id="demo_service_engine_bay" model="product.template">
+        <field name="name">Engine Bay Cleaning</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">0.3</field>
+        <field name="carwash_bay_type_id" ref="bay_type_hand"/>
+        <field name="list_price">399.0</field>
+        <field name="carwash_material_line_ids" eval="[
+            (0, 0, {'product_id': ref('demo_material_shampoo'), 'quantity': 0.1}),
+        ]"/>
+    </record>
+
+    <record id="demo_service_headlight" model="product.template">
+        <field name="name">Headlight Restoration</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">0.5</field>
+        <field name="carwash_bay_type_id" ref="bay_type_detail"/>
+        <field name="list_price">699.0</field>
+        <field name="carwash_material_line_ids" eval="[
+            (0, 0, {'product_id': ref('demo_material_headlight_compound'), 'quantity': 1.0}),
+        ]"/>
+    </record>
+
+    <record id="demo_service_tire_detail" model="product.template">
+        <field name="name">Tire and Rim Detailing</field>
+        <field name="type">service</field>
+        <field name="is_carwash_service">True</field>
+        <field name="carwash_duration">0.3</field>
+        <field name="carwash_bay_type_id" ref="bay_type_hand"/>
+        <field name="list_price">249.0</field>
+        <field name="carwash_material_line_ids" eval="[
+            (0, 0, {'product_id': ref('demo_material_tire_shine'), 'quantity': 0.2}),
+        ]"/>
+    </record>
+</odoo>

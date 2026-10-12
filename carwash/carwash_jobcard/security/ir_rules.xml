@@ -6,4 +6,154 @@
         <field name="domain_force">[('assigned_employee_ids.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
     </record>
+    <record id="carwash_jobcard_consumption_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: consumption of assigned job cards only</field>
+        <field name="model_id" ref="model_carwash_jobcard_consumption"/>
+        <field name="domain_force">[('jobcard_id.assigned_employee_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+    <!-- ================================================================================================
+         Staff see only their own work. Washer / Detailer: the job cards they're assigned to and those
+         bookings. QC Inspector: the job cards they check (plus the ones waiting for QC with nobody
+         assigned yet) and those bookings. Both: the inspections they're the inspector of.
+         Front Desk / Manager / Owner see everything (also when they hold a staff role as well).
+         ================================================================================================ -->
+    <!-- Job cards -->
+    <record id="carwash_jobcard_rule_qc_own" model="ir.rule">
+        <field name="name">QC: job cards to check or checked</field>
+        <field name="model_id" ref="model_carwash_jobcard"/>
+        <field name="domain_force">['|', ('qc_inspector_id.user_id', '=', user.id), '&amp;', ('stages', '=', 'qc'), ('qc_inspector_id', '=', False)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_jobcard_rule_all" model="ir.rule">
+        <field name="name">Job cards: all (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_jobcard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <record id="carwash_jobcard_service_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: services of assigned job cards</field>
+        <field name="model_id" ref="model_carwash_jobcard_service"/>
+        <field name="domain_force">[('jobcard_id.assigned_employee_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+    <record id="carwash_jobcard_service_rule_qc_own" model="ir.rule">
+        <field name="name">QC: services of the job cards to check</field>
+        <field name="model_id" ref="model_carwash_jobcard_service"/>
+        <field name="domain_force">[('jobcard_id', 'any', ['|', ('qc_inspector_id.user_id', '=', user.id), '&amp;', ('stages', '=', 'qc'), ('qc_inspector_id', '=', False)])]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_jobcard_service_rule_all" model="ir.rule">
+        <field name="name">Job card services: all (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_jobcard_service"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <record id="carwash_jobcard_checklist_line_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: tasks of assigned job cards</field>
+        <field name="model_id" ref="model_carwash_jobcard_checklist_line"/>
+        <field name="domain_force">[('jobcard_id.assigned_employee_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+    <record id="carwash_jobcard_checklist_line_rule_qc_own" model="ir.rule">
+        <field name="name">QC: tasks of the job cards to check</field>
+        <field name="model_id" ref="model_carwash_jobcard_checklist_line"/>
+        <field name="domain_force">[('jobcard_id', 'any', ['|', ('qc_inspector_id.user_id', '=', user.id), '&amp;', ('stages', '=', 'qc'), ('qc_inspector_id', '=', False)])]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_jobcard_checklist_line_rule_all" model="ir.rule">
+        <field name="name">Job card tasks: all (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_jobcard_checklist_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <record id="carwash_jobcard_consumption_rule_qc_own" model="ir.rule">
+        <field name="name">QC: consumption of the job cards to check</field>
+        <field name="model_id" ref="model_carwash_jobcard_consumption"/>
+        <field name="domain_force">[('jobcard_id', 'any', ['|', ('qc_inspector_id.user_id', '=', user.id), '&amp;', ('stages', '=', 'qc'), ('qc_inspector_id', '=', False)])]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_jobcard_consumption_rule_all" model="ir.rule">
+        <field name="name">Job card consumption: all (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_jobcard_consumption"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <!-- Bookings and their services -->
+    <record id="carwash_appointment_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: bookings of assigned job cards / own inspections</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+        <field name="domain_force">['|', ('jobcard_ids.assigned_employee_ids.user_id', '=', user.id), ('inspection_ids.inspector_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+    <record id="carwash_appointment_rule_qc_own" model="ir.rule">
+        <field name="name">QC: bookings to check / own inspections</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+        <field name="domain_force">['|', '|', ('jobcard_ids.qc_inspector_id.user_id', '=', user.id), ('jobcard_ids', 'any', [('stages', '=', 'qc'), ('qc_inspector_id', '=', False)]), ('inspection_ids.inspector_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_appointment_rule_all" model="ir.rule">
+        <field name="name">Bookings: all (front desk / manager)</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <record id="carwash_appointment_line_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: services of own bookings</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment_line"/>
+        <field name="domain_force">[('appointment_id', 'any', ['|', ('jobcard_ids.assigned_employee_ids.user_id', '=', user.id), ('inspection_ids.inspector_id.user_id', '=', user.id)])]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+    <record id="carwash_appointment_line_rule_qc_own" model="ir.rule">
+        <field name="name">QC: services of own bookings</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment_line"/>
+        <field name="domain_force">[('appointment_id', 'any', ['|', '|', ('jobcard_ids.qc_inspector_id.user_id', '=', user.id), ('jobcard_ids', 'any', [('stages', '=', 'qc'), ('qc_inspector_id', '=', False)]), ('inspection_ids.inspector_id.user_id', '=', user.id)])]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_appointment_line_rule_all" model="ir.rule">
+        <field name="name">Booking services: all (front desk / manager)</field>
+        <field name="model_id" ref="carwash_base.model_carwash_appointment_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <!-- Inspections -->
+    <record id="carwash_inspection_rule_washer_own" model="ir.rule">
+        <field name="name">Washer: own inspections / of assigned job cards</field>
+        <field name="model_id" ref="model_carwash_inspection"/>
+        <field name="domain_force">['|', ('inspector_id.user_id', '=', user.id), ('appointment_id.jobcard_ids.assigned_employee_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer'))]"/>
+    </record>
+    <record id="carwash_inspection_rule_qc_own" model="ir.rule">
+        <field name="name">QC: own inspections / of the bookings to check</field>
+        <field name="model_id" ref="model_carwash_inspection"/>
+        <field name="domain_force">['|', ('inspector_id.user_id', '=', user.id), ('appointment_id', 'any', ['|', '|', ('jobcard_ids.qc_inspector_id.user_id', '=', user.id), ('jobcard_ids', 'any', [('stages', '=', 'qc'), ('qc_inspector_id', '=', False)]), ('inspection_ids.inspector_id.user_id', '=', user.id)])]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_qc'))]"/>
+    </record>
+    <record id="carwash_inspection_rule_all" model="ir.rule">
+        <field name="name">Inspections: all (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_inspection"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+    <!-- Staff Payables: front desk / manager see all (washer / QC own: rule below) -->
+    <record id="carwash_commission_rule_all" model="ir.rule">
+        <field name="name">Staff Payable: all (front desk / manager)</field>
+        <field name="model_id" ref="model_carwash_staff_commission"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('carwash_base.group_carwash_user'))]"/>
+    </record>
+
+    <!-- Washers / QC inspectors only see their own staff payables -->
+    <record id="carwash_commission_rule_own" model="ir.rule">
+        <field name="name">Staff Payable: own only (washer / QC)</field>
+        <field name="model_id" ref="model_carwash_staff_commission"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_carwash_washer')), (4, ref('group_carwash_qc'))]"/>
+    </record>
+    <!-- Staff performance: the branches the user works in -->
+    <record id="carwash_staff_performance_rule_branch" model="ir.rule">
+        <field name="name">Staff Performance: Branch Isolation</field>
+        <field name="model_id" ref="model_carwash_staff_performance"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
 </odoo>

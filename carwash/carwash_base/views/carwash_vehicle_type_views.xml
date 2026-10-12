@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_vehicle_type_list" model="ir.ui.view">
+        <field name="name">carwash.vehicle.type.list</field>
+        <field name="model">carwash.vehicle.type</field>
+        <field name="arch" type="xml">
+            <list string="Vehicle Types" editable="bottom" multi_edit="1" sample="1" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name" class="fw-bold"/>
+                <field name="icon"/>
+                <field name="vehicle_count" string="Vehicles"/>
+                <field name="code" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_vehicle_type_form" model="ir.ui.view">
+        <field name="name">carwash.vehicle.type.form</field>
+        <field name="model">carwash.vehicle.type</field>
+        <field name="arch" type="xml">
+            <form string="Vehicle Type" class="o_cw_form">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_vehicles" type="object" class="oe_stat_button" icon="fa-car">
+                            <field name="vehicle_count" widget="statinfo" string="Vehicles"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="o_cw_hero">
+                        <!-- the tile previews the icon picked below -->
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-car'"><i class="fa fa-car" title="Car"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-taxi'"><i class="fa fa-taxi" title="Taxi / Cab"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-truck'"><i class="fa fa-truck" title="Truck / Pickup"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-bus'"><i class="fa fa-bus" title="Van / Bus"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-motorcycle'"><i class="fa fa-motorcycle" title="Motorcycle / Scooter"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon != 'fa-bicycle'"><i class="fa fa-bicycle" title="Bicycle"/></span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="icon"><i class="fa fa-car" title="Vehicle type"/></span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Scooter"/></h1>
+                        </div>
+                    </div>
+                    <group name="vehicle_type_details">
+                        <group string="Display" name="display">
+                            <field name="icon"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Technical" name="technical" groups="base.group_no_one">
+                            <field name="code"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_vehicle_type_search" model="ir.ui.view">
+        <field name="name">carwash.vehicle.type.search</field>
+        <field name="model">carwash.vehicle.type</field>
+        <field name="arch" type="xml">
+            <search string="Vehicle Types">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_vehicle_type" model="ir.actions.act_window">
+        <field name="name">Vehicle Types</field>
+        <field name="res_model">carwash.vehicle.type</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a vehicle type</p>
+            <p>The kinds of vehicles you wash (Hatchback, SUV, Motorcycle...). Checklist templates can be limited to some types.</p>
+        </field>
+    </record>
+</odoo>

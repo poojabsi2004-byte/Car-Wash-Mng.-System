@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- switched on when installed; Car Wash > Configuration > Settings turns it off -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('carwash_purchase.group_carwash_purchase'))]"/>
+    </record>
+</odoo>

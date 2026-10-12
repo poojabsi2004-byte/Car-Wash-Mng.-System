@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- default timings (Car Wash > Configuration > Settings > Notifications) -->
+    <record id="param_booking_reminder_hours" model="ir.config_parameter">
+        <field name="key">carwash_notification.booking_reminder_hours</field>
+        <field name="value">24</field>
+    </record>
+    <record id="param_membership_expiry_days" model="ir.config_parameter">
+        <field name="key">carwash_notification.membership_expiry_days</field>
+        <field name="value">2</field>
+    </record>
+</odoo>

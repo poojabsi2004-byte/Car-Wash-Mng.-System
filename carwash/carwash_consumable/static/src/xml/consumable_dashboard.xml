@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- "Consumables" card on the Car Wash dashboard (managers / owner) -->
+  <t t-name="carwash_consumable.Dashboard" t-inherit="carwash_dashboard.Dashboard" t-inherit-mode="extension">
+    <xpath expr="//footer[hasclass('o_cwd_footer')]" position="before">
+      <div t-if="d.consumables" class="o_cwd_grid">
+        <t t-set="cons" t-value="d.consumables"/>
+        <section class="o_cwd_card o_cwd_span_12 o_cwc" style="--cw-i:9">
+          <header class="o_cwd_card_head">
+            <div>
+              <h3><i class="fa fa-flask"/> Consumables</h3>
+              <p>Low stock at <t t-esc="d.company_name"/> · requests waiting for you</p>
+            </div>
+            <div class="o_cwc_badges">
+              <button class="o_cwc_badge" t-att-class="cons.to_approve ? 'o_cwc_badge_hot' : ''"
+                      t-on-click="() => this.openAction('carwash.consumable.request', [['state', '=', 'submitted']], 'Requests to Approve', [[false, 'list'], [false, 'form']])">
+                <strong t-esc="cons.to_approve"/> to approve
+              </button>
+              <button class="o_cwc_badge"
+                      t-on-click="() => this.openAction('carwash.consumable.request', [['state', '=', 'approved']], 'Requests to Issue', [[false, 'list'], [false, 'form']])">
+                <strong t-esc="cons.to_issue"/> to issue
+              </button>
+            </div>
+          </header>
+          <div t-if="cons.low_stock.length" class="o_cwc_list">
+            <div t-foreach="cons.low_stock" t-as="item" t-key="item.id + '-' + item.branch" class="o_cwc_row"
+                 t-att-class="item.out ? 'o_cwc_out' : ''" t-att-style="stagger(item_index)">
+              <div class="o_cwc_name">
+                <strong t-esc="item.name"/>
+                <small><i class="fa fa-map-marker"/> <t t-esc="item.branch"/></small>
+              </div>
+              <div class="o_cwc_bar"><span t-attf-style="width: {{item.fill}}%"/></div>
+              <div class="o_cwc_qty">
+                <strong><t t-esc="item.qty"/> <t t-esc="item.uom"/></strong>
+                <small>min <t t-esc="item.min"/></small>
+              </div>
+              <span class="o_cwd_pill" t-att-class="item.out ? 'o_cwc_pill_out' : 'o_cwc_pill_low'"
+                    t-esc="item.out ? 'Out of stock' : 'Low stock'"/>
+            </div>
+          </div>
+          <div t-else="" class="o_cwd_empty">
+            <i class="fa fa-check-circle"/>
+            <span>All consumables are above their minimum stock</span>
+          </div>
+        </section>
+      </div>
+    </xpath>
+  </t>
+</templates>

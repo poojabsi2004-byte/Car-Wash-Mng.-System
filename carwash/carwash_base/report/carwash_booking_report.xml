@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Booking Confirmation (before the wash) / Service Receipt (once the booking is Done).
+         carwash_jobcard / carwash_membership add their sections through the named hooks. -->
+    <record id="action_report_carwash_booking" model="ir.actions.report">
+        <field name="name">Booking / Service Receipt</field>
+        <field name="model">carwash.appointment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_base.report_carwash_booking</field>
+        <field name="report_file">carwash_base.report_carwash_booking</field>
+        <field name="print_report_name">('Service Receipt - %s' % object.name) if object.state == 'done' else ('Booking - %s' % object.name)</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+        <field name="binding_model_id" ref="model_carwash_appointment"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_carwash_booking_document">
+        <t t-call="carwash_base.carwash_external_layout">
+            <t t-set="currency" t-value="o.company_id.currency_id"/>
+            <t t-set="is_receipt" t-value="o.state == 'done'"/>
+            <t t-set="state_label" t-value="dict(o._fields['state']._description_selection(o.env))[o.state]"/>
+            <t t-set="services" t-value="o._service_lines()"/>
+            <div class="page o_cw_report">
+                <table class="o_cw_title">
+                    <tr>
+                        <td>
+                            <h2 t-if="is_receipt">Service Receipt</h2>
+                            <h2 t-else="">Booking Confirmation</h2>
+                            <div class="o_cw_ref" t-esc="o.name"/>
+                            <div class="o_cw_sub">
+                                <t t-if="is_receipt">Completed on <t t-esc="o._carwash_report_datetime(o.done_at)"/></t>
+                                <t t-else="">Booked for <t t-esc="o._carwash_report_datetime(o.appointment_date)"/></t>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <span t-attf-class="o_cw_badge {{'o_cw_badge_ok' if o.state == 'done' else 'o_cw_badge_bad' if o.state in ('cancelled', 'no_show') else ''}}"
+                                  t-esc="state_label"/>
+                            <div t-if="o.token_no" class="o_cw_token mt-2"><small>Token</small><span t-esc="o.token_no"/></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table class="o_cw_boxes">
+                    <tr>
+                        <td>
+                            <h6>Customer</h6>
+                            <div class="o_cw_big" t-esc="o.customer_id.name"/>
+                            <div t-if="o.customer_id.phone" t-esc="o.customer_id.phone"/>
+                            <div t-if="o.customer_id.email" t-esc="o.customer_id.email"/>
+                            <div t-if="o.customer_id.street" class="text-muted small"
+                                 t-esc="', '.join(filter(None, [o.customer_id.street, o.customer_id.city, o.customer_id.zip]))"/>
+                        </td>
+                        <td>
+                            <h6>Vehicle</h6>
+                            <div class="o_cw_big" t-esc="o.vehicle_id.license_plate"/>
+                            <div t-esc="' '.join(filter(None, [o.vehicle_id.make, o.vehicle_id.vehicle_model, o.vehicle_id.year]))"/>
+                            <div class="text-muted small">
+                                <t t-esc="o.vehicle_id.vehicle_type_id.name"/><t t-if="o.vehicle_id.color"> · <t t-esc="o.vehicle_id.color"/></t>
+                            </div>
+                        </td>
+                        <td>
+                            <h6>Visit</h6>
+                            <table class="o_cw_kv">
+                                <tr><td>Branch</td><td t-esc="o.company_id.name"/></tr>
+                                <tr t-if="o.bay_id"><td>Bay</td><td t-esc="o.bay_id.name"/></tr>
+                                <tr><td>Booked for</td><td t-esc="o._carwash_report_datetime(o.appointment_date)"/></tr>
+                                <tr t-if="o.arrived_at"><td>Arrived</td><td t-esc="o._carwash_report_datetime(o.arrived_at)"/></tr>
+                                <tr t-if="o.service_started_at"><td>Wash started</td><td t-esc="o._carwash_report_datetime(o.service_started_at)"/></tr>
+                                <tr t-if="o.ready_at"><td>Ready</td><td t-esc="o._carwash_report_datetime(o.ready_at)"/></tr>
+                                <tr t-if="o.done_at"><td>Handed over</td><td t-esc="o._carwash_report_datetime(o.done_at)"/></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <div name="booking_banners"/>
+
+                <h5 class="o_cw_section">Services</h5>
+                <table class="o_cw_table" name="services_table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th class="text-end" style="width: 9%">Qty</th>
+                            <th class="text-end" style="width: 16%">Unit Price</th>
+                            <th class="text-end" style="width: 16%">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.line_ids" t-as="line">
+                            <tr t-attf-class="{{'o_cw_discount' if line.is_discount_line else ''}}">
+                                <td name="line_service">
+                                    <strong t-esc="line.product_id.display_name"/>
+                                    <span t-if="line.description and line.description != line.product_id.display_name"
+                                          class="o_cw_note" t-esc="line.description"/>
+                                </td>
+                                <td class="text-end"><t t-if="not line.is_discount_line" t-esc="'%g' % line.quantity"/></td>
+                                <td class="text-end">
+                                    <t t-if="not line.is_discount_line" t-esc="line.price_unit"
+                                       t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                                </td>
+                                <td class="text-end" t-esc="line.price_subtotal"
+                                    t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+                <table class="o_cw_totals" name="totals">
+                    <tr class="o_cw_grand">
+                        <td><t t-if="is_receipt">Total Paid / Due</t><t t-else="">Estimated Total</t></td>
+                        <td class="text-end" t-esc="o.amount_total" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                    </tr>
+                    <tr t-if="o.sudo().sale_order_id">
+                        <td class="text-muted small" colspan="2">Billed on sales order <t t-esc="o.sudo().sale_order_id.name"/> (taxes as per invoice)</td>
+                    </tr>
+                </table>
+
+                <t t-set="timed" t-value="services.filtered('start_time')"/>
+                <div t-if="timed" class="o_cw_keep" name="service_timeline">
+                    <h5 class="o_cw_section">Service Log</h5>
+                    <table class="o_cw_table">
+                        <thead>
+                            <tr><th>Service</th><th>Started</th><th>Finished</th><th class="text-end">Time Taken</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="timed" t-as="line">
+                                <td t-esc="line.product_id.display_name"/>
+                                <td t-esc="o._carwash_report_datetime(line.start_time)"/>
+                                <td t-esc="o._carwash_report_datetime(line.end_time)"/>
+                                <td class="text-end"><t t-if="line.end_time"><t t-esc="'%d' % line.actual_duration"/> min</t></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div name="extra_sections"/>
+
+                <div t-if="o.notes" class="o_cw_callout o_cw_keep">
+                    <strong>Notes:</strong> <span t-field="o.notes"/>
+                </div>
+                <div t-if="o.state == 'cancelled' and o.cancel_reason" class="o_cw_callout o_cw_callout_bad">
+                    <strong>Cancelled:</strong> <span t-field="o.cancel_reason"/>
+                </div>
+
+                <table class="o_cw_signatures">
+                    <tr>
+                        <td><div class="o_cw_sign_line"/>Customer signature<t t-if="is_receipt"> - vehicle received in good condition</t></td>
+                        <td><div class="o_cw_sign_line"/>For <t t-esc="o.company_id.name"/></td>
+                    </tr>
+                </table>
+                <p class="o_cw_thanks">
+                    <t t-if="is_receipt">Thank you for washing with us - see you again soon!</t>
+                    <t t-else="">Please arrive a few minutes early and remove valuables from the vehicle.</t>
+                </p>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_carwash_booking">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="o" t-value="o.with_context(lang=o.customer_id.lang or o.env.lang)"/>
+                <t t-call="carwash_base.report_carwash_booking_document"/>
+            </t>
+        </t>
+    </template>
+</odoo>

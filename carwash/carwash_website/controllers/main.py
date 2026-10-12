@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 
-from odoo import http
+import pytz
+
+from odoo import fields, http
 from odoo.exceptions import UserError
 from odoo.http import request
 
@@ -14,6 +16,45 @@ class CarwashBookingController(http.Controller):
         except (TypeError, ValueError):
             return None
 
+    @staticmethod
+    def _branch_tz(company):
+        """Timezone of the branch's working hours - website slots are local times of the branch."""
+        try:
+            return pytz.timezone(company.sudo().resource_calendar_id.tz or "UTC")
+        except pytz.UnknownTimeZoneError:
+            return pytz.utc
+
+    def _to_local(self, company, utc_dt):
+        return pytz.utc.localize(utc_dt).astimezone(self._branch_tz(company)).replace(tzinfo=None)
+
+    def _parse_slot_start(self, company, value):
+        """The posted slot (UTC, as rendered by the slot page) as a naive UTC datetime, or None.
+        A value with a timezone offset is converted to UTC."""
+        try:
+            start = datetime.fromisoformat(value or "")
+        except ValueError:
+            return None
+        if start.tzinfo:
+            start = start.astimezone(pytz.utc).replace(tzinfo=None)
+        return start
+
+    def _bookable_slots(self, company, booking_date, service, package):
+        """Free slots of `booking_date` at the branch (branch-local hours, UTC `start`), future ones only."""
+        now = fields.Datetime.now()
+        slots = request.env["carwash.appointment"].sudo()._get_available_slots(
+            company, booking_date, service, duration=self._selection_duration(service, package),
+            tz=self._branch_tz(company),
+        )
+        for slot in slots:
+            slot["label"] = self._to_local(company, slot["start"]).strftime("%I:%M %p")
+        return [slot for slot in slots if slot["start"] > now]
+
+    def _vehicle_type(self, vehicle_type_id=None, code=None):
+        """The vehicle type picked on the website (by id, or by its standard code), else the default one."""
+        VehicleType = request.env["carwash.vehicle.type"].sudo()
+        vehicle_type = VehicleType.browse(self._to_int(vehicle_type_id) or []).exists().filtered("active")
+        return vehicle_type or VehicleType._by_code(code) or VehicleType._default_type()
+
     def _get_branches(self):
         bay_company_ids = request.env["carwash.bay"].sudo().search([]).company_id.ids
         return request.env["res.company"].sudo().browse(set(bay_company_ids))
@@ -22,6 +63,8 @@ class CarwashBookingController(http.Controller):
         return request.env["product.product"].sudo().search([("is_carwash_service", "=", True)])
 
     def _get_packages(self):
+        if not request.env["carwash.feature"].sudo()._enabled("carwash_jobcard.group_carwash_package"):
+            return request.env["carwash.service.package"]
         return request.env["carwash.service.package"].sudo().search([("active", "=", True)])
 
     def _get_selection(self, product_id=None, package_id=None):
@@ -66,7 +109,7 @@ class CarwashBookingController(http.Controller):
         appointments and sees the first booking - so it correctly picks a different bay
         or reports the slot full instead of double-booking.
         """
-        bays = request.env["carwash.bay"].sudo().search([("company_id", "=", company.id), ("active", "=", True)])
+        bays = request.env["carwash.appointment"].sudo()._carwash_bookable_bays(company)
         if not bays:
             return None
         request.env.cr.execute(
@@ -145,9 +188,7 @@ class CarwashBookingController(http.Controller):
             return request.render("carwash_website.book_start_page", values)
 
         partner = request.env.user.partner_id
-        slots = request.env["carwash.appointment"].sudo()._get_available_slots(
-            company, booking_date, service, duration=self._selection_duration(service, package)
-        )
+        slots = self._bookable_slots(company, booking_date, service, package)
         vehicles = request.env["carwash.vehicle"].sudo().search(
             [("customer_id", "=", partner.id), ("company_id", "=", company.id)]
         )
@@ -155,6 +196,8 @@ class CarwashBookingController(http.Controller):
             {
                 "slots": slots,
                 "vehicles": vehicles,
+                "vehicle_types": request.env["carwash.vehicle.type"].sudo().search([]),
+                "default_vehicle_type": request.env["carwash.vehicle.type"].sudo()._default_type(),
                 "normal_amount": round(sum(price * qty for _p, price, qty in self._booking_price_lines(service, package)), 2),
                 "membership_preview": self._membership_preview(values["membership"], service, package),
             }
@@ -162,8 +205,9 @@ class CarwashBookingController(http.Controller):
         return request.render("carwash_website.book_slots_page", values)
 
     @http.route("/car-wash/book/confirm", type="http", auth="user", website=True, methods=["POST"], sitemap=False)
-    def book_confirm(self, company_id, slot_start, product_id=None, vehicle_id=None, license_plate=None,
-                      make=None, vehicle_model=None, vehicle_type=None, package_id=None, use_membership=None, **kwargs):
+    def book_confirm(self, company_id=None, slot_start=None, product_id=None, vehicle_id=None, license_plate=None,
+                      make=None, vehicle_model=None, vehicle_type=None, package_id=None, use_membership=None,
+                      vehicle_type_id=None, **kwargs):
         company_id = self._to_int(company_id)
         service, package = self._get_selection(product_id, package_id)
         if not (company_id and (service or package)):
@@ -174,11 +218,17 @@ class CarwashBookingController(http.Controller):
         product_id = service.id or None
         retry = {"package_id": package.id or None}
 
-        try:
-            start = datetime.fromisoformat(slot_start)
-        except ValueError:
+        start = self._parse_slot_start(company, slot_start)
+        if not start:
             return request.redirect("/car-wash/book")
+        local_date = self._to_local(company, start).date()
         end = start + timedelta(hours=self._selection_duration(service, package))
+        # only a slot the page offered can be booked (no past / closed / lunch / odd times)
+        if start not in {slot["start"] for slot in self._bookable_slots(company, local_date, service, package)}:
+            return self.book_slots(
+                company_id=company_id, product_id=product_id, date=local_date.isoformat(), **retry,
+                error="That time can't be booked any more. Please pick one of the available times.",
+            )
 
         partner = request.env.user.partner_id
         Vehicle = request.env["carwash.vehicle"].sudo()
@@ -189,7 +239,7 @@ class CarwashBookingController(http.Controller):
             )
             if not vehicle:
                 return self.book_slots(
-                    company_id=company_id, product_id=product_id, date=start.date().isoformat(), **retry,
+                    company_id=company_id, product_id=product_id, date=local_date.isoformat(), **retry,
                     error="That vehicle is no longer available. Please pick another.",
                 )
         elif license_plate:
@@ -200,19 +250,19 @@ class CarwashBookingController(http.Controller):
                     "company_id": company.id,
                     "make": make or "",
                     "vehicle_model": vehicle_model or "",
-                    "vehicle_type": vehicle_type or "sedan",
+                    "vehicle_type_id": self._vehicle_type(vehicle_type_id, vehicle_type).id,
                 }
             )
         else:
             return self.book_slots(
-                company_id=company_id, product_id=product_id, date=start.date().isoformat(), **retry,
+                company_id=company_id, product_id=product_id, date=local_date.isoformat(), **retry,
                 error="Please select an existing vehicle or register a new one.",
             )
 
         bay = self._lock_and_pick_bay(company, start, end)
         if not bay:
             return self.book_slots(
-                company_id=company_id, product_id=product_id, date=start.date().isoformat(), **retry,
+                company_id=company_id, product_id=product_id, date=local_date.isoformat(), **retry,
                 error="Sorry, that slot was just taken. Please pick another time.",
             )
 
@@ -227,7 +277,8 @@ class CarwashBookingController(http.Controller):
         package = package or request.env["carwash.service.package"]
         Appointment = request.env["carwash.appointment"].sudo()
         extra = service - package.line_ids.product_id
-        appointment = Appointment.create(
+        # the package's services are added right after creating the booking
+        appointment = Appointment.with_context(carwash_services_pending=True).create(
             {
                 "customer_id": partner.id,
                 "vehicle_id": vehicle.id,
@@ -235,7 +286,7 @@ class CarwashBookingController(http.Controller):
                 "appointment_date": start,
                 "line_ids": [(0, 0, {"product_id": extra.id, "quantity": 1})] if extra else [],
             }
-        )
+        ).with_context(carwash_services_pending=False)
         try:
             if package:
                 appointment._apply_service_package(package)
@@ -249,7 +300,7 @@ class CarwashBookingController(http.Controller):
         except UserError:
             return self.book_slots(
                 company_id=company.id, product_id=service.id or None, package_id=package.id or None,
-                date=start.date().isoformat(),
+                date=self._to_local(company, start).date().isoformat(),
                 error="Sorry, that slot was just taken. Please pick another time.",
             )
         return request.redirect(f"/car-wash/book/success/{appointment.id}")

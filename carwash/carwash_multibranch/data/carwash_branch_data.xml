@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Five branches of the main company (a branch = a sub-company), each with its own warehouse, branch code
+         (numbering: SAT/26/0001...) and 3-4 bays (hand wash, tunnel, detailing). Regular data, so every new
+         database starts with them (with or without demo data); edit, archive or add branches as needed -
+         noupdate: upgrades never change or bring back what you changed. forcecreate="0": created on install only -
+         on an upgrade a new company can't be made while some modules aren't loaded yet (e.g. Timesheets' Internal
+         project of the company): migrations/19.0.1.7.0/end-migrate.py adds missing branches then. -->
+
+    <!-- ============================================================ Satellite Branch -->
+    <record id="demo_company_satellite" model="res.company" forcecreate="0">
+        <field name="name">Satellite Branch</field>
+        <field name="parent_id" ref="base.main_company"/>
+        <field name="carwash_code">SAT</field>
+        <field name="street">Satellite Road</field>
+        <field name="city">Ahmedabad</field>
+        <field name="phone">+91 79 4000 1001</field>
+    </record>
+    <record id="demo_warehouse_satellite" model="stock.warehouse" forcecreate="0">
+        <field name="name">Satellite Branch</field>
+        <field name="code">SAT</field>
+        <field name="company_id" ref="demo_company_satellite"/>
+        <field name="partner_id" model="res.company" eval="obj(ref('demo_company_satellite')).partner_id.id"/>
+    </record>
+    <record id="demo_bay_satellite_1" model="carwash.bay" forcecreate="0">
+        <field name="name">SAT Bay 1</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_satellite"/>
+    </record>
+    <record id="demo_bay_satellite_2" model="carwash.bay" forcecreate="0">
+        <field name="name">SAT Bay 2</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+        <field name="company_id" ref="demo_company_satellite"/>
+    </record>
+    <record id="demo_bay_satellite_3" model="carwash.bay" forcecreate="0">
+        <field name="name">SAT Bay 3</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_detail"/>
+        <field name="company_id" ref="demo_company_satellite"/>
+    </record>
+    <record id="demo_bay_satellite_4" model="carwash.bay" forcecreate="0">
+        <field name="name">SAT Bay 4</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_satellite"/>
+    </record>
+
+    <!-- ============================================================ Navrangpura Branch -->
+    <record id="demo_company_navrangpura" model="res.company" forcecreate="0">
+        <field name="name">Navrangpura Branch</field>
+        <field name="parent_id" ref="base.main_company"/>
+        <field name="carwash_code">NAV</field>
+        <field name="street">CG Road, Navrangpura</field>
+        <field name="city">Ahmedabad</field>
+        <field name="phone">+91 79 4000 1002</field>
+    </record>
+    <record id="demo_warehouse_navrangpura" model="stock.warehouse" forcecreate="0">
+        <field name="name">Navrangpura Branch</field>
+        <field name="code">NAV</field>
+        <field name="company_id" ref="demo_company_navrangpura"/>
+        <field name="partner_id" model="res.company" eval="obj(ref('demo_company_navrangpura')).partner_id.id"/>
+    </record>
+    <record id="demo_bay_navrangpura_1" model="carwash.bay" forcecreate="0">
+        <field name="name">NAV Bay 1</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_navrangpura"/>
+    </record>
+    <record id="demo_bay_navrangpura_2" model="carwash.bay" forcecreate="0">
+        <field name="name">NAV Bay 2</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+        <field name="company_id" ref="demo_company_navrangpura"/>
+    </record>
+    <record id="demo_bay_navrangpura_3" model="carwash.bay" forcecreate="0">
+        <field name="name">NAV Bay 3</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_detail"/>
+        <field name="company_id" ref="demo_company_navrangpura"/>
+    </record>
+
+    <!-- ============================================================ SG Highway Branch -->
+    <record id="demo_company_sg_highway" model="res.company" forcecreate="0">
+        <field name="name">SG Highway Branch</field>
+        <field name="parent_id" ref="base.main_company"/>
+        <field name="carwash_code">SGH</field>
+        <field name="street">SG Highway</field>
+        <field name="city">Ahmedabad</field>
+        <field name="phone">+91 79 4000 1003</field>
+    </record>
+    <record id="demo_warehouse_sg_highway" model="stock.warehouse" forcecreate="0">
+        <field name="name">SG Highway Branch</field>
+        <field name="code">SGH</field>
+        <field name="company_id" ref="demo_company_sg_highway"/>
+        <field name="partner_id" model="res.company" eval="obj(ref('demo_company_sg_highway')).partner_id.id"/>
+    </record>
+    <record id="demo_bay_sg_highway_1" model="carwash.bay" forcecreate="0">
+        <field name="name">SGH Bay 1</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_sg_highway"/>
+    </record>
+    <record id="demo_bay_sg_highway_2" model="carwash.bay" forcecreate="0">
+        <field name="name">SGH Bay 2</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+        <field name="company_id" ref="demo_company_sg_highway"/>
+    </record>
+    <record id="demo_bay_sg_highway_3" model="carwash.bay" forcecreate="0">
+        <field name="name">SGH Bay 3</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_detail"/>
+        <field name="company_id" ref="demo_company_sg_highway"/>
+    </record>
+    <record id="demo_bay_sg_highway_4" model="carwash.bay" forcecreate="0">
+        <field name="name">SGH Bay 4</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+        <field name="company_id" ref="demo_company_sg_highway"/>
+    </record>
+
+    <!-- ============================================================ Maninagar Branch -->
+    <record id="demo_company_maninagar" model="res.company" forcecreate="0">
+        <field name="name">Maninagar Branch</field>
+        <field name="parent_id" ref="base.main_company"/>
+        <field name="carwash_code">MAN</field>
+        <field name="street">Maninagar Cross Road</field>
+        <field name="city">Ahmedabad</field>
+        <field name="phone">+91 79 4000 1004</field>
+    </record>
+    <record id="demo_warehouse_maninagar" model="stock.warehouse" forcecreate="0">
+        <field name="name">Maninagar Branch</field>
+        <field name="code">MAN</field>
+        <field name="company_id" ref="demo_company_maninagar"/>
+        <field name="partner_id" model="res.company" eval="obj(ref('demo_company_maninagar')).partner_id.id"/>
+    </record>
+    <record id="demo_bay_maninagar_1" model="carwash.bay" forcecreate="0">
+        <field name="name">MAN Bay 1</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_maninagar"/>
+    </record>
+    <record id="demo_bay_maninagar_2" model="carwash.bay" forcecreate="0">
+        <field name="name">MAN Bay 2</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+        <field name="company_id" ref="demo_company_maninagar"/>
+    </record>
+    <record id="demo_bay_maninagar_3" model="carwash.bay" forcecreate="0">
+        <field name="name">MAN Bay 3</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_detail"/>
+        <field name="company_id" ref="demo_company_maninagar"/>
+    </record>
+
+    <!-- ============================================================ Vastrapur Branch -->
+    <record id="demo_company_vastrapur" model="res.company" forcecreate="0">
+        <field name="name">Vastrapur Branch</field>
+        <field name="parent_id" ref="base.main_company"/>
+        <field name="carwash_code">VAS</field>
+        <field name="street">Vastrapur Lake Road</field>
+        <field name="city">Ahmedabad</field>
+        <field name="phone">+91 79 4000 1005</field>
+    </record>
+    <record id="demo_warehouse_vastrapur" model="stock.warehouse" forcecreate="0">
+        <field name="name">Vastrapur Branch</field>
+        <field name="code">VAS</field>
+        <field name="company_id" ref="demo_company_vastrapur"/>
+        <field name="partner_id" model="res.company" eval="obj(ref('demo_company_vastrapur')).partner_id.id"/>
+    </record>
+    <record id="demo_bay_vastrapur_1" model="carwash.bay" forcecreate="0">
+        <field name="name">VAS Bay 1</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_vastrapur"/>
+    </record>
+    <record id="demo_bay_vastrapur_2" model="carwash.bay" forcecreate="0">
+        <field name="name">VAS Bay 2</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_tunnel"/>
+        <field name="company_id" ref="demo_company_vastrapur"/>
+    </record>
+    <record id="demo_bay_vastrapur_3" model="carwash.bay" forcecreate="0">
+        <field name="name">VAS Bay 3</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_detail"/>
+        <field name="company_id" ref="demo_company_vastrapur"/>
+    </record>
+    <record id="demo_bay_vastrapur_4" model="carwash.bay" forcecreate="0">
+        <field name="name">VAS Bay 4</field>
+        <field name="bay_type_id" ref="carwash_base.bay_type_hand"/>
+        <field name="company_id" ref="demo_company_vastrapur"/>
+    </record>
+
+    <!-- the administrator works at every branch (company switcher) -->
+    <function model="res.users" name="write">
+        <value eval="[ref('base.user_admin')]"/>
+        <value eval="{'company_ids': [(4, ref('demo_company_satellite')), (4, ref('demo_company_navrangpura')), (4, ref('demo_company_sg_highway')), (4, ref('demo_company_maninagar')), (4, ref('demo_company_vastrapur'))]}"/>
+    </function>
+
+</odoo>

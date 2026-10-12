@@ -22,11 +22,12 @@ class CarwashServicePackage(models.Model):
         "Fixed package price: one bundle price, spread across the services when applied to a booking.",
     )
     fixed_price = fields.Float(string="Package Price", tracking=True)
-    services_total = fields.Float(compute="_compute_prices", string="Services Total")
-    total_price = fields.Float(compute="_compute_prices", string="Package Amount")
-    saving = fields.Float(compute="_compute_prices", string="Customer Saves")
-    duration = fields.Float(compute="_compute_prices", string="Duration (hours)")
-    service_count = fields.Integer(compute="_compute_prices", string="Number of Services")
+    # sudo: a package is shared by all branches while its services may be company-specific products
+    services_total = fields.Float(compute="_compute_prices", string="Services Total", compute_sudo=True)
+    total_price = fields.Float(compute="_compute_prices", string="Package Amount", compute_sudo=True)
+    saving = fields.Float(compute="_compute_prices", string="Customer Saves", compute_sudo=True)
+    duration = fields.Float(compute="_compute_prices", string="Duration (hours)", compute_sudo=True)
+    service_count = fields.Integer(compute="_compute_prices", string="Number of Services", compute_sudo=True)
     booking_count = fields.Integer(compute="_compute_booking_count", string="Bookings")
     website_highlights = fields.Html(
         string="What's Included (Website)",
@@ -106,7 +107,7 @@ class CarwashServicePackageLine(models.Model):
     )
     quantity = fields.Float(default=1.0)
     list_price = fields.Float(related="product_id.list_price", string="Unit Price")
-    subtotal = fields.Float(compute="_compute_subtotal", string="Subtotal")
+    subtotal = fields.Float(compute="_compute_subtotal", string="Subtotal", compute_sudo=True)
     duration = fields.Float(related="product_id.carwash_duration", string="Duration (hours)")
 
     @api.depends("quantity", "product_id.list_price")

@@ -1,60 +1,405 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ============================================================ actions -->
     <record id="action_report_carwash_jobcard" model="ir.actions.report">
         <field name="name">Job Card</field>
         <field name="model">carwash.jobcard</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">carwash_jobcard.report_carwash_jobcard_document</field>
         <field name="report_file">carwash_jobcard.report_carwash_jobcard_document</field>
+        <field name="print_report_name">'Job Card - %s' % object.name</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
         <field name="binding_model_id" ref="model_carwash_jobcard"/>
         <field name="binding_type">report</field>
     </record>
 
+    <record id="action_report_carwash_quality_check" model="ir.actions.report">
+        <field name="name">Quality Check Report</field>
+        <field name="model">carwash.jobcard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_jobcard.report_carwash_quality_check</field>
+        <field name="report_file">carwash_jobcard.report_carwash_quality_check</field>
+        <field name="print_report_name">'Quality Check - %s' % object.name</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+        <field name="binding_model_id" ref="model_carwash_jobcard"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_carwash_inspection" model="ir.actions.report">
+        <field name="name">Inspection Report</field>
+        <field name="model">carwash.inspection</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_jobcard.report_carwash_inspection</field>
+        <field name="report_file">carwash_jobcard.report_carwash_inspection</field>
+        <field name="print_report_name">'Inspection - %s' % object.name</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+        <field name="binding_model_id" ref="model_carwash_inspection"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ============================================================ shared blocks -->
+    <!-- customer / vehicle / booking boxes: expects `booking` -->
+    <template id="report_carwash_booking_boxes">
+        <table class="o_cw_boxes">
+            <tr>
+                <td>
+                    <h6>Customer</h6>
+                    <div class="o_cw_big" t-esc="booking.customer_id.name"/>
+                    <div t-if="booking.customer_id.phone" t-esc="booking.customer_id.phone"/>
+                </td>
+                <td>
+                    <h6>Vehicle</h6>
+                    <div class="o_cw_big" t-esc="booking.vehicle_id.license_plate"/>
+                    <div t-esc="' '.join(filter(None, [booking.vehicle_id.make, booking.vehicle_id.vehicle_model]))"/>
+                    <div class="text-muted small" t-esc="booking.vehicle_id.vehicle_type_id.name"/>
+                </td>
+                <td>
+                    <h6>Booking</h6>
+                    <table class="o_cw_kv">
+                        <tr><td>Reference</td><td t-esc="booking.name"/></tr>
+                        <tr><td>Branch</td><td t-esc="booking.company_id.name"/></tr>
+                        <tr t-if="booking.bay_id"><td>Bay</td><td t-esc="booking.bay_id.name"/></tr>
+                        <tr t-if="booking.token_no"><td>Token</td><td t-esc="booking.token_no"/></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </template>
+
+    <!-- check-in / inspection checklist: expects `lines`, `booking` -->
+    <template id="report_carwash_checklist_table">
+        <table class="o_cw_table">
+            <thead>
+                <tr>
+                    <th style="width: 6%" class="text-center">Done</th>
+                    <th>Task</th>
+                    <th style="width: 12%">Mandatory</th>
+                    <th style="width: 30%">Done by</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="lines" t-as="line">
+                    <td class="text-center">
+                        <span t-if="line.is_done" class="o_cw_check">&#10004;</span>
+                        <span t-else="" class="o_cw_cross">&#10008;</span>
+                    </td>
+                    <td><t t-esc="line.name"/><span t-if="line.note" class="o_cw_note" t-esc="line.note"/></td>
+                    <td><t t-if="line.is_required">Yes</t></td>
+                    <td class="small">
+                        <t t-if="line.is_done"><t t-esc="line.done_by_id.name"/> · <t t-esc="booking._carwash_report_datetime(line.done_date)"/></t>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </template>
+
+    <!-- one inspection (Quality Check and Inspection reports): expects `insp`, `booking`, `with_photos` -->
+    <template id="report_carwash_inspection_block">
+        <div class="o_cw_keep">
+            <table class="o_cw_kv" style="width: 60%">
+                <tr><td>Inspection</td><td><strong t-esc="insp.name"/> - <t t-esc="insp.inspection_type_id.name"/></td></tr>
+                <tr><td>Inspector</td><td t-esc="insp.inspector_id.name or '-'"/></tr>
+                <tr><td>Date</td><td t-esc="booking._carwash_report_datetime(insp.inspection_date)"/></tr>
+                <tr><td>Status</td><td>
+                    <span t-if="insp.state == 'done'" class="o_cw_badge o_cw_badge_ok">Completed</span>
+                    <span t-else="" class="o_cw_badge o_cw_badge_warn">In Progress</span>
+                    <span t-if="insp.has_damage" class="o_cw_badge o_cw_badge_bad">Damage found</span>
+                </td></tr>
+            </table>
+            <div t-if="insp.condition_notes" t-attf-class="o_cw_callout {{'o_cw_callout_bad' if insp.has_damage else ''}}">
+                <strong>Condition:</strong> <span t-field="insp.condition_notes"/>
+            </div>
+        </div>
+        <t t-if="insp.checklist_line_ids">
+            <t t-call="carwash_jobcard.report_carwash_checklist_table">
+                <t t-set="lines" t-value="insp.checklist_line_ids"/>
+            </t>
+        </t>
+        <table t-if="with_photos and insp.photo_ids" class="o_cw_photos">
+            <t t-foreach="[insp.photo_ids[i:i + 3] for i in range(0, len(insp.photo_ids), 3)]" t-as="row">
+                <tr>
+                    <td t-foreach="row" t-as="photo">
+                        <img t-att-src="image_data_uri(photo.image)" alt="Photo"/>
+                        <small t-esc="photo.note"/>
+                    </td>
+                </tr>
+            </t>
+        </table>
+    </template>
+
+    <!-- ============================================================ Job Card -->
+    <template id="report_carwash_jobcard_page">
+        <t t-call="carwash_base.carwash_external_layout">
+            <t t-set="booking" t-value="o.appointment_id"/>
+            <t t-set="stage_label" t-value="dict(o._fields['stages']._description_selection(o.env))[o.stages]"/>
+            <div class="page o_cw_report">
+                <table class="o_cw_title">
+                    <tr>
+                        <td>
+                            <h2>Job Card</h2>
+                            <div class="o_cw_ref" t-esc="o.name"/>
+                            <div class="o_cw_sub">Work order for booking <t t-esc="booking.name"/></div>
+                        </td>
+                        <td class="text-end">
+                            <span t-attf-class="o_cw_badge {{'o_cw_badge_ok' if o.stages == 'done' else 'o_cw_badge_bad' if o.stages == 'cancel' else 'o_cw_badge_warn' if o.stages == 'qc' else ''}}"
+                                  t-esc="stage_label"/>
+                            <div t-if="booking.token_no" class="o_cw_token mt-2"><small>Token</small><span t-esc="booking.token_no"/></div>
+                        </td>
+                    </tr>
+                </table>
+                <t t-call="carwash_jobcard.report_carwash_booking_boxes"/>
+
+                <h5 class="o_cw_section">Crew &amp; Timing</h5>
+                <table class="o_cw_kv" style="width: 70%">
+                    <tr><td>Assigned staff</td><td>
+                        <t t-foreach="o.assigned_employee_ids" t-as="emp">
+                            <strong t-esc="emp.name"/><t t-if="emp.carwash_role_ids"> (<t t-esc="', '.join(emp.carwash_role_ids.mapped('name'))"/>)</t><t t-if="not emp_last">, </t>
+                        </t>
+                        <t t-if="not o.assigned_employee_ids">Not assigned</t>
+                    </td></tr>
+                    <tr><td>Started</td><td t-esc="booking._carwash_report_datetime(o.start_time) or '-'"/></tr>
+                    <tr><td>Finished</td><td t-esc="booking._carwash_report_datetime(o.end_time) or '-'"/></tr>
+                    <tr t-if="o.start_time and o.end_time"><td>Duration</td>
+                        <td><t t-esc="'%d' % ((o.end_time - o.start_time).total_seconds() // 60)"/> min</td></tr>
+                    <tr t-if="o.qc_inspector_id"><td>QC inspector</td><td t-esc="o.qc_inspector_id.name"/></tr>
+                </table>
+
+                <h5 class="o_cw_section">Services to perform</h5>
+                <table class="o_cw_table">
+                    <thead>
+                        <tr><th>Service</th><th style="width: 12%">Qty</th><th style="width: 18%">Status</th><th style="width: 16%" class="text-end">Time Taken</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="o.service_line_ids or booking._service_lines()" t-as="line">
+                            <td><strong t-esc="line.product_id.display_name"/><span t-if="line.package_id" class="o_cw_note">Package: <t t-esc="line.package_id.name"/></span></td>
+                            <td t-esc="'%g' % line.quantity"/>
+                            <td t-esc="dict(line._fields['service_state']._description_selection(line.env))[line.service_state]"/>
+                            <td class="text-end"><t t-if="line.end_time"><t t-esc="'%d' % line.actual_duration"/> min</t></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h5 class="o_cw_section">Task Checklist</h5>
+                <table class="o_cw_table" t-if="o.checklist_line_ids">
+                    <thead><tr><th style="width: 8%" class="text-center">Done</th><th>Task</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="o.checklist_line_ids" t-as="task">
+                            <td class="text-center">
+                                <span t-if="task.is_check" class="o_cw_check">&#10004;</span>
+                                <span t-else="" class="o_cw_cross">&#10008;</span>
+                            </td>
+                            <td t-esc="task.name"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <p t-else="" class="text-muted">No checklist on this job card.</p>
+                <p t-if="o.checklist_line_ids" class="small text-muted">
+                    <t t-esc="len(o.checklist_line_ids.filtered('is_check'))"/> of <t t-esc="len(o.checklist_line_ids)"/> tasks done (<t t-esc="o.checklist_progress"/>%).
+                </p>
+
+                <div t-if="booking.notes" class="o_cw_callout"><strong>Booking notes:</strong> <span t-field="booking.notes"/></div>
+                <div t-if="o.qc_notes" class="o_cw_callout o_cw_callout_warn"><strong>QC notes:</strong> <span t-field="o.qc_notes"/></div>
+
+                <table class="o_cw_signatures">
+                    <tr>
+                        <td><div class="o_cw_sign_line"/>Washer / Detailer</td>
+                        <td><div class="o_cw_sign_line"/>QC Inspector</td>
+                    </tr>
+                </table>
+            </div>
+        </t>
+    </template>
+
     <template id="report_carwash_jobcard_document">
         <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="doc">
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <h2>Job Card <span t-field="doc.name"/></h2>
-                        <div class="row mt-3">
-                            <div class="col-6">
-                                <strong>Customer:</strong> <span t-field="doc.customer_id.name"/><br/>
-                                <strong>Vehicle:</strong> <span t-field="doc.vehicle_id.license_plate"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Bay:</strong> <span t-field="doc.bay_id.name"/><br/>
-                                <strong>Assigned Staff:</strong>
-                                <span t-esc="', '.join(doc.assigned_employee_ids.mapped('name'))"/>
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-6">
-                                <strong>Start:</strong> <span t-field="doc.start_time"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>End:</strong> <span t-field="doc.end_time"/>
-                            </div>
-                        </div>
-                        <table class="table table-sm o_report_table mt-4">
-                            <thead>
-                                <tr>
-                                    <th>Task</th>
-                                    <th class="text-center">Done</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="doc.checklist_line_ids" t-as="line">
-                                    <td><span t-field="line.name"/></td>
-                                    <td class="text-center"><span t-field="line.is_check"/></td>
-                                </tr>
-                            </tbody>
+            <t t-foreach="docs" t-as="o">
+                <t t-call="carwash_jobcard.report_carwash_jobcard_page"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================================================ Quality Check -->
+    <template id="report_carwash_quality_check_page">
+        <t t-call="carwash_base.carwash_external_layout">
+            <t t-set="booking" t-value="o.appointment_id"/>
+            <t t-set="passed" t-value="o.stages == 'done'"/>
+            <div class="page o_cw_report">
+                <table class="o_cw_title">
+                    <tr>
+                        <td>
+                            <h2>Quality Check Report</h2>
+                            <div class="o_cw_ref"><t t-esc="o.name"/> · <t t-esc="booking.name"/></div>
+                            <div class="o_cw_sub" t-if="o.end_time">Checked on <t t-esc="booking._carwash_report_datetime(o.end_time)"/></div>
+                        </td>
+                        <td class="text-end">
+                            <span t-if="passed" class="o_cw_badge o_cw_badge_ok">QC Passed</span>
+                            <span t-elif="o.stages == 'qc'" class="o_cw_badge o_cw_badge_warn">Waiting for QC</span>
+                            <span t-elif="o.stages == 'cancel'" class="o_cw_badge o_cw_badge_bad">Cancelled</span>
+                            <span t-else="" class="o_cw_badge">In Progress</span>
+                        </td>
+                    </tr>
+                </table>
+                <t t-call="carwash_jobcard.report_carwash_booking_boxes"/>
+
+                <h5 class="o_cw_section">QC Result</h5>
+                <table class="o_cw_kv" style="width: 70%">
+                    <tr><td>Result</td><td>
+                        <strong t-if="passed">Passed - vehicle cleared for hand-over</strong>
+                        <strong t-elif="o.stages == 'qc'">Pending - waiting for the inspector</strong>
+                        <strong t-else="">Not passed yet</strong>
+                    </td></tr>
+                    <tr><td>QC inspector</td><td t-esc="o.qc_inspector_id.name or '-'"/></tr>
+                    <tr><td>Crew</td><td t-esc="', '.join(o.assigned_employee_ids.mapped('name')) or '-'"/></tr>
+                    <tr><td>Work started</td><td t-esc="booking._carwash_report_datetime(o.start_time) or '-'"/></tr>
+                    <tr><td>QC completed</td><td t-esc="booking._carwash_report_datetime(o.end_time) or '-'"/></tr>
+                    <tr t-if="o.checklist_line_ids"><td>Tasks</td>
+                        <td><t t-esc="len(o.checklist_line_ids.filtered('is_check'))"/> / <t t-esc="len(o.checklist_line_ids)"/> done</td></tr>
+                </table>
+                <div t-if="o.qc_notes" class="o_cw_callout o_cw_callout_warn"><strong>QC notes / rework:</strong> <span t-field="o.qc_notes"/></div>
+
+                <t t-if="o.checklist_line_ids">
+                    <h5 class="o_cw_section">Work Checklist</h5>
+                    <table class="o_cw_table">
+                        <thead><tr><th style="width: 8%" class="text-center">OK</th><th>Task</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="o.checklist_line_ids" t-as="task">
+                                <td class="text-center">
+                                    <span t-if="task.is_check" class="o_cw_check">&#10004;</span>
+                                    <span t-else="" class="o_cw_cross">&#10008;</span>
+                                </td>
+                                <td t-esc="task.name"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <t t-if="booking.checklist_line_ids">
+                    <h5 class="o_cw_section">Vehicle Check-in</h5>
+                    <t t-call="carwash_jobcard.report_carwash_checklist_table">
+                        <t t-set="lines" t-value="booking.checklist_line_ids"/>
+                    </t>
+                </t>
+
+                <t t-foreach="booking.inspection_ids.sorted(lambda i: (i.inspection_type_id.sequence, i.id))" t-as="insp">
+                    <h5 class="o_cw_section"><t t-esc="insp.inspection_type_id.name"/> Inspection</h5>
+                    <t t-call="carwash_jobcard.report_carwash_inspection_block">
+                        <t t-set="with_photos" t-value="True"/>
+                    </t>
+                </t>
+
+                <table class="o_cw_signatures">
+                    <tr>
+                        <td><div class="o_cw_sign_line"/>QC Inspector<t t-if="o.qc_inspector_id"> - <t t-esc="o.qc_inspector_id.name"/></t></td>
+                        <td><div class="o_cw_sign_line"/>Customer</td>
+                    </tr>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_carwash_quality_check">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="carwash_jobcard.report_carwash_quality_check_page"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================================================ Inspection -->
+    <template id="report_carwash_inspection">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="carwash_base.carwash_external_layout">
+                    <t t-set="booking" t-value="o.appointment_id"/>
+                    <t t-set="insp" t-value="o"/>
+                    <div class="page o_cw_report">
+                        <table class="o_cw_title">
+                            <tr>
+                                <td>
+                                    <h2><t t-esc="o.inspection_type_id.name"/> Inspection</h2>
+                                    <div class="o_cw_ref"><t t-esc="o.name"/> · <t t-esc="booking.name"/></div>
+                                </td>
+                                <td class="text-end">
+                                    <span t-if="o.has_damage" class="o_cw_badge o_cw_badge_bad">Damage found</span>
+                                    <span t-elif="o.state == 'done'" class="o_cw_badge o_cw_badge_ok">No damage</span>
+                                </td>
+                            </tr>
                         </table>
-                        <p t-if="doc.qc_notes" class="mt-3">
-                            <strong>QC Notes:</strong> <span t-field="doc.qc_notes"/>
-                        </p>
+                        <t t-call="carwash_jobcard.report_carwash_booking_boxes"/>
+                        <h5 class="o_cw_section">Inspection</h5>
+                        <t t-call="carwash_jobcard.report_carwash_inspection_block">
+                            <t t-set="with_photos" t-value="True"/>
+                        </t>
+                        <table class="o_cw_signatures">
+                            <tr>
+                                <td><div class="o_cw_sign_line"/>Inspector<t t-if="o.inspector_id"> - <t t-esc="o.inspector_id.name"/></t></td>
+                                <td><div class="o_cw_sign_line"/>Customer (acknowledges the vehicle condition)</td>
+                            </tr>
+                        </table>
                     </div>
                 </t>
             </t>
         </t>
+    </template>
+
+    <!-- ============================================================ Booking receipt additions -->
+    <template id="report_carwash_booking_document_jobcard" inherit_id="carwash_base.report_carwash_booking_document">
+        <xpath expr="//div[@name='booking_banners']" position="inside">
+            <div t-if="o.service_package_id" class="o_cw_callout">
+                <strong>Package: <t t-esc="o.service_package_id.name"/></strong>
+                <t t-if="o.package_saving"> - you save
+                    <t t-esc="o.package_saving" t-options="{'widget': 'monetary', 'display_currency': currency}"/></t>
+            </div>
+        </xpath>
+        <xpath expr="//td[@name='line_service']" position="inside">
+            <span t-if="line.package_id" class="o_cw_note">Part of package <t t-esc="line.package_id.name"/></span>
+        </xpath>
+        <xpath expr="//div[@name='extra_sections']" position="inside">
+            <t t-set="jobcards" t-value="o.sudo().jobcard_ids.filtered(lambda j: j.stages != 'cancel')"/>
+            <div t-if="jobcards" class="o_cw_keep">
+                <h5 class="o_cw_section">Crew &amp; Quality Check</h5>
+                <table class="o_cw_table">
+                    <thead><tr><th>Job Card</th><th>Crew</th><th>QC Inspector</th><th>Result</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="jobcards" t-as="jc">
+                            <td t-esc="jc.name"/>
+                            <td t-esc="', '.join(jc.assigned_employee_ids.mapped('name')) or '-'"/>
+                            <td t-esc="jc.qc_inspector_id.name or '-'"/>
+                            <td>
+                                <span t-if="jc.stages == 'done'" class="o_cw_badge o_cw_badge_ok">QC Passed</span>
+                                <span t-else="" class="o_cw_badge o_cw_badge_warn" t-esc="dict(jc._fields['stages']._description_selection(jc.env))[jc.stages]"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <t t-set="inspections" t-value="o.sudo().inspection_ids"/>
+            <div t-if="inspections" class="o_cw_keep">
+                <h5 class="o_cw_section">Vehicle Inspections</h5>
+                <table class="o_cw_table">
+                    <thead><tr><th>Inspection</th><th>Inspector</th><th>Date</th><th>Condition</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="inspections" t-as="insp">
+                            <td><t t-esc="insp.inspection_type_id.name"/> <span class="o_cw_note" t-esc="insp.name"/></td>
+                            <td t-esc="insp.inspector_id.name or '-'"/>
+                            <td t-esc="o._carwash_report_datetime(insp.inspection_date)"/>
+                            <td>
+                                <span t-if="insp.has_damage" class="o_cw_badge o_cw_badge_bad">Damage noted</span>
+                                <span t-else="" class="o_cw_badge o_cw_badge_ok">OK</span>
+                                <span t-if="insp.condition_notes" class="o_cw_note" t-esc="insp.condition_notes"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <t t-set="review" t-value="o.carwash_review_id"/>
+            <div t-if="review" class="o_cw_callout o_cw_keep">
+                <strong>Your rating: </strong>
+                <span class="o_cw_stars">
+                    <t t-foreach="range(5)" t-as="i"><span t-attf-class="{{'' if i &lt; int(review.carwash_stars or 0) else 'o_cw_star_off'}}">&#9733;</span></t>
+                </span>
+                <div t-if="review.feedback" class="small" t-esc="review.feedback"/>
+            </div>
+        </xpath>
     </template>
 </odoo>

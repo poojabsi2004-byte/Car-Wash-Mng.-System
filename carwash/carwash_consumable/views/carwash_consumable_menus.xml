@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Configuration > Consumables (section header) -->
+    <menuitem id="menu_carwash_consumable_section" name="Consumables" parent="carwash_base.menu_carwash_config"
+              groups="group_carwash_consumable" sequence="25"/>
+    <menuitem id="menu_carwash_consumable_request" name="Requests" parent="menu_carwash_consumable_section"
+              action="action_carwash_consumable_request" sequence="10"/>
+    <menuitem id="menu_carwash_consumable_stock" name="Stock" parent="menu_carwash_consumable_section"
+              action="action_carwash_consumable_stock" groups="carwash_base.group_carwash_manager" sequence="20"/>
+    <menuitem id="menu_carwash_consumable_receipts" name="Receive Stock" parent="menu_carwash_consumable_section"
+              action="stock.action_picking_tree_incoming" groups="carwash_base.group_carwash_manager" sequence="30"/>
+    <menuitem id="menu_carwash_config_consumable" name="Consumable Products" parent="menu_carwash_consumable_section"
+              action="action_carwash_consumable_product" sequence="50"/>
+
+    <!-- Reporting > Consumables > Consumption Analysis (the section hides it while Consumables is
+         switched off, the entry itself is for managers) -->
+    <menuitem id="menu_carwash_reporting_consumable" name="Consumables" parent="carwash_base.menu_carwash_reporting"
+              groups="group_carwash_consumable" sequence="50"/>
+    <menuitem id="menu_carwash_consumption_analysis" name="Consumption Analysis" parent="menu_carwash_reporting_consumable"
+              action="action_carwash_consumption_analysis" groups="carwash_base.group_carwash_manager" sequence="10"/>
+
+    <!-- Configuration is for managers: floor staff (washer / QC / front desk) raise their
+         consumable requests from Operations -->
+    <menuitem id="menu_carwash_consumable_request_operations" name="Consumable Requests"
+              parent="carwash_base.menu_carwash_operations" action="action_carwash_consumable_request"
+              groups="group_carwash_consumable" sequence="40"/>
+</odoo>

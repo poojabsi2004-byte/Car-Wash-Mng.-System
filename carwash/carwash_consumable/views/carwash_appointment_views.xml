@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_appointment_form_consumable" model="ir.ui.view">
+        <field name="name">carwash.appointment.form.consumable</field>
+        <field name="model">carwash.appointment</field>
+        <field name="inherit_id" ref="carwash_base.view_carwash_appointment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_consumables" type="object" class="oe_stat_button" icon="fa-flask"
+                        invisible="not consumable_move_count" groups="carwash_base.group_carwash_manager">
+                    <field name="consumable_move_count" widget="statinfo" string="Consumables"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

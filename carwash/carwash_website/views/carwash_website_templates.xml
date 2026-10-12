@@ -31,8 +31,8 @@
                 </div>
                 <div class="small text-muted">
                     <t t-esc="membership.plan_id._benefit_summary()"/>
-                    <t t-if="membership.washes_remaining &gt;= 0"> · <t t-esc="membership.washes_remaining"/> free wash(es) left this cycle</t>
-                    <t t-if="membership.paid_until"> · valid until <t t-esc="membership.paid_until.strftime('%d %b %Y')"/></t>
+                    <t t-if="membership.washes_remaining &gt;= 0"> · <t t-esc="membership.washes_remaining"/> free wash(es) left this month</t>
+                    <t t-if="membership.valid_until"> · valid until <t t-esc="membership.valid_until.strftime('%d %b, %y')"/></t>
                 </div>
             </div>
             <a href="/my/membership" class="small text-nowrap">My membership</a>
@@ -311,7 +311,7 @@
                                            t-att-value="slot['start'].isoformat()"
                                            required="required" autocomplete="off"/>
                                     <label class="btn btn-outline-primary o_cw_slot_label" t-att-for="'cw_slot_%d' % slot_index">
-                                        <t t-esc="slot['start'].strftime('%I:%M %p')"/>
+                                        <t t-esc="slot['label']"/>
                                         <span class="d-block small fw-normal">
                                             <t t-esc="slot['bay_count']"/> spot<t t-if="slot['bay_count'] != 1">s</t> open
                                         </span>
@@ -341,14 +341,11 @@
                                 <input type="text" class="form-control" name="vehicle_model" placeholder="Model"/>
                             </div>
                             <div class="col-md-3">
-                                <select class="form-select" name="vehicle_type">
-                                    <option value="sedan">Sedan</option>
-                                    <option value="hatchback">Hatchback</option>
-                                    <option value="suv">SUV</option>
-                                    <option value="truck">Truck/Pickup</option>
-                                    <option value="van">Van</option>
-                                    <option value="bike">Motorcycle</option>
-                                    <option value="other">Other</option>
+                                <select class="form-select" name="vehicle_type_id" aria-label="Vehicle type">
+                                    <t t-foreach="vehicle_types" t-as="vehicle_type">
+                                        <option t-att-value="vehicle_type.id" t-out="vehicle_type.name"
+                                                t-att-selected="'selected' if vehicle_type == default_vehicle_type else None"/>
+                                    </t>
                                 </select>
                             </div>
                         </div>
@@ -404,7 +401,7 @@
                         <h1 class="h3 mb-3">Booking Confirmed!</h1>
                         <p class="text-muted">
                             Your booking <strong t-esc="appointment.name"/> is confirmed for
-                            <strong t-esc="appointment.appointment_date.strftime('%B %d, %Y at %I:%M %p')"/>
+                            <strong t-esc="appointment._slot_local(appointment.appointment_date).strftime('%d %b, %y %I:%M %p')"/>
                             at <strong t-esc="appointment.company_id.name"/>.
                         </p>
                         <p t-if="appointment.membership_id" class="text-success">

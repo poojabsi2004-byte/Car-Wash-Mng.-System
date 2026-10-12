@@ -8,3 +8,11 @@ access_carwash_appointment_line_manager,carwash.appointment.line.manager,model_c
 access_carwash_bay_user,carwash.bay.user,model_carwash_bay,group_carwash_user,1,1,0,0
 access_carwash_bay_manager,carwash.bay.manager,model_carwash_bay,group_carwash_manager,1,1,1,1
 access_carwash_service_material_line_manager,carwash.service.material.line.manager,model_carwash_service_material_line,group_carwash_manager,1,1,1,1
+access_carwash_time_slot_user,carwash.time.slot.user,model_carwash_time_slot,base.group_user,1,0,0,0
+access_carwash_time_slot_manager,carwash.time.slot.manager,model_carwash_time_slot,group_carwash_manager,1,1,1,1
+access_carwash_time_slot_front_desk,carwash.time.slot.front.desk,model_carwash_time_slot,group_carwash_user,1,0,1,0
+access_carwash_vehicle_type_internal,carwash.vehicle.type.internal,model_carwash_vehicle_type,base.group_user,1,0,0,0
+access_carwash_vehicle_type_user,carwash.vehicle.type.user,model_carwash_vehicle_type,group_carwash_user,1,1,1,0
+access_carwash_vehicle_type_manager,carwash.vehicle.type.manager,model_carwash_vehicle_type,group_carwash_manager,1,1,1,1
+access_carwash_bay_type_internal,carwash.bay.type.internal,model_carwash_bay_type,base.group_user,1,0,0,0
+access_carwash_bay_type_manager,carwash.bay.type.manager,model_carwash_bay_type,group_carwash_manager,1,1,1,1

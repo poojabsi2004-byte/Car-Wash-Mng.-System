@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Customer emails of the booking workflow. Editable in Settings > Technical > Email Templates
+         (or Car Wash > Configuration > Settings > Notifications > Email Templates). -->
+    <data noupdate="1">
+
+        <record id="mail_template_booking_request" model="mail.template">
+            <field name="name">Car Wash: Booking Request Received</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="subject">We received your car wash booking request</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id or '' }}</field>
+            <field name="email_to">{{ (not object.partner_id and object.email_from) or '' }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.partner_id.name or object.contact_name or ''">Customer</t>,</p>
+    <p>Thank you! We have received your booking request
+        <t t-if="object.carwash_booking_date">for
+            <strong t-out="format_datetime(object.carwash_booking_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a')">Monday, 10:00 AM</strong>
+        </t>
+        at <strong t-out="object.company_id.name or ''">Branch</strong>.</p>
+    <ul>
+        <li t-if="object.carwash_package_id">Package: <strong t-out="object.carwash_package_id.name or ''"/></li>
+        <li t-if="object.carwash_service_ids">Services: <t t-out="', '.join(object.carwash_service_ids.mapped('name'))"/></li>
+        <li t-if="object.carwash_license_plate">Vehicle: <strong t-out="object.carwash_license_plate or ''"/></li>
+    </ul>
+    <p>Our team will confirm it shortly - you will receive another email as soon as your booking is confirmed.</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_booking_confirmed" model="mail.template">
+            <field name="name">Car Wash: Booking Confirmed</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Booking confirmed - {{ object.name }} on {{ format_datetime(object.appointment_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a') }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.customer_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.customer_id.name or ''">Customer</t>,</p>
+    <p>Your car wash booking is <strong>confirmed</strong>.</p>
+    <table style="border-collapse: collapse; margin: 8px 0 14px 0;">
+        <tr><td style="padding: 3px 14px 3px 0; color: #666;">Booking</td><td><strong t-out="object.name or ''">CW/26/0001</strong></td></tr>
+        <tr><td style="padding: 3px 14px 3px 0; color: #666;">When</td>
+            <td><strong t-out="format_datetime(object.appointment_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a')">Monday, 10:00 AM</strong></td></tr>
+        <tr><td style="padding: 3px 14px 3px 0; color: #666;">Where</td><td t-out="object.company_id.name or ''">Branch</td></tr>
+        <tr><td style="padding: 3px 14px 3px 0; color: #666;">Vehicle</td><td t-out="object.vehicle_id.license_plate or ''">GJ01AB1234</td></tr>
+        <tr t-if="object.token_no"><td style="padding: 3px 14px 3px 0; color: #666;">Token</td><td><strong t-out="object.token_no">12</strong></td></tr>
+    </table>
+    <p t-if="object.service_package_id" style="background: #eef7f6; padding: 8px 12px; border-radius: 6px;">
+        Package <strong t-out="object.service_package_id.name or ''">Full Wash</strong>
+        <t t-if="object.package_saving"> - you save <strong t-out="format_amount(object.package_saving, object.company_id.currency_id)"/></t>
+    </p>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr t-foreach="object.line_ids" t-as="line">
+            <td style="padding: 4px 0; border-bottom: 1px solid #eee;" t-out="line.description or line.product_id.display_name">Service</td>
+            <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: right;" t-out="format_amount(line.price_subtotal, object.company_id.currency_id)">100</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0;"><strong>Total</strong></td>
+            <td style="padding: 6px 0; text-align: right;"><strong t-out="format_amount(object.amount_total, object.company_id.currency_id)">100</strong></td>
+        </tr>
+    </table>
+    <p t-if="object.membership_id and object.membership_saving" style="color: #0f7b6c;">
+        Your <t t-out="object.membership_id.plan_id.name or ''"/> membership saves you
+        <strong t-out="format_amount(object.membership_saving, object.company_id.currency_id)"/>.
+    </p>
+    <p><a t-att-href="object.get_base_url() + '/my/bookings/%s' % object.id"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">View my booking</a></p>
+    <p>See you soon!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_booking_updated" model="mail.template">
+            <field name="name">Car Wash: Booking Updated</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Your booking {{ object.name }} was updated</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.customer_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.customer_id.name or ''">Customer</t>,</p>
+    <p>Your booking <strong t-out="object.name or ''">CW/26/0001</strong> has been updated. Here are the current details:</p>
+    <ul>
+        <li>When: <strong t-out="format_datetime(object.appointment_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a')">Monday, 10:00 AM</strong></li>
+        <li>Where: <t t-out="object.company_id.name or ''">Branch</t></li>
+        <li t-if="object.service_package_id">Package: <strong t-out="object.service_package_id.name or ''"/>
+            <t t-if="object.package_saving"> (you save <t t-out="format_amount(object.package_saving, object.company_id.currency_id)"/>)</t></li>
+        <li>Services: <t t-out="', '.join([l.product_id.name for l in object.line_ids if not l.is_discount_line])"/></li>
+        <li>Total: <strong t-out="format_amount(object.amount_total, object.company_id.currency_id)">100</strong></li>
+    </ul>
+    <p><a t-att-href="object.get_base_url() + '/my/bookings/%s' % object.id"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">View my booking</a></p>
+    <p>If this doesn't suit you, just reply to this email.</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_booking_reminder" model="mail.template">
+            <field name="name">Car Wash: Visit Reminder</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Reminder: your car wash {{ format_datetime(object.appointment_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a') }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.customer_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.customer_id.name or ''">Customer</t>,</p>
+    <p>A friendly reminder of your car wash
+        <strong t-out="format_datetime(object.appointment_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a')">Monday, 10:00 AM</strong>
+        at <strong t-out="object.company_id.name or ''">Branch</strong>
+        for <strong t-out="object.vehicle_id.license_plate or ''">GJ01AB1234</strong>.</p>
+    <p t-if="object.service_package_id">Package: <strong t-out="object.service_package_id.name or ''"/></p>
+    <p>Please arrive a few minutes early and remove valuables from the vehicle.</p>
+    <p><a t-att-href="object.get_base_url() + '/my/bookings/%s' % object.id"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">View my booking</a></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_booking_ready" model="mail.template">
+            <field name="name">Car Wash: Vehicle Ready for Pickup</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Your vehicle {{ object.vehicle_id.license_plate }} is ready for pickup</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.customer_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.customer_id.name or ''">Customer</t>,</p>
+    <p>Great news - your vehicle <strong t-out="object.vehicle_id.license_plate or ''">GJ01AB1234</strong> is clean and
+        <strong>ready for pickup</strong> at <t t-out="object.company_id.name or ''">Branch</t>.</p>
+    <p>Amount to pay: <strong t-out="format_amount(object.amount_total, object.company_id.currency_id)">100</strong></p>
+    <p>Thank you for choosing us!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_booking_cancelled" model="mail.template">
+            <field name="name">Car Wash: Booking Cancelled</field>
+            <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
+            <field name="subject">Your booking {{ object.name }} was cancelled</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.customer_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-size: 13px;">
+    <p>Hello <t t-out="object.customer_id.name or ''">Customer</t>,</p>
+    <p>Your booking <strong t-out="object.name or ''">CW/26/0001</strong> for
+        <t t-out="format_datetime(object.appointment_date, tz=(object.company_id.resource_calendar_id.tz or 'UTC'), dt_format='dd MMM, yy h:mm a')">Monday, 10:00 AM</t>
+        has been <strong>cancelled</strong>.</p>
+    <p t-if="object.cancel_reason">Reason: <t t-out="object.cancel_reason"/></p>
+    <p><a t-att-href="object.get_base_url() + '/car-wash/book'"
+          style="background-color: #0e7490; padding: 8px 16px; color: #fff; border-radius: 5px; text-decoration: none;">Book another time</a></p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ analysis (pivot / graph / list) -->
+    <record id="view_carwash_staff_performance_pivot" model="ir.ui.view">
+        <field name="name">carwash.staff.performance.pivot</field>
+        <field name="model">carwash.staff.performance</field>
+        <field name="arch" type="xml">
+            <pivot string="Staff Performance" sample="1">
+                <field name="employee_id" type="row"/>
+                <field name="job_count" type="measure"/>
+                <field name="service_count" type="measure"/>
+                <field name="service_minutes" type="measure"/>
+                <field name="standard_minutes" type="measure"/>
+                <field name="rework_count" type="measure"/>
+                <field name="first_time_pass" type="measure"/>
+                <field name="rating" type="measure"/>
+                <field name="commission" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_performance_graph" model="ir.ui.view">
+        <field name="name">carwash.staff.performance.graph</field>
+        <field name="model">carwash.staff.performance</field>
+        <field name="arch" type="xml">
+            <graph string="Staff Performance" type="bar" sample="1">
+                <field name="employee_id"/>
+                <field name="job_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_performance_list" model="ir.ui.view">
+        <field name="name">carwash.staff.performance.list</field>
+        <field name="model">carwash.staff.performance</field>
+        <field name="arch" type="xml">
+            <list string="Staff Performance" create="false" edit="false" delete="false" sample="1"
+                  decoration-warning="rework_count &gt; 0">
+                <field name="date" widget="datetime"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="jobcard_id" class="fw-bold"/>
+                <field name="appointment_id" optional="show"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="service_count" sum="Total"/>
+                <field name="service_minutes" sum="Total"/>
+                <field name="standard_minutes" sum="Total" optional="show"/>
+                <field name="rework_count" sum="Total"/>
+                <field name="rating" optional="show"/>
+                <field name="commission" sum="Total" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_performance_search" model="ir.ui.view">
+        <field name="name">carwash.staff.performance.search</field>
+        <field name="model">carwash.staff.performance</field>
+        <field name="arch" type="xml">
+            <search string="Staff Performance">
+                <field name="employee_id"/>
+                <field name="jobcard_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <filter string="Completed On" name="filter_date" date="date"/>
+                <separator/>
+                <filter string="With Rework" name="reworked" domain="[('rework_count', '&gt;', 0)]"/>
+                <filter string="Rated by the Customer" name="rated" domain="[('rated_count', '&gt;', 0)]"/>
+                <group>
+                    <filter string="Staff" name="group_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Day" name="group_day" context="{'group_by': 'date:day'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date:month'}"/>
+                    <filter string="Branch" name="group_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_staff_performance_analysis" model="ir.actions.act_window">
+        <field name="name">Staff Performance Analysis</field>
+        <field name="res_model">carwash.staff.performance</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_carwash_staff_performance_search"/>
+        <field name="context">{'search_default_filter_date': 1, 'search_default_group_employee': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No completed job cards yet</p>
+            <p>Each completed job card counts for every staff member who worked on it: services done, time taken
+                against the standard time, reworks after quality control, customer rating and staff payable.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================ report wizard -->
+    <record id="view_carwash_staff_performance_report_form" model="ir.ui.view">
+        <field name="name">carwash.staff.performance.report.form</field>
+        <field name="model">carwash.staff.performance.report</field>
+        <field name="arch" type="xml">
+            <form string="Staff Performance">
+                <div class="alert alert-info mb-3" role="status">
+                    Jobs completed, services and time taken against the standard time, quality control first-time
+                    pass, reworks, customer rating, staff payable and hours worked - per staff member, ranked.
+                </div>
+                <group>
+                    <group string="Period">
+                        <field name="period" widget="radio"/>
+                        <field name="date_from" readonly="period != 'custom'"/>
+                        <field name="date_to" readonly="period != 'custom'"/>
+                    </group>
+                    <group string="Who">
+                        <field name="company_ids" widget="many2many_tags" options="{'no_create': True}"
+                               groups="base.group_multi_company"/>
+                        <field name="employee_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Whole team"/>
+                        <field name="detailed"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print" type="object" string="Print Report" icon="fa-print" class="btn-primary"/>
+                    <button name="action_view_analysis" type="object" string="Analyse on Screen" icon="fa-bar-chart" class="btn-secondary"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_carwash_staff_performance_report" model="ir.actions.act_window">
+        <field name="name">Staff Performance</field>
+        <field name="res_model">carwash.staff.performance.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Performance Report on the staff member -->
+    <record id="view_employee_form_carwash_performance" model="ir.ui.view">
+        <field name="name">hr.employee.form.carwash.performance</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="carwash_jobcard.view_employee_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_carwash_jobcards']" position="before">
+                <button name="action_carwash_performance_report" type="object" class="oe_stat_button" icon="fa-line-chart"
+                        string="Performance" invisible="not carwash_role_ids" groups="carwash_base.group_carwash_manager"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Reporting menu -->
+    <menuitem id="menu_carwash_staff_performance_report" name="Staff Performance" parent="carwash_base.menu_carwash_reporting"
+              action="action_carwash_staff_performance_report" groups="carwash_base.group_carwash_manager" sequence="25"/>
+    <menuitem id="menu_carwash_staff_performance_analysis" name="Staff Performance Analysis" parent="carwash_base.menu_carwash_reporting"
+              action="action_carwash_staff_performance_analysis" groups="carwash_base.group_carwash_manager" sequence="26"/>
+</odoo>

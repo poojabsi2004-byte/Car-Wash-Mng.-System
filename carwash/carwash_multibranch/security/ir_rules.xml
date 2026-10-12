@@ -7,44 +7,50 @@
             job cards" rule. Attaching this same restriction as a group-specific rule
             instead would make Odoo OR it with that other rule (any group-rule sharing a
             group gets OR'd), which would let a washer see every job card in their own
-            company regardless of assignment. Owner bypasses by self-exempting inside the
-            domain rather than via the groups field, since group-based exemption is what
-            caused the OR-combination problem in the first place.
+            company regardless of assignment. The Owner is a member of every branch and
+            follows the company switcher like everyone else: tick all branches to see all of
+            them, or one branch to focus on it.
         -->
         <record id="carwash_rule_branch_vehicle" model="ir.rule">
             <field name="name">Car Wash Vehicle: Branch Isolation</field>
             <field name="model_id" ref="carwash_base.model_carwash_vehicle"/>
-            <field name="domain_force">[('company_id', 'in', company_ids + [False])] if not user.has_group('carwash_multibranch.group_carwash_owner') else []</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
         </record>
 
         <record id="carwash_rule_branch_bay" model="ir.rule">
             <field name="name">Car Wash Bay: Branch Isolation</field>
             <field name="model_id" ref="carwash_base.model_carwash_bay"/>
-            <field name="domain_force">[('company_id', 'in', company_ids + [False])] if not user.has_group('carwash_multibranch.group_carwash_owner') else []</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
         </record>
 
         <record id="carwash_rule_branch_appointment" model="ir.rule">
             <field name="name">Car Wash Booking: Branch Isolation</field>
             <field name="model_id" ref="carwash_base.model_carwash_appointment"/>
-            <field name="domain_force">[('company_id', 'in', company_ids + [False])] if not user.has_group('carwash_multibranch.group_carwash_owner') else []</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
         </record>
 
         <record id="carwash_rule_branch_jobcard" model="ir.rule">
             <field name="name">Car Wash Job Card: Branch Isolation</field>
             <field name="model_id" ref="carwash_jobcard.model_carwash_jobcard"/>
-            <field name="domain_force">[('company_id', 'in', company_ids + [False])] if not user.has_group('carwash_multibranch.group_carwash_owner') else []</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
         </record>
 
         <record id="carwash_rule_branch_inspection" model="ir.rule">
             <field name="name">Car Wash Inspection: Branch Isolation</field>
             <field name="model_id" ref="carwash_jobcard.model_carwash_inspection"/>
-            <field name="domain_force">[('company_id', 'in', company_ids + [False])] if not user.has_group('carwash_multibranch.group_carwash_owner') else []</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
         </record>
 
         <record id="carwash_rule_branch_membership" model="ir.rule">
             <field name="name">Car Wash Membership: Branch Isolation</field>
             <field name="model_id" ref="carwash_membership.model_carwash_membership"/>
-            <field name="domain_force">[('company_id', 'in', company_ids + [False])] if not user.has_group('carwash_multibranch.group_carwash_owner') else []</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+        </record>
+
+        <record id="carwash_rule_branch_staff_commission" model="ir.rule">
+            <field name="name">Car Wash Staff Payable: Branch Isolation</field>
+            <field name="model_id" ref="carwash_jobcard.model_carwash_staff_commission"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
     </data>
 </odoo>

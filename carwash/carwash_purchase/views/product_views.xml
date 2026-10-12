@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Purchase type on the product (Car Wash tab) -->
+    <record id="view_product_template_form_carwash_purchase" model="ir.ui.view">
+        <field name="name">product.template.form.carwash.purchase</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="carwash_consumable.view_product_template_form_carwash_consumable"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_carwash_consumable']" position="after">
+                <field name="carwash_supply_type" invisible="is_carwash_service"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Consumable stock: supplier, reorder-up-to and ordering -->
+    <record id="view_carwash_consumable_list_purchase" model="ir.ui.view">
+        <field name="name">product.product.list.carwash.consumable.purchase</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="carwash_consumable.view_carwash_consumable_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <header>
+                    <button name="action_carwash_create_low_stock_rfqs" type="object" string="Create RFQs for Low Stock"
+                            class="btn-primary" display="always" groups="carwash_base.group_carwash_manager"/>
+                </header>
+            </xpath>
+            <xpath expr="//field[@name='carwash_min_qty']" position="after">
+                <field name="carwash_max_qty" string="Reorder Up To" groups="carwash_purchase.group_carwash_purchase"/>
+            </xpath>
+            <xpath expr="//field[@name='carwash_stock_status']" position="after">
+                <button name="action_carwash_order" type="object" string="Order" icon="fa-shopping-cart"
+                        groups="carwash_purchase.group_carwash_purchase,purchase.group_purchase_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Configuration > Purchases > Purchase Products: equipment, spares and maintenance services -->
+    <record id="view_carwash_purchase_product_list" model="ir.ui.view">
+        <field name="name">product.template.list.carwash.purchase</field>
+        <field name="model">product.template</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Products" sample="1" decoration-muted="not active">
+                <field name="active" column_invisible="1"/>
+                <field name="default_code" optional="show"/>
+                <field name="name" decoration-bf="1"/>
+                <field name="carwash_supply_type" widget="badge"
+                       decoration-info="carwash_supply_type == 'consumable'"
+                       decoration-warning="carwash_supply_type == 'equipment'"
+                       decoration-success="carwash_supply_type == 'maintenance'"/>
+                <field name="type" optional="show"/>
+                <field name="l10n_in_hsn_code" string="HSN / SAC" optional="show"/>
+                <field name="cost_currency_id" column_invisible="1"/>
+                <field name="standard_price" string="Cost" widget="monetary" options="{'currency_field': 'cost_currency_id'}"/>
+                <field name="seller_ids" string="Suppliers" widget="many2many_tags" optional="hide"/>
+                <field name="uom_id" string="Unit" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_purchase_product_search" model="ir.ui.view">
+        <field name="name">product.template.search.carwash.purchase</field>
+        <field name="model">product.template</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search string="Purchase Products">
+                <field name="name" string="Product" filter_domain="['|', ('name', 'ilike', self), ('default_code', 'ilike', self)]"/>
+                <field name="l10n_in_hsn_code" string="HSN / SAC"/>
+                <field name="seller_ids" string="Supplier" filter_domain="[('seller_ids.partner_id', 'ilike', self)]"/>
+                <filter string="Consumables" name="consumable" domain="[('carwash_supply_type', '=', 'consumable')]"/>
+                <filter string="Equipment &amp; Spares" name="equipment" domain="[('carwash_supply_type', '=', 'equipment')]"/>
+                <filter string="Maintenance Services" name="maintenance" domain="[('carwash_supply_type', '=', 'maintenance')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Purchase Type" name="group_supply_type" context="{'group_by': 'carwash_supply_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_purchase_product" model="ir.actions.act_window">
+        <field name="name">Purchase Products</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('carwash_supply_type', '!=', False)]</field>
+        <field name="context">{'default_carwash_supply_type': 'equipment', 'default_purchase_ok': True, 'default_sale_ok': False, 'default_type': 'consu', 'search_default_group_supply_type': 1}</field>
+        <field name="search_view_id" ref="view_carwash_purchase_product_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_purchase_product_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('product.product_template_only_form_view')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add what the car wash buys</p>
+            <p>Consumables, equipment and spare parts, and maintenance services (repairs). Give each its HSN / SAC code
+                for GST and its suppliers with their prices (Purchase tab).</p>
+        </field>
+    </record>
+
+</odoo>

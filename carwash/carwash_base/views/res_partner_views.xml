@@ -12,7 +12,7 @@
                     <field name="carwash_vehicle_count" widget="statinfo" string="Vehicles"/>
                 </button>
                 <button name="action_view_carwash_appointments" type="object"
-                        class="oe_stat_button" icon="fa-wrench"
+                        class="oe_stat_button" icon="fa-calendar-check-o"
                         invisible="carwash_appointment_count == 0">
                     <field name="carwash_appointment_count" widget="statinfo" string="Bookings"/>
                 </button>

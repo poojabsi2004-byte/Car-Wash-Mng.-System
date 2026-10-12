@@ -213,3 +213,34 @@
         border-radius: 12px;
     }
 }
+
+// Review & rating stars in My Bookings
+.o_cw_stars {
+    .o_cw_star_on { color: #f5b301; }
+    .o_cw_star_off { color: #ced4da; }
+}
+
+.o_cw_star_input {
+    display: inline-flex;
+    flex-direction: row-reverse; // inputs are 5..1 in the DOM so "~" lights up the lower stars
+    font-size: 1.75rem;
+    input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+    }
+    label {
+        color: #ced4da;
+        cursor: pointer;
+        padding: 0 0.1rem;
+    }
+    input:checked ~ label,
+    label:hover,
+    label:hover ~ label {
+        color: #f5b301;
+    }
+    input:focus-visible + label {
+        outline: 2px solid #6f42c1;
+        border-radius: 4px;
+    }
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Car Wash > Purchases (hidden while Supplier Management is switched off; each entry for its role) -->
+    <menuitem id="menu_carwash_purchase_root" name="Purchases" parent="carwash_base.menu_carwash_root"
+              groups="group_carwash_purchase" sequence="40"/>
+
+    <menuitem id="menu_carwash_purchase_orders_head" name="Orders" parent="menu_carwash_purchase_root" sequence="10"/>
+    <menuitem id="menu_carwash_rfq" name="Requests for Quotation" parent="menu_carwash_purchase_orders_head"
+              action="action_carwash_rfq" groups="purchase.group_purchase_user" sequence="10"/>
+    <menuitem id="menu_carwash_purchase_to_approve" name="Waiting for Approval" parent="menu_carwash_purchase_orders_head"
+              action="action_carwash_purchase_to_approve" groups="carwash_base.group_carwash_manager" sequence="20"/>
+    <menuitem id="menu_carwash_purchase_order" name="Purchase Orders" parent="menu_carwash_purchase_orders_head"
+              action="action_carwash_purchase_order" groups="purchase.group_purchase_user" sequence="30"/>
+    <menuitem id="menu_carwash_purchase_low_stock" name="Reorder Low Stock" parent="menu_carwash_purchase_orders_head"
+              action="carwash_consumable.action_carwash_consumable_stock" groups="carwash_base.group_carwash_manager" sequence="40"/>
+
+    <menuitem id="menu_carwash_purchase_receive_head" name="Receive" parent="menu_carwash_purchase_root"
+              groups="carwash_base.group_carwash_manager" sequence="20"/>
+    <menuitem id="menu_carwash_receipt" name="Receipts" parent="menu_carwash_purchase_receive_head"
+              action="action_carwash_receipt" sequence="10"/>
+    <menuitem id="menu_carwash_supplier_return" name="Returns to Vendors" parent="menu_carwash_purchase_receive_head"
+              action="action_carwash_supplier_return" sequence="20"/>
+
+    <menuitem id="menu_carwash_purchase_pay_head" name="Bills &amp; Payments" parent="menu_carwash_purchase_root"
+              groups="account.group_account_invoice" sequence="30"/>
+    <menuitem id="menu_carwash_vendor_bill" name="Vendor Bills" parent="menu_carwash_purchase_pay_head"
+              action="action_carwash_vendor_bill" sequence="10"/>
+    <menuitem id="menu_carwash_supplier_due" name="Vendor Dues" parent="menu_carwash_purchase_pay_head"
+              action="action_carwash_supplier_due" sequence="20"/>
+    <menuitem id="menu_carwash_supplier_payment" name="Vendor Payments" parent="menu_carwash_purchase_pay_head"
+              action="account.action_account_payments_payable" sequence="30"/>
+
+    <!-- Reporting > Purchases -->
+    <menuitem id="menu_carwash_reporting_purchase" name="Purchases" parent="carwash_base.menu_carwash_reporting"
+              groups="group_carwash_purchase" sequence="60"/>
+    <menuitem id="menu_carwash_purchase_analysis" name="Purchase Analysis" parent="menu_carwash_reporting_purchase"
+              action="purchase.action_purchase_order_report_all" groups="carwash_base.group_carwash_manager" sequence="10"/>
+
+    <!-- Configuration > Purchases -->
+    <menuitem id="menu_carwash_config_purchase" name="Purchases" parent="carwash_base.menu_carwash_config"
+              groups="group_carwash_purchase" sequence="27"/>
+    <menuitem id="menu_carwash_purchase_product" name="Purchase Products" parent="menu_carwash_config_purchase"
+              action="action_carwash_purchase_product" sequence="20"/>
+</odoo>

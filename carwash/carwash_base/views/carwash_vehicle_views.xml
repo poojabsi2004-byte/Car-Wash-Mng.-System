@@ -4,14 +4,17 @@
         <field name="name">carwash.vehicle.list</field>
         <field name="model">carwash.vehicle</field>
         <field name="arch" type="xml">
-            <list string="Vehicles">
-                <field name="license_plate"/>
-                <field name="customer_id"/>
+            <list string="Vehicles" sample="1">
+                <field name="license_plate" class="o_cw_plate_cell"/>
+                <field name="customer_id" widget="many2one_avatar"/>
                 <field name="make"/>
                 <field name="vehicle_model"/>
-                <field name="vehicle_type"/>
-                <field name="visit_count"/>
-                <field name="last_service_date"/>
+                <field name="vehicle_type_id" widget="badge"/>
+                <field name="color" optional="hide"/>
+                <field name="year" optional="hide"/>
+                <field name="visit_count" string="Visits"/>
+                <field name="last_service_date" string="Last Wash" widget="remaining_days" optional="show"/>
+                <field name="company_id" string="Branch" optional="hide" groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
@@ -20,38 +23,59 @@
         <field name="name">carwash.vehicle.form</field>
         <field name="model">carwash.vehicle</field>
         <field name="arch" type="xml">
-            <form string="Vehicle">
+            <form string="Vehicle" class="o_cw_form">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_appointments" type="object"
-                                class="oe_stat_button" icon="fa-wrench">
+                                class="oe_stat_button" icon="fa-calendar-check-o">
                             <field name="appointment_count" widget="statinfo" string="Bookings"/>
                         </button>
                     </div>
-                    <field name="image_1920" widget="image" class="oe_avatar"/>
-                    <div class="oe_title">
-                        <label for="license_plate"/>
-                        <h1><field name="license_plate" placeholder="License Plate"/></h1>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <field name="vehicle_type_icon" invisible="1"/>
+                    <div class="o_cw_hero">
+                        <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_1920'}"/>
+                        <div class="oe_title">
+                            <label for="license_plate" string="Number Plate"/>
+                            <h1><field name="license_plate" placeholder="e.g. GJ01 AB 1234"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip"><i class="fa fa-user" title="Owner"/><field name="customer_id" readonly="1" nolabel="1" options="{'no_open': True}"/></span>
+                                <span class="o_cw_chip o_cw_chip_info" invisible="not vehicle_type_id"><field name="vehicle_type_id" readonly="1" nolabel="1" options="{'no_open': True}"/></span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi">
+                                <field name="visit_count" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Visits</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not last_service_date">
+                                <field name="last_service_date" widget="date" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Last Wash</span>
+                            </div>
+                        </div>
                     </div>
                     <group>
-                        <group>
+                        <group string="Owner">
                             <field name="customer_id"/>
-                            <field name="vehicle_type"/>
-                            <field name="color"/>
+                            <field name="company_id" string="Branch" groups="base.group_multi_company"/>
                         </group>
-                        <group>
+                        <group string="Vehicle">
+                            <field name="vehicle_type_id"/>
                             <field name="make"/>
                             <field name="vehicle_model"/>
+                            <field name="color"/>
                             <field name="year"/>
                             <field name="vin"/>
                         </group>
                     </group>
-                    <group>
-                        <field name="visit_count" readonly="1"/>
-                        <field name="last_service_date" readonly="1"/>
-                    </group>
-                    <field name="notes" placeholder="Notes..."/>
+                    <notebook>
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Scratches, accessories, customer requests..."/>
+                        </page>
+                    </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -64,10 +88,11 @@
                 <field name="license_plate"/>
                 <field name="customer_id"/>
                 <field name="vin"/>
+                <field name="vehicle_type_id"/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group>
                     <filter string="Customer" name="group_customer" context="{'group_by': 'customer_id'}"/>
-                    <filter string="Vehicle Type" name="group_type" context="{'group_by': 'vehicle_type'}"/>
+                    <filter string="Vehicle Type" name="group_type" context="{'group_by': 'vehicle_type_id'}"/>
                 </group>
             </search>
         </field>
@@ -76,6 +101,6 @@
     <record id="action_carwash_vehicle" model="ir.actions.act_window">
         <field name="name">Vehicles</field>
         <field name="res_model">carwash.vehicle</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
     </record>
 </odoo>

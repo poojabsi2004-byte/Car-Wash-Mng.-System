@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Feature switch (Car Wash > Configuration > Settings). Member prices are pricelists, so
+         memberships switch on Odoo's Pricelists feature too. -->
+    <record id="group_carwash_membership" model="res.groups">
+        <field name="name">Car Wash: Memberships</field>
+        <field name="implied_ids" eval="[(4, ref('product.group_product_pricelist'))]"/>
+    </record>
+</odoo>

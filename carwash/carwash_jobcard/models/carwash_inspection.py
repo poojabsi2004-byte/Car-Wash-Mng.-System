@@ -66,14 +66,20 @@ class CarwashInspection(models.Model):
         required=True,
         help="An inspection must be completed (mandatory checklist tasks ticked) before the booking moves on.",
     )
-    checklist_line_ids = fields.One2many("carwash.checklist.line", "inspection_id", string="Checklist")
+    checklist_line_ids = fields.One2many("carwash.checklist.line", "inspection_id", string="Checklist Tasks")
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].next_by_code("carwash.inspection") or "New"
+                company = (self.env["res.company"].browse(vals.get("company_id"))
+                           or self.env["carwash.appointment"].browse(vals.get("appointment_id")).company_id
+                           or self.env.company)
+                vals["name"] = self.env["ir.sequence"]._carwash_next_by_code("carwash.inspection", company) or "New"
         return super().create(vals_list)
+
+    def _checklist_vehicle_type(self):
+        return self.vehicle_id.vehicle_type_id
 
     def _checklist_template_domain(self):
         return super()._checklist_template_domain() + [
@@ -103,6 +109,9 @@ class CarwashInspection(models.Model):
                 )
             )
         return True
+
+    def action_print_inspection(self):
+        return self.env.ref("carwash_jobcard.action_report_carwash_inspection").report_action(self, config=False)
 
     def action_reopen(self):
         if any(i.appointment_id.state in ("done", "cancelled", "no_show") for i in self):

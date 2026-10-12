@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Bookings calendar ===================== -->
+    <record id="view_carwash_appointment_calendar" model="ir.ui.view">
+        <field name="name">carwash.appointment.calendar</field>
+        <field name="model">carwash.appointment</field>
+        <field name="arch" type="xml">
+            <!-- length from the services' durations, one colour per bay; a click on an empty slot opens a
+                 new booking at that time (no quick-create: a booking needs its services) -->
+            <calendar string="Bookings" date_start="appointment_date" date_delay="duration" color="bay_id"
+                      mode="week" quick_create="0" event_open_popup="0" scales="day,week,month">
+                <field name="customer_id"/>
+                <field name="vehicle_id"/>
+                <field name="bay_id" filters="1"/>
+                <field name="state" filters="1"/>
+                <field name="amount_total"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ===================== Vehicles ===================== -->
+    <record id="view_carwash_vehicle_kanban" model="ir.ui.view">
+        <field name="name">carwash.vehicle.kanban</field>
+        <field name="model">carwash.vehicle</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="vehicle_type_id"/>
+                <field name="vehicle_type_icon"/>
+                <field name="image_128"/>
+                <field name="visit_count"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <aside class="d-flex align-items-start me-3">
+                            <field t-if="record.image_128.raw_value" name="image_128" widget="image"
+                                   options="{'img_class': 'o_cw_tile object-fit-cover p-0'}" alt="Vehicle"/>
+                            <span t-else="" class="o_cw_tile">
+                                <i t-attf-class="fa {{record.vehicle_type_icon.raw_value or 'fa-car'}}" role="img" aria-label="Vehicle"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <div class="o_cw_card_head">
+                                <field name="license_plate" class="o_cw_plate"/>
+                                <field name="vehicle_type_id" widget="badge" class="small"/>
+                            </div>
+                            <div class="o_cw_meta">
+                                <div><i class="fa fa-user" title="Owner"/><field name="customer_id"/></div>
+                                <div t-if="record.make.raw_value or record.vehicle_model.raw_value">
+                                    <i class="fa fa-car" title="Make / model"/><field name="make"/> <field name="vehicle_model"/>
+                                </div>
+                            </div>
+                            <footer>
+                                <span><i class="fa fa-repeat me-1" title="Visits"/><field name="visit_count"/> visit(s)</span>
+                                <span t-if="record.last_service_date.raw_value" class="ms-auto d-inline-flex align-items-center gap-1 text-nowrap">
+                                    <i class="fa fa-clock-o" title="Last wash"/><field name="last_service_date" widget="remaining_days"/>
+                                </span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== Vehicle types ===================== -->
+    <record id="view_carwash_vehicle_type_kanban" model="ir.ui.view">
+        <field name="name">carwash.vehicle.type.kanban</field>
+        <field name="model">carwash.vehicle.type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="icon"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="card" class="flex-row align-items-center">
+                        <span t-att-class="{'o_cw_tone_muted': !record.active.raw_value}"/>
+                        <aside class="me-3">
+                            <span t-att-class="'o_cw_tile' + (record.active.raw_value ? '' : ' o_cw_tile_muted')">
+                                <i t-attf-class="fa {{record.icon.raw_value or 'fa-car'}}" role="img" aria-label="Icon" title="Vehicle type"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <field name="name" class="o_cw_card_title"/>
+                        </main>
+                        <div class="text-end ms-2">
+                            <field name="vehicle_count" class="o_cw_kpi"/>
+                            <div class="o_cw_kpi_label">Vehicles</div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== Time slots ===================== -->
+    <record id="view_carwash_time_slot_kanban" model="ir.ui.view">
+        <field name="name">carwash.time.slot.kanban</field>
+        <field name="model">carwash.time.slot</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="hour"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="card" class="flex-row align-items-center">
+                        <span t-att-class="{'o_cw_tone_muted': !record.active.raw_value}"/>
+                        <aside class="me-3">
+                            <span t-att-class="'o_cw_tile o_cw_tile_sm' + (
+                                !record.active.raw_value ? ' o_cw_tile_muted' :
+                                record.hour.raw_value &lt; 12 ? ' o_cw_tile_info' :
+                                record.hour.raw_value &lt; 17 ? ' o_cw_tile_warning' : '')">
+                                <i t-att-class="'fa ' + (record.hour.raw_value &lt; 17 ? 'fa-sun-o' : 'fa-moon-o')"
+                                   role="img" aria-label="Time of day" title="Time of day"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <div class="o_cw_card_head">
+                                <field name="name" class="o_cw_card_title"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </div>
+                            <div class="o_cw_card_sub">
+                                <t t-if="record.hour.raw_value &lt; 12">Morning</t>
+                                <t t-elif="record.hour.raw_value &lt; 17">Afternoon</t>
+                                <t t-else="">Evening</t>
+                            </div>
+                            <footer groups="base.group_multi_company">
+                                <i class="fa fa-building" title="Branches"/>
+                                <field name="company_ids" widget="many2many_tags" class="small"/>
+                                <span t-if="!record.company_ids.raw_value.length" class="text-muted">All branches</span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

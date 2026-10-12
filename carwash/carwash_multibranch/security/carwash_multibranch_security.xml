@@ -3,6 +3,7 @@
     <record id="group_carwash_owner" model="res.groups">
         <field name="name">Owner</field>
         <field name="privilege_id" ref="carwash_base.res_groups_privilege_carwash"/>
+        <field name="comment">Owns the business: everything of Manager, at every branch - branch comparison, owner dashboard, all branches' staff, bookings and money.</field>
         <field name="implied_ids" eval="[(4, ref('carwash_base.group_carwash_manager')), (4, ref('base.group_multi_company'))]"/>
     </record>
 </odoo>

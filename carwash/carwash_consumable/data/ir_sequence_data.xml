@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_carwash_consumable_request" model="ir.sequence">
+        <field name="name">Car Wash Consumable Request</field>
+        <field name="code">carwash.consumable.request</field>
+        <field name="prefix">CWCR/%(range_year)s/</field>
+        <field name="padding">4</field>
+        <field name="use_date_range" eval="True"/>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

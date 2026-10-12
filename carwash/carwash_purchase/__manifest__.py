@@ -1,0 +1,51 @@
+{
+    "name": "Car Wash Purchases",
+    "version": "19.0.1.0.3",
+    "license": "LGPL-3",
+    "author": "Botspot Infoware",
+    "maintainer": "Botspot Infoware",
+    "category": "Services",
+    "sequence": 18,
+    "summary": "RFQs and purchase orders with approval, branch receipts and returns, vendor bills, "
+    "payments and GST - for consumables, equipment and maintenance",
+    "description": """Car Wash Management System - Purchases
+Built on Odoo Purchase, Inventory, Invoicing and the Indian localisation (GST):
+- vendors and their prices are Odoo's own (the product's Purchase tab),
+- each branch buys for itself: RFQ > Purchase Order, approval by a Manager / Owner above an amount,
+- low stock > RFQs grouped by supplier (button, or automatic per branch),
+- consumable requests short of stock > purchase, bay repairs and spare parts > purchase for the bay,
+- receipts at the branch (partial deliveries), returns to the supplier with a reason, credit notes,
+- vendor bills from the purchase order (received quantities), payments, supplier dues,
+- GST: Indian chart of accounts per branch, HSN / SAC codes, CGST+SGST / IGST,
+- car wash printed RFQ / purchase order, dashboard card, follow-up reminders, purchase analysis.""",
+    "depends": ["carwash_consumable", "purchase_stock", "l10n_in"],
+    "data": [
+        "security/carwash_purchase_security.xml",
+        "security/ir.model.access.csv",
+        "data/carwash_feature_data.xml",
+        "data/product_data.xml",
+        "data/ir_cron_data.xml",
+        "report/carwash_purchase_report.xml",
+        "views/product_views.xml",
+        "views/purchase_order_views.xml",
+        "views/stock_picking_views.xml",
+        "views/account_move_views.xml",
+        "views/carwash_consumable_request_views.xml",
+        "views/carwash_bay_views.xml",
+        "views/carwash_appointment_views.xml",
+        "views/res_config_settings_views.xml",
+        "views/carwash_purchase_menus.xml",
+    ],
+    "demo": ["demo/carwash_purchase_demo.xml"],
+    "assets": {
+        "web.assets_backend": [
+            "carwash_purchase/static/src/js/purchase_dashboard.js",
+            "carwash_purchase/static/src/xml/purchase_dashboard.xml",
+            "carwash_purchase/static/src/scss/purchase_dashboard.scss",
+        ],
+    },
+    "post_init_hook": "_carwash_purchase_post_init",
+    "installable": True,
+    "application": False,
+    "auto_install": ["carwash_consumable"],  # installed together with Car Wash (chain from carwash_base)
+}

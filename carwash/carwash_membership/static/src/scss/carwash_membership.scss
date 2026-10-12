@@ -1,0 +1,40 @@
+// Membership plan cards (kanban): a short pricing card - name, price, key benefits. Builds on the shared
+// Car Wash UI kit (carwash_base).
+.o_cw_kanban.o_cw_plan_kanban {
+    .o_cw_card_head .o_cw_chip {
+        font-size: 0.72rem;
+    }
+
+    .o_cw_plan_price {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin: 14px 0 0;
+
+        .o_cw_kpi {
+            font-size: 1.55rem;
+        }
+    }
+
+    .o_cw_plan_per {
+        font-size: 0.85rem;
+        color: $o-gray-600;
+    }
+
+    .o_cw_plan_alt {
+        font-size: 0.82rem;
+        color: $o-gray-600;
+    }
+
+    footer.o_cw_plan_perks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 12px;
+        padding-top: 10px;
+
+        &:empty {
+            display: none;
+        }
+    }
+}

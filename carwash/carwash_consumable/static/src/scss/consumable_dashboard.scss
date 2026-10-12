@@ -1,0 +1,82 @@
+// "Consumables" card of the Car Wash dashboard - uses the dashboard's theme tokens
+.o_cwd .o_cwc {
+    .o_cwc_badges {
+        display: flex;
+        gap: 8px;
+    }
+
+    .o_cwc_badge {
+        border: 1px solid var(--cw-border);
+        border-radius: 999px;
+        background: var(--cw-surface-2);
+        color: var(--cw-ink);
+        padding: 4px 12px;
+        font-size: 0.85rem;
+
+        &:hover { box-shadow: var(--cw-shadow-hover); }
+    }
+
+    .o_cwc_badge_hot {
+        background: var(--cw-amber-soft);
+        border-color: var(--cw-amber);
+    }
+
+    .o_cwc_list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .o_cwc_row {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+        border: 1px solid var(--cw-border);
+        border-radius: 12px;
+        background: var(--cw-surface-solid);
+        padding: 10px 14px;
+        animation: cwd-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        animation-delay: calc(var(--cw-i, 0) * 45ms + 150ms);
+    }
+
+    .o_cwc_name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        strong { color: var(--cw-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        small { color: var(--cw-faint); }
+    }
+
+    .o_cwc_bar {
+        height: 8px;
+        border-radius: 8px;
+        background: var(--cw-surface-2);
+        overflow: hidden;
+
+        span {
+            display: block;
+            height: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--cw-amber), var(--cw-coral));
+        }
+    }
+
+    .o_cwc_qty {
+        display: flex;
+        flex-direction: column;
+        text-align: right;
+
+        strong { color: var(--cw-ink); }
+        small { color: var(--cw-muted); }
+    }
+
+    .o_cwc_pill_low { background: var(--cw-amber-soft); color: var(--cw-amber); }
+    .o_cwc_pill_out { background: var(--cw-coral-soft); color: var(--cw-coral); }
+
+    @media (max-width: 767.98px) {
+        .o_cwc_row { grid-template-columns: 1fr auto; }
+        .o_cwc_bar { display: none; }
+    }
+}

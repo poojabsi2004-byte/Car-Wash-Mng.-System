@@ -2,6 +2,8 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 MEMBERSHIP_EDITABLE_STATES = ("draft", "confirmed", "arrived")
+# a membership can still be taken off until the booking is completed - e.g. it lapsed during the wash
+MEMBERSHIP_REMOVABLE_STATES = MEMBERSHIP_EDITABLE_STATES + ("in_service", "ready")
 
 
 class CarwashAppointmentLine(models.Model):
@@ -28,7 +30,8 @@ class CarwashAppointment(models.Model):
     @api.depends("customer_id", "membership_id")
     def _compute_customer_membership(self):
         for appointment in self:
-            membership = appointment.membership_id or appointment.customer_id.sudo().carwash_active_membership_id
+            # sudo: a display summary - staff (washer / QC) open the booking without access to memberships / plans
+            membership = appointment.membership_id.sudo() or appointment.customer_id.sudo().carwash_active_membership_id
             appointment.customer_membership_id = membership
             appointment.membership_washes_left = membership.washes_remaining if membership else 0
             appointment.membership_benefit = membership.plan_id._benefit_summary() if membership else False
@@ -67,6 +70,8 @@ class CarwashAppointment(models.Model):
     def action_apply_membership(self):
         """Free covered services go to 0 on their own line; the member discount on the other
         services is one separate "Membership Discount" line, so the services keep their price."""
+        if not self.env["carwash.feature"]._enabled("carwash_membership.group_carwash_membership"):
+            raise UserError(self.env._("Memberships are switched off (Car Wash > Configuration > Settings)."))
         for appointment in self:
             membership = appointment.customer_id.sudo().carwash_active_membership_id
             if not membership:
@@ -131,8 +136,8 @@ class CarwashAppointment(models.Model):
 
     def action_remove_membership(self):
         for appointment in self:
-            if appointment.state not in MEMBERSHIP_EDITABLE_STATES:
-                raise UserError(self.env._("The membership can only be removed before the service starts."))
+            if appointment.state not in MEMBERSHIP_REMOVABLE_STATES:
+                raise UserError(self.env._("The membership can only be removed before the booking is completed."))
         self._reset_membership_prices()
         return True
 
@@ -145,7 +150,7 @@ class CarwashAppointment(models.Model):
             return
         for appointment in self:
             if appointment.customer_id.email:
-                template.send_mail(appointment.id, force_send=False)
+                self.env["carwash.mail"]._send_now([template.send_mail(appointment.id, force_send=False)])
 
     def action_confirm(self):
         res = super().action_confirm()
@@ -159,7 +164,13 @@ class CarwashAppointment(models.Model):
 
     def action_done(self):
         for appointment in self.filtered("membership_id"):
-            appointment.membership_id._check_usable()
+            try:
+                appointment.membership_id._check_usable()
+            except UserError as error:
+                raise UserError(self.env._(
+                    "%(error)s\nClick Remove on the membership banner to complete the booking at normal prices.",
+                    error=error.args[0],
+                )) from error
         res = super().action_done()
         for appointment in self:
             appointment._apply_membership_usage()

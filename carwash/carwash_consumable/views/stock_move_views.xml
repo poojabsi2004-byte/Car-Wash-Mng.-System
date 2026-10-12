@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_consumption_list" model="ir.ui.view">
+        <field name="name">stock.move.list.carwash.consumption</field>
+        <field name="model">stock.move</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Consumption" create="false" edit="false" delete="false" sample="1" decoration-muted="state == 'cancel'">
+                <field name="date"/>
+                <field name="origin" string="Reference"/>
+                <field name="product_id"/>
+                <field name="product_uom_qty" string="Quantity" sum="Total"/>
+                <field name="product_uom" string="Unit" groups="uom.group_uom"/>
+                <field name="carwash_usage_type" widget="badge"
+                       decoration-info="carwash_usage_type == 'service'"
+                       decoration-warning="carwash_usage_type == 'issue'"
+                       decoration-danger="carwash_usage_type == 'wastage'"
+                       decoration-success="carwash_usage_type == 'return'"/>
+                <field name="carwash_appointment_id" optional="show"/>
+                <field name="carwash_consumable_request_id" optional="show"/>
+                <field name="company_id" string="Branch" groups="base.group_multi_company" optional="show"/>
+                <field name="state" widget="badge" optional="hide"
+                       decoration-success="state == 'done'" decoration-muted="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_consumption_pivot" model="ir.ui.view">
+        <field name="name">stock.move.pivot.carwash.consumption</field>
+        <field name="model">stock.move</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <pivot string="Consumption Analysis" sample="1">
+                <field name="product_id" type="row"/>
+                <field name="carwash_usage_type" type="col"/>
+                <field name="product_uom_qty" type="measure" string="Quantity"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_carwash_consumption_graph" model="ir.ui.view">
+        <field name="name">stock.move.graph.carwash.consumption</field>
+        <field name="model">stock.move</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <graph string="Consumption Analysis" type="bar" stacked="1">
+                <field name="date" interval="month"/>
+                <field name="carwash_usage_type"/>
+                <field name="product_uom_qty" type="measure" string="Quantity"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_carwash_consumption_search" model="ir.ui.view">
+        <field name="name">stock.move.search.carwash.consumption</field>
+        <field name="model">stock.move</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search string="Consumption">
+                <field name="product_id"/>
+                <field name="carwash_appointment_id"/>
+                <field name="carwash_consumable_request_id"/>
+                <filter string="Done" name="done" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter string="Services" name="service" domain="[('carwash_usage_type', '=', 'service')]"/>
+                <filter string="Floor Issues" name="issue" domain="[('carwash_usage_type', '=', 'issue')]"/>
+                <filter string="Wastage" name="wastage" domain="[('carwash_usage_type', '=', 'wastage')]"/>
+                <filter string="Returns" name="return" domain="[('carwash_usage_type', '=', 'return')]"/>
+                <separator/>
+                <filter string="Date" name="date" date="date"/>
+                <group>
+                    <filter string="Consumable" name="group_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Usage" name="group_usage" context="{'group_by': 'carwash_usage_type'}"/>
+                    <filter string="Branch" name="group_branch" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_consumption_analysis" model="ir.actions.act_window">
+        <field name="name">Consumption Analysis</field>
+        <field name="res_model">stock.move</field>
+        <field name="view_mode">pivot,graph,list,kanban</field>
+        <field name="domain">[('carwash_usage_type', '!=', False)]</field>
+        <field name="context">{'search_default_done': 1}</field>
+        <field name="search_view_id" ref="view_carwash_consumption_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_carwash_consumption_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_carwash_consumption_graph')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_consumption_list')}),
+            (0, 0, {'view_mode': 'kanban'})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No consumption yet</p>
+            <p>Consumables used by completed bookings (service materials) and by issued Consumable Requests
+                (floor issue, wastage, return) appear here, per product, branch and month.</p>
+        </field>
+    </record>
+</odoo>

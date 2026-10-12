@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_checklist_type_list" model="ir.ui.view">
+        <field name="name">carwash.checklist.type.list</field>
+        <field name="model">carwash.checklist.type</field>
+        <field name="arch" type="xml">
+            <list string="Checklist Types" sample="1">
+                <field name="sequence" widget="handle"/>
+                <field name="name" class="fw-bold"/>
+                <field name="applies_to" widget="badge"
+                       decoration-info="applies_to == 'inspection'" decoration-warning="applies_to == 'jobcard'"/>
+                <field name="template_count" string="Templates"/>
+                <field name="active" widget="boolean_toggle" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_checklist_type_form" model="ir.ui.view">
+        <field name="name">carwash.checklist.type.form</field>
+        <field name="model">carwash.checklist.type</field>
+        <field name="arch" type="xml">
+            <form string="Checklist Type" class="o_cw_form">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_templates" type="object" class="oe_stat_button" icon="fa-list-ul">
+                            <field name="template_count" widget="statinfo" string="Templates"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="applies_to in ('inspection', 'jobcard')">
+                            <i class="fa fa-calendar-check-o" title="Booking check-in"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_info" invisible="applies_to != 'inspection'">
+                            <i class="fa fa-search" title="Inspection"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="applies_to != 'jobcard'">
+                            <i class="fa fa-wrench" title="Job card"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Express Check-in"/></h1>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Applies To" name="applies_to_group">
+                            <field name="applies_to" widget="radio" nolabel="1" colspan="2"/>
+                        </group>
+                        <group string="Options" name="options">
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="When is this checklist done, and by whom?"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_checklist_type_kanban" model="ir.ui.view">
+        <field name="name">carwash.checklist.type.kanban</field>
+        <field name="model">carwash.checklist.type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="applies_to"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <aside class="d-flex align-items-start me-3">
+                            <span t-attf-class="o_cw_tile o_cw_tile_sm {{ record.applies_to.raw_value == 'inspection' ? 'o_cw_tile_info' : record.applies_to.raw_value == 'jobcard' ? 'o_cw_tile_warning' : '' }}">
+                                <i t-attf-class="fa {{ record.applies_to.raw_value == 'inspection' ? 'fa-search' : record.applies_to.raw_value == 'jobcard' ? 'fa-wrench' : 'fa-calendar-check-o' }}"
+                                   title="Checklist type"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <field name="name" class="o_cw_card_title"/>
+                            <div class="o_cw_card_sub"><field name="applies_to"/></div>
+                            <footer>
+                                <span><i class="fa fa-list-ul me-1" title="Templates"/><field name="template_count"/> template(s)</span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_checklist_type_search" model="ir.ui.view">
+        <field name="name">carwash.checklist.type.search</field>
+        <field name="model">carwash.checklist.type</field>
+        <field name="arch" type="xml">
+            <search string="Checklist Types">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Applies To" name="group_applies_to" context="{'group_by': 'applies_to'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_checklist_type" model="ir.actions.act_window">
+        <field name="name">Checklist Types</field>
+        <field name="res_model">carwash.checklist.type</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a checklist type</p>
+            <p>The kinds of checklist you use - Booking Check-in, Inspection, Job Card... Each type applies to one step
+                of the process; its checklist templates are loaded at that step.</p>
+        </field>
+    </record>
+</odoo>

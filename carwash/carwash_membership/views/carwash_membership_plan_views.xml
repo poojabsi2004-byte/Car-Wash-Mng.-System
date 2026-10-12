@@ -4,15 +4,18 @@
         <field name="name">carwash.membership.plan.list</field>
         <field name="model">carwash.membership.plan</field>
         <field name="arch" type="xml">
-            <list string="Membership Plans">
+            <list string="Membership Plans" sample="1" multi_edit="1">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
-                <field name="billing_period"/>
-                <field name="price" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="monthly_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="yearly_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="yearly_saving" widget="monetary" options="{'currency_field': 'currency_id'}" optional="hide"/>
                 <field name="wash_allowance"/>
                 <field name="plan_service_ids" widget="many2many_tags" optional="show"/>
-                <field name="discount_percent"/>
+                <field name="discount_percent" options="{'hide_trailing_zeros': true}"/>
                 <field name="member_count"/>
+                <field name="product_id" optional="hide"/>
                 <field name="website_published" widget="boolean_toggle" optional="show"/>
             </list>
         </field>
@@ -22,7 +25,7 @@
         <field name="name">carwash.membership.plan.form</field>
         <field name="model">carwash.membership.plan</field>
         <field name="arch" type="xml">
-            <form string="Membership Plan">
+            <form string="Membership Plan" class="o_cw_form">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_members" type="object" class="oe_stat_button" icon="fa-users">
@@ -30,17 +33,56 @@
                         </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. Gold Monthly"/></h1>
+                    <field name="active" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg"><i class="fa fa-id-card-o" title="Membership plan"/></span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Gold Monthly"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip" invisible="not monthly_price"><i class="fa fa-refresh" title="Monthly billing"/>Monthly</span>
+                                <span class="o_cw_chip" invisible="not yearly_price"><i class="fa fa-calendar" title="Yearly billing"/>Yearly</span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="not yearly_saving"><i class="fa fa-tag" title="Yearly saving"/>Save <field name="yearly_saving" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" nolabel="1"/> a year</span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="not website_published"><i class="fa fa-globe" title="Available online"/>Available online</span>
+                                <span class="o_cw_chip o_cw_chip_muted" invisible="website_published"><i class="fa fa-eye-slash" title="Not on the website"/>Not on the website</span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi" invisible="not monthly_price">
+                                <field name="monthly_price" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Per month</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not yearly_price">
+                                <field name="yearly_price" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Per year</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not wash_allowance">
+                                <field name="wash_allowance" readonly="1" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Free washes / month</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="wash_allowance">
+                                <span class="o_cw_hero_kpi_value">Unlimited</span>
+                                <span class="o_cw_hero_kpi_label">Free washes</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not discount_percent">
+                                <span class="o_cw_hero_kpi_value"><field name="discount_percent" readonly="1" options="{'hide_trailing_zeros': true}"/>%</span>
+                                <span class="o_cw_hero_kpi_label">Member discount</span>
+                            </div>
+                        </div>
                     </div>
                     <group>
-                        <group string="Billing">
+                        <group string="Plan Amount">
+                            <field name="monthly_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="yearly_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="yearly_saving" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="not yearly_saving"/>
+                            <div class="text-muted small" colspan="2">
+                                <i class="fa fa-info-circle me-1" title="Info"/>The customer chooses Monthly or Yearly when joining. Paid today, the
+                                membership starts today and ends the same day next month (or next year); it expires the day after
+                                unless renewed. Leave an amount at 0 to not offer that billing.
+                            </div>
                             <field name="product_id"/>
-                            <field name="price" widget="monetary" readonly="1"/>
-                            <field name="billing_period"/>
                             <field name="website_published"/>
-                            <field name="active" invisible="1"/>
                         </group>
                         <group string="Odoo Member Level">
                             <field name="grade_id"/>
@@ -52,26 +94,85 @@
                             <field name="plan_service_ids" widget="many2many_tags" options="{'no_create': True}"/>
                             <field name="wash_allowance"/>
                             <div class="text-muted small" colspan="2">
-                                Covered services cost nothing; each booking that uses one counts as a wash. 0 = unlimited.
+                                <i class="fa fa-info-circle me-1" title="Info"/>Covered services cost nothing; each booking that uses one counts as a wash. The free washes start again every month (yearly members too). 0 = unlimited.
                             </div>
                         </group>
                         <group string="Benefit 2 - Member Discount">
                             <field name="discount_percent"/>
                             <div class="text-muted small" colspan="2">
-                                Applied to every other car wash service (and to covered services once the free washes are used up),
+                                <i class="fa fa-info-circle me-1" title="Info"/>Applied to every other car wash service (and to covered services once the free washes are used up),
                                 through the member level's pricelist.
                             </div>
                         </group>
                     </group>
-                    <field name="description" placeholder="Short pitch shown on the website membership page..."/>
+                    <notebook>
+                        <page string="Website Pitch" name="description">
+                            <field name="description" placeholder="Short pitch shown on the website membership page..."/>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_membership_plan_kanban" model="ir.ui.view">
+        <field name="name">carwash.membership.plan.kanban</field>
+        <field name="model">carwash.membership.plan</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban o_cw_plan_kanban" sample="1">
+                <field name="currency_id"/>
+                <field name="monthly_price"/>
+                <field name="yearly_price"/>
+                <field name="wash_allowance"/>
+                <field name="discount_percent"/>
+                <field name="plan_service_ids"/>
+                <field name="website_published"/>
+                <templates>
+                    <!-- a short pricing card: name, price, the two key benefits; the rest is on the form -->
+                    <t t-name="card">
+                        <span t-att-class="record.website_published.raw_value ? 'o_cw_tone_primary' : 'o_cw_tone_muted'"/>
+                        <div class="o_cw_card_head">
+                            <div class="d-flex align-items-center gap-2 min-w-0">
+                                <span class="o_cw_tile o_cw_tile_sm"><i class="fa fa-id-card-o" title="Membership plan"/></span>
+                                <div class="min-w-0">
+                                    <field name="name" class="o_cw_card_title d-block"/>
+                                    <div class="o_cw_card_sub"><field name="member_count"/> active member(s)</div>
+                                </div>
+                            </div>
+                            <span t-if="record.website_published.raw_value" class="o_cw_chip o_cw_chip_success" title="Shown on the website">
+                                <i class="fa fa-globe" title="Online"/> Online
+                            </span>
+                            <span t-else="" class="o_cw_chip o_cw_chip_muted" title="Not shown on the website">Offline</span>
+                        </div>
+                        <div class="o_cw_plan_price">
+                            <t t-if="record.monthly_price.raw_value">
+                                <field name="monthly_price" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_cw_kpi"/>
+                                <span class="o_cw_plan_per">/ month</span>
+                            </t>
+                            <t t-else="">
+                                <field name="yearly_price" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_cw_kpi"/>
+                                <span class="o_cw_plan_per">/ year</span>
+                            </t>
+                        </div>
+                        <div t-if="record.monthly_price.raw_value and record.yearly_price.raw_value" class="o_cw_plan_alt">
+                            or <field name="yearly_price" widget="monetary" options="{'currency_field': 'currency_id'}"/> / year
+                        </div>
+                        <footer class="o_cw_plan_perks">
+                            <t t-if="record.plan_service_ids.raw_value.length">
+                                <span t-if="record.wash_allowance.raw_value" class="o_cw_chip"><i class="fa fa-tint" title="Free washes"/> <field name="wash_allowance"/> washes / month</span>
+                                <span t-else="" class="o_cw_chip"><i class="fa fa-tint" title="Free washes"/> Unlimited washes</span>
+                            </t>
+                            <span t-if="record.discount_percent.raw_value" class="o_cw_chip o_cw_chip_success"><span><field name="discount_percent" options="{'hide_trailing_zeros': true}"/>% off</span></span>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
     <record id="action_carwash_membership_plan" model="ir.actions.act_window">
         <field name="name">Membership Plans</field>
         <field name="res_model">carwash.membership.plan</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
 </odoo>

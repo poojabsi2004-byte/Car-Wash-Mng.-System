@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Feature switch (Car Wash > Configuration > Settings > Purchases) -->
+    <record id="group_carwash_purchase" model="res.groups">
+        <field name="name">Car Wash: Purchases</field>
+    </record>
+
+    <!-- Each branch buys for itself:
+         - Front Desk raises RFQs / purchase orders (above the approval amount they wait for approval),
+         - Car Wash Managers (and Owners) approve them, receive the goods, record the bills and pay the suppliers. -->
+    <record id="carwash_base.group_carwash_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('purchase.group_purchase_user'))]"/>
+    </record>
+    <record id="carwash_base.group_carwash_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('purchase.group_purchase_manager')), (4, ref('account.group_account_invoice')), (4, ref('base.group_partner_manager'))]"/>
+    </record>
+</odoo>

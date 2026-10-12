@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Standard vehicle types (editable / extendable in Configuration > Customers > Vehicle Types) -->
+    <record id="vehicle_type_hatchback" model="carwash.vehicle.type">
+        <field name="name">Hatchback</field><field name="code">hatchback</field><field name="sequence">10</field><field name="icon">fa-car</field>
+    </record>
+    <record id="vehicle_type_sedan" model="carwash.vehicle.type">
+        <field name="name">Sedan</field><field name="code">sedan</field><field name="sequence">20</field><field name="icon">fa-car</field>
+    </record>
+    <record id="vehicle_type_suv" model="carwash.vehicle.type">
+        <field name="name">SUV</field><field name="code">suv</field><field name="sequence">30</field><field name="icon">fa-car</field>
+    </record>
+    <record id="vehicle_type_truck" model="carwash.vehicle.type">
+        <field name="name">Truck/Pickup</field><field name="code">truck</field><field name="sequence">40</field><field name="icon">fa-truck</field>
+    </record>
+    <record id="vehicle_type_van" model="carwash.vehicle.type">
+        <field name="name">Van</field><field name="code">van</field><field name="sequence">50</field><field name="icon">fa-bus</field>
+    </record>
+    <record id="vehicle_type_bike" model="carwash.vehicle.type">
+        <field name="name">Motorcycle</field><field name="code">bike</field><field name="sequence">60</field><field name="icon">fa-motorcycle</field>
+    </record>
+    <record id="vehicle_type_other" model="carwash.vehicle.type">
+        <field name="name">Other</field><field name="code">other</field><field name="sequence">90</field><field name="icon">fa-car</field>
+    </record>
+</odoo>

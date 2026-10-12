@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- "Purchases" card on the Car Wash dashboard (managers / owner) + Create RFQs on the Consumables card -->
+  <t t-name="carwash_purchase.Dashboard" t-inherit="carwash_dashboard.Dashboard" t-inherit-mode="extension">
+    <xpath expr="//div[hasclass('o_cwc_badges')]" position="inside">
+      <button t-if="d.purchases" class="o_cwc_badge o_cwp_order_btn" t-on-click="createLowStockRfqs"
+              t-att-title="d.purchases.low_without_supplier ? d.purchases.low_without_supplier + ' low consumable(s) have no supplier yet' : 'One RFQ per supplier for the consumables below their minimum'">
+        <i class="fa fa-shopping-cart"/> Create RFQs<t t-if="d.purchases.low_with_supplier"> (<t t-esc="d.purchases.low_with_supplier"/>)</t>
+      </button>
+    </xpath>
+    <xpath expr="//footer[hasclass('o_cwd_footer')]" position="before">
+      <div t-if="d.purchases" class="o_cwd_grid">
+        <t t-set="pur" t-value="d.purchases"/>
+        <section class="o_cwd_card o_cwd_span_12 o_cwp" style="--cw-i:10">
+          <header class="o_cwd_card_head">
+            <div>
+              <h3><i class="fa fa-truck"/> Purchases</h3>
+              <p>Orders, deliveries and bills at <t t-esc="d.company_name"/>
+                <t t-if="pur.auto_rfq"> · automatic RFQs for low stock</t></p>
+            </div>
+            <div class="o_cwd_period" role="group" aria-label="Purchases">
+              <button class="o_cwd_period_btn" t-on-click="newRfq"><i class="fa fa-plus"/> New RFQ</button>
+            </div>
+          </header>
+          <div class="o_cwp_tiles">
+            <button class="o_cwp_tile" t-att-class="pur.to_approve ? 'o_cwp_hot' : ''" t-on-click="() => this.openPurchases('approve')">
+              <strong t-esc="pur.to_approve"/><span>To approve</span>
+            </button>
+            <button class="o_cwp_tile" t-on-click="() => this.openPurchases('rfq')">
+              <strong t-esc="pur.rfqs"/><span>Open RFQs</span>
+            </button>
+            <button class="o_cwp_tile" t-on-click="() => this.openPurchases('receipts')">
+              <strong t-esc="pur.receipts_today"/><span>Deliveries today</span>
+            </button>
+            <button class="o_cwp_tile" t-att-class="pur.receipts_late ? 'o_cwp_hot' : ''" t-on-click="() => this.openPurchases('receipts')">
+              <strong t-esc="pur.receipts_late"/><span>Late deliveries</span>
+            </button>
+            <button class="o_cwp_tile" t-att-class="pur.bills_due ? 'o_cwp_hot' : ''" t-on-click="() => this.openPurchases('dues')">
+              <strong t-esc="pur.bills_due"/><span>Bills due (7 days)</span>
+            </button>
+            <button class="o_cwp_tile" t-on-click="() => this.openPurchases('dues')">
+              <strong t-esc="formatMoney(pur.amount_due)"/><span>Owed to suppliers</span>
+            </button>
+            <button class="o_cwp_tile" t-on-click="() => this.openPurchases('orders')">
+              <strong t-esc="formatMoney(pur.spend_month)"/><span>Spent this month</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </xpath>
+  </t>
+</templates>

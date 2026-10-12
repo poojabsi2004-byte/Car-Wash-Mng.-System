@@ -8,8 +8,8 @@
             <xpath expr="//sheet/div[hasclass('oe_title')]" position="after">
                 <field name="customer_membership_id" invisible="1"/>
                 <field name="membership_id" invisible="1"/>
-                <div class="o_cw_member_banner" invisible="not customer_membership_id">
-                    <div class="o_cw_member_banner_icon"><i class="fa fa-id-card"/></div>
+                <div class="o_cw_member_banner" invisible="not customer_membership_id" groups="carwash_membership.group_carwash_membership">
+                    <div class="o_cw_member_banner_icon"><i class="fa fa-id-card" title="Membership"/></div>
                     <div class="o_cw_member_banner_body">
                         <div>
                             <strong>Member:</strong>
@@ -24,12 +24,12 @@
                                 <field name="membership_saving" readonly="1" nolabel="1" class="o_cw_inline"/></span>
                         </div>
                     </div>
-                    <div class="o_cw_member_banner_actions" invisible="state not in ('draft', 'confirmed', 'arrived')"
+                    <div class="o_cw_member_banner_actions" invisible="state not in ('draft', 'confirmed', 'arrived', 'in_service', 'ready')"
                          groups="carwash_base.group_carwash_user">
                         <button name="action_apply_membership" type="object" string="Apply Membership" icon="fa-check"
-                                class="btn btn-primary o_cw_btn_primary btn-sm" invisible="membership_id"/>
+                                class="btn btn-primary o_cw_btn_primary btn-sm" invisible="membership_id or state in ('in_service', 'ready')"/>
                         <button name="action_apply_membership" type="object" string="Re-apply" icon="fa-refresh"
-                                class="btn btn-link btn-sm" invisible="not membership_id"
+                                class="btn btn-link btn-sm" invisible="not membership_id or state in ('in_service', 'ready')"
                                 title="Recalculate after changing services or the package"/>
                         <button name="action_remove_membership" type="object" string="Remove" icon="fa-times"
                                 class="btn btn-link btn-sm text-danger" invisible="not membership_id"/>

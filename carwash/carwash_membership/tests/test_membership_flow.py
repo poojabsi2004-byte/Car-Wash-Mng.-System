@@ -3,7 +3,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -13,6 +13,8 @@ class TestMembershipFlow(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # these tests are about the features below - make sure they are switched on
+        cls.env.ref("base.group_user").write({"implied_ids": [(4, cls.env.ref(x).id) for x in ['carwash_membership.group_carwash_membership']]})
         Product = cls.env["product.product"]
         cls.wash = Product.create({"name": "T Wash", "type": "service", "is_carwash_service": True, "list_price": 300})
         cls.wax = Product.create({"name": "T Wax", "type": "service", "is_carwash_service": True, "list_price": 500})
@@ -21,7 +23,8 @@ class TestMembershipFlow(TransactionCase):
             {
                 "name": "T Gold",
                 "product_id": cls.fee.id,
-                "billing_period": "monthly",
+                "monthly_price": 1000,
+                "yearly_price": 10000,
                 "wash_allowance": 1,
                 "plan_service_ids": [(6, 0, cls.wash.ids)],
                 "discount_percent": 20,
@@ -65,7 +68,13 @@ class TestMembershipFlow(TransactionCase):
         self.assertIn(invoice.payment_state, ("paid", "in_payment"))
         self.assertEqual(membership.state, "active")
         today = fields.Date.context_today(membership)
-        self.assertEqual(membership.paid_until, today + relativedelta(months=1) - relativedelta(days=1))
+        # starts today, ends the same day next month, expires the day after
+        self.assertEqual(membership.billing_period, "monthly")
+        self.assertEqual(membership.start_date, today)
+        self.assertEqual(membership.valid_until, today + relativedelta(months=1))
+        self.assertEqual(membership.paid_until, membership.valid_until)
+        self.assertEqual(membership.expiry_date, today + relativedelta(months=1, days=1))
+        self.assertEqual(invoice.amount_untaxed, 1000)
         self.assertEqual(self.customer.grade_id, self.plan.grade_id)
         self.assertEqual(self.customer.specific_property_product_pricelist, self.plan.pricelist_id)
         self.assertFalse(membership.pending_order_id)
@@ -137,6 +146,7 @@ class TestMembershipFlow(TransactionCase):
         # completing a booking with a free wash consumes it
         first.action_apply_membership()
         first.action_confirm()
+        first.state = "ready"  # shortcut through the wash itself (covered by the workflow tests)
         first.action_done()
         self.assertEqual(membership.washes_used, 1)
         self.assertEqual(first.sale_order_id.amount_untaxed, 400.0)
@@ -158,33 +168,75 @@ class TestMembershipFlow(TransactionCase):
     def test_renewal_rollover_and_expiry(self):
         membership = self._new_membership()
         self._pay_backend(membership)
+        self.assertFalse(membership.auto_renew, "off until the customer turns it on (reminder email)")
+        membership._carwash_turn_on_auto_renew(by_customer=True)
+        self.assertIn("by the customer", membership.message_ids[0].body)
         membership.washes_used = 1
         today = fields.Date.context_today(membership)
+        yesterday = today - relativedelta(days=1)
 
-        # near the end of the period the cron raises the renewal order
-        membership.write({"valid_until": today + relativedelta(days=2), "paid_until": today + relativedelta(days=2),
-                          "next_billing_date": today + relativedelta(days=3)})
+        # up to the end date nothing happens
+        membership.write({"valid_until": today, "paid_until": today, "next_billing_date": today})
         self.env["carwash.membership"]._cron_process_membership_billing()
-        self.assertTrue(membership.pending_order_id)
+        self.assertFalse(membership.pending_order_id)
+        self.assertEqual(len(membership.sale_order_ids), 1)
 
-        # paid early -> secured for the next period, current period untouched
-        self._pay_backend(membership)
-        self.assertEqual(membership.paid_until, today + relativedelta(days=2) + relativedelta(months=1))
-        self.assertEqual(membership.washes_used, 1)
-
-        # the period ends -> roll over, free washes reset
-        membership.write({"valid_until": today - relativedelta(days=1)})
+        # the day after the end date (Expires On): auto-renewal invoices and pays the renewal -> one more month
+        # from the end date, without a gap
+        membership.write({"valid_until": yesterday, "paid_until": yesterday, "next_billing_date": yesterday})
+        orders_before = membership.sale_order_ids
         self.env["carwash.membership"]._cron_process_membership_billing()
-        self.assertEqual(membership.period_start, today)
+        renewal = membership.sale_order_ids - orders_before
+        self.assertEqual(membership.state, "active")
+        self.assertEqual(membership.paid_until, yesterday + relativedelta(months=1))
+        self.assertTrue(renewal.carwash_membership_paid)
+        self.assertEqual(renewal.invoice_ids.payment_state in ("paid", "in_payment"), True)
+        self.assertFalse(membership.pending_order_id, "nothing left to pay")
+        self.assertTrue(membership.message_ids.filtered(lambda m: "Auto-renewal" in (m.body or "")), "logged")
+        self.assertEqual(membership.washes_used, 1, "the current month's washes are untouched")
+
+        # a new month -> free washes reset, still active
+        membership.write({"wash_period_start": today - relativedelta(months=1)})
+        self.env["carwash.membership"]._cron_process_membership_billing()
+        self.assertEqual(membership.wash_period_start, today)
         self.assertEqual(membership.washes_used, 0)
         self.assertEqual(membership.state, "active")
 
-        # nothing paid beyond the period -> expired, member level removed
+        # auto-renewal off and nothing paid beyond the period -> expired, member level removed
+        membership.auto_renew = False
         membership.write({"valid_until": today - relativedelta(days=1), "paid_until": today - relativedelta(days=1)})
         self.env["carwash.membership"]._cron_process_membership_billing()
         self.assertEqual(membership.state, "expired")
         self.assertFalse(self.customer.grade_id)
         self.assertFalse(self.customer.specific_property_product_pricelist)
+
+    def test_yearly_billing(self):
+        membership = self.env["carwash.membership"].create(
+            {"partner_id": self.customer.id, "plan_id": self.plan.id, "billing_period": "monthly"})
+        order = membership._get_or_create_billing_order()
+        self.assertEqual(order.amount_untaxed, 1000)
+        # switched to yearly before paying -> the unpaid order follows
+        membership.billing_period = "yearly"
+        self.assertEqual(membership.amount, 10000)
+        self.assertEqual(order.amount_untaxed, 10000)
+        self.assertEqual(order.carwash_billing_period, "yearly")
+        self._pay_backend(membership)
+        today = fields.Date.context_today(membership)
+        self.assertEqual(membership.state, "active")
+        self.assertEqual(membership.start_date, today)
+        self.assertEqual(membership.valid_until, today + relativedelta(years=1))
+        self.assertEqual(membership.expiry_date, today + relativedelta(years=1, days=1))
+        # the day after the end date -> expired
+        self.env["carwash.membership"]._cron_process_membership_billing()
+        self.assertEqual(membership.state, "active")
+        membership.write({"valid_until": today - relativedelta(days=1)})
+        self.env["carwash.membership"]._cron_process_membership_billing()
+        self.assertEqual(membership.state, "expired")
+        # a plan sold monthly only can't be billed yearly
+        membership.billing_period = "monthly"
+        self.plan.yearly_price = 0
+        with self.assertRaisesRegex(ValidationError, "isn't offered yearly"):
+            membership.billing_period = "yearly"
 
     def test_preview_matches_applied_prices(self):
         membership = self._new_membership()
@@ -206,6 +258,8 @@ class TestMembershipFlow(TransactionCase):
     def test_auto_renew_off_lets_membership_lapse(self):
         membership = self._new_membership()
         self._pay_backend(membership)
+        self.assertFalse(membership.auto_renew, "a new membership starts without auto-renewal")
+        membership.action_toggle_auto_renew()
         self.assertTrue(membership.auto_renew)
         membership.action_toggle_auto_renew()
         self.assertFalse(membership.auto_renew)
@@ -218,3 +272,38 @@ class TestMembershipFlow(TransactionCase):
         membership.write({"valid_until": today - relativedelta(days=1), "paid_until": today - relativedelta(days=1)})
         self.env["carwash.membership"]._cron_process_membership_billing()
         self.assertEqual(membership.state, "expired")
+
+    def test_one_open_membership_and_cancel_closes_billing(self):
+        membership = self._new_membership()
+        with self.assertRaisesRegex(ValidationError, "already has membership"):
+            self._new_membership()
+        action = membership.action_create_invoice()
+        invoice = self.env["account.move"].browse(action["res_id"])
+        self.assertEqual(invoice.state, "posted")
+        membership.action_cancel()
+        self.assertEqual(invoice.state, "cancel", "an unpaid invoice of a cancelled membership can't be paid any more")
+        self.assertEqual(membership.sale_order_ids.mapped("state"), ["cancel"])
+
+    def test_membership_lapsing_during_the_wash_can_be_removed(self):
+        membership = self._new_membership()
+        self._pay_backend(membership)
+        booking = self._booking(self.wash)
+        booking.action_apply_membership()
+        booking.action_confirm()
+        booking.state = "ready"
+        membership.action_cancel()
+        with self.assertRaisesRegex(UserError, "Click Remove"):
+            booking.action_done()
+        booking.action_remove_membership()
+        booking.action_done()
+        self.assertEqual((booking.state, booking.amount_total), ("done", 300.0))
+
+    def test_memberships_switched_off(self):
+        membership = self._new_membership()
+        self._pay_backend(membership)
+        self.assertTrue(self.env.user.has_group("product.group_product_pricelist"),
+                        "memberships switch on the Pricelists feature")
+        self.env["res.config.settings"].create({"group_carwash_membership": False}).execute()
+        self.assertFalse(self.customer._carwash_get_usable_membership())
+        with self.assertRaises(UserError):
+            self._booking(self.wash).action_apply_membership()

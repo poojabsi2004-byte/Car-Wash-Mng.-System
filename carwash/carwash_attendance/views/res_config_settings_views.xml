@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_carwash_attendance" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.carwash.attendance</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="carwash_base.res_config_settings_view_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='carwash_staff_settings']" position="inside">
+                <setting id="carwash_attendance" string="Staff Attendance"
+                         help="Everyone checks in / out - every role (washer, QC, front desk, manager, owner) at every branch: the Check In button on the dashboard (My Attendance) and in the top bar. Managers see everyone's attendance.">
+                    <field name="group_carwash_attendance"/>
+                    <div class="mt8" invisible="not group_carwash_attendance">
+                        <button name="%(action_carwash_attendance)d" type="action" string="Attendances"
+                                icon="oi-arrow-right" class="btn-link"/>
+                        <button name="%(hr_attendance.action_hr_attendance_settings)d" type="action"
+                                string="Attendance Settings (kiosk, overtime)" icon="oi-arrow-right" class="btn-link"/>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

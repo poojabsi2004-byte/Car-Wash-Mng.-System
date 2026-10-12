@@ -16,7 +16,7 @@
                                 (<t t-esc="'%.2f' % lead.carwash_package_amount"/>)</t>
                             <t t-if="lead.carwash_package_id and lead.carwash_service_ids"> + </t>
                             <strong t-if="lead.carwash_service_ids" t-esc="', '.join(lead.carwash_service_ids.mapped('name'))"/> on
-                            <strong t-esc="lead.carwash_booking_date.strftime('%B %d, %Y at %I:%M %p')"/>
+                            <strong t-esc="lead._slot_local(lead.carwash_booking_date).strftime('%d %b, %y %I:%M %p')"/>
                             at <strong t-esc="lead.company_id.name"/>.
                         </p>
                         <p t-if="lead.carwash_use_membership" class="text-success">
@@ -54,7 +54,7 @@
                                 <span class="badge text-bg-warning ms-1">Requested</span>
                             </td>
                             <td t-esc="req.carwash_license_plate"/>
-                            <td class="text-end" t-esc="req.carwash_booking_date.strftime('%d %b %Y %I:%M %p') if req.carwash_booking_date else ''"/>
+                            <td class="text-end" t-esc="req._slot_local(req.carwash_booking_date).strftime('%d %b, %y %I:%M %p') if req.carwash_booking_date else ''"/>
                             <td class="text-end">
                                 <small t-if="req.carwash_member_saving" class="text-muted text-decoration-line-through me-1"
                                        t-esc="'%.2f' % req.carwash_normal_amount"/>

@@ -6,10 +6,11 @@
         <field name="inherit_id" ref="carwash_base.view_partner_form_carwash"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_view_carwash_memberships" type="object"
-                        class="oe_stat_button" icon="fa-id-card"
+                <button name="action_view_carwash_memberships" type="object" groups="carwash_membership.group_carwash_membership"
+                        class="oe_stat_button" icon="fa-id-card-o"
                         invisible="not carwash_membership_ids">
                     <div class="o_stat_info">
+                        <span class="o_stat_value text-success" invisible="not carwash_active_membership_id">Active</span>
                         <span class="o_stat_text" invisible="not carwash_active_membership_id">Member</span>
                         <span class="o_stat_text" invisible="carwash_active_membership_id">Memberships</span>
                     </div>

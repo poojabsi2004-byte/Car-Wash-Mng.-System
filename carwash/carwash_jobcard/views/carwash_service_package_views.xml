@@ -4,14 +4,14 @@
         <field name="name">carwash.service.package.list</field>
         <field name="model">carwash.service.package</field>
         <field name="arch" type="xml">
-            <list string="Service Packages">
+            <list string="Service Packages" sample="1">
                 <field name="sequence" widget="handle"/>
-                <field name="name"/>
+                <field name="name" class="fw-bold"/>
                 <field name="service_count"/>
                 <field name="duration" widget="float_time"/>
                 <field name="services_total"/>
-                <field name="price_type"/>
-                <field name="total_price" string="Package Amount"/>
+                <field name="price_type" widget="badge" decoration-info="price_type == 'fixed'" optional="show"/>
+                <field name="total_price" string="Package Amount" class="fw-bold"/>
                 <field name="saving" decoration-success="saving &gt; 0"/>
                 <field name="booking_count" optional="show"/>
             </list>
@@ -22,7 +22,7 @@
         <field name="name">carwash.service.package.form</field>
         <field name="model">carwash.service.package</field>
         <field name="arch" type="xml">
-            <form string="Service Package">
+            <form string="Service Package" class="o_cw_form">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
@@ -30,12 +30,38 @@
                         </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. Full Wash Package"/></h1>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg"><i class="fa fa-gift" title="Service package"/></span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Full Wash Package"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip">
+                                    <i class="fa fa-tag" title="Pricing"/>
+                                    <field name="price_type" readonly="1" nolabel="1"/>
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="not saving">
+                                    <i class="fa fa-thumbs-o-up" title="Customer saves"/>Customer saves <field name="saving" readonly="1" nolabel="1"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi">
+                                <field name="total_price" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Package Amount</span>
+                            </div>
+                            <div class="o_cw_hero_kpi">
+                                <field name="service_count" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Services</span>
+                            </div>
+                            <div class="o_cw_hero_kpi">
+                                <field name="duration" widget="float_time" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Hours</span>
+                            </div>
+                        </div>
                     </div>
                     <group>
-                        <group string="Pricing">
+                        <group string="Pricing" name="pricing">
                             <field name="active" invisible="1"/>
                             <field name="price_type" widget="radio"/>
                             <field name="fixed_price" invisible="price_type != 'fixed'" required="price_type == 'fixed'"/>
@@ -43,15 +69,15 @@
                             <field name="total_price" string="Package Amount" class="fw-bold"/>
                             <field name="saving" invisible="not saving" decoration-success="1"/>
                         </group>
-                        <group string="Summary">
-                            <field name="service_count"/>
-                            <field name="duration" widget="float_time"/>
+                        <group string="Description" name="description_group">
+                            <field name="description" nolabel="1" colspan="2" placeholder="Describe what this package includes..."/>
                         </group>
                     </group>
-                    <field name="description" placeholder="Describe what this package includes..."/>
                     <notebook>
                         <page string="Services" name="services">
-                            <p class="text-muted">The bookable services in this package - drives pricing and what actually gets applied to a booking.</p>
+                            <p class="text-muted small">
+                                <i class="fa fa-info-circle me-1" title="Info"/>The bookable services in this package - drives pricing and what actually gets applied to a booking.
+                            </p>
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
@@ -64,8 +90,8 @@
                             </field>
                         </page>
                         <page string="Website Content" name="website_content">
-                            <p class="text-muted">
-                                Rich "what's included" content shown on this package's website tab. Use headings
+                            <p class="text-muted small">
+                                <i class="fa fa-globe me-1" title="Website"/>Rich "what's included" content shown on this package's website tab. Use headings
                                 for each wash stage and bullet lists underneath (bullets get a checkmark style
                                 automatically). Leave empty to fall back to a plain list of the services above.
                             </p>
@@ -78,9 +104,26 @@
         </field>
     </record>
 
+    <record id="view_carwash_service_package_search" model="ir.ui.view">
+        <field name="name">carwash.service.package.search</field>
+        <field name="model">carwash.service.package</field>
+        <field name="arch" type="xml">
+            <search string="Service Packages">
+                <field name="name"/>
+                <field name="line_ids" string="Service" filter_domain="[('line_ids.product_id', 'ilike', self)]"/>
+                <filter string="Fixed Package Price" name="fixed_price" domain="[('price_type', '=', 'fixed')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Pricing" name="group_price_type" context="{'group_by': 'price_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="action_carwash_service_package" model="ir.actions.act_window">
         <field name="name">Service Packages</field>
         <field name="res_model">carwash.service.package</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
 </odoo>

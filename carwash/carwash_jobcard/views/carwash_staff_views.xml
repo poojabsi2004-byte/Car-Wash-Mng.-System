@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Staff roles (Configuration) ===================== -->
+    <record id="view_carwash_staff_role_list" model="ir.ui.view">
+        <field name="name">carwash.staff.role.list</field>
+        <field name="model">carwash.staff.role</field>
+        <field name="arch" type="xml">
+            <list string="Staff Roles" sample="1">
+                <field name="sequence" widget="handle"/>
+                <field name="name" class="fw-bold"/>
+                <field name="can_do_jobs" widget="boolean_toggle"/>
+                <field name="can_do_qc" widget="boolean_toggle"/>
+                <field name="commission_type" widget="badge" decoration-info="commission_type != 'none'"
+                       groups="carwash_jobcard.group_carwash_commission"/>
+                <field name="commission_rate" invisible="commission_type != 'percent'" groups="carwash_jobcard.group_carwash_commission"/>
+                <field name="commission_fixed" invisible="commission_type != 'fixed'" groups="carwash_jobcard.group_carwash_commission"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="employee_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_role_form" model="ir.ui.view">
+        <field name="name">carwash.staff.role.form</field>
+        <field name="model">carwash.staff.role</field>
+        <field name="arch" type="xml">
+            <form string="Staff Role" class="o_cw_form">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_staff" type="object" class="oe_stat_button" icon="fa-users">
+                            <field name="employee_count" widget="statinfo" string="Staff"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg"><i class="fa fa-id-badge" title="Staff role"/></span>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="e.g. Washer"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip o_cw_chip_info" invisible="not can_do_jobs">
+                                    <i class="fa fa-wrench" title="Job cards"/>Works on job cards
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_warning" invisible="not can_do_qc">
+                                    <i class="fa fa-search" title="Quality checks"/>Does quality checks
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="What they do" name="duties">
+                            <field name="can_do_jobs"/>
+                            <field name="can_do_qc"/>
+                            <field name="color" widget="color_picker"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Default Staff Payable" name="commission" groups="carwash_jobcard.group_carwash_commission">
+                            <field name="commission_type"/>
+                            <field name="commission_rate" invisible="commission_type != 'percent'"/>
+                            <field name="commission_fixed" invisible="commission_type != 'fixed'"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="What does this role do?"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_carwash_staff_role" model="ir.actions.act_window">
+        <field name="name">Staff Roles</field>
+        <field name="res_model">carwash.staff.role</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a staff role</p>
+            <p>Roles (Washer, Detailer, QC Inspector...) let you filter your staff, decide who can be put on a
+                job card or do the quality check, and set the default staff payable.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Employees: roles, staff payable, stats ===================== -->
+    <record id="view_employee_form_carwash" model="ir.ui.view">
+        <field name="name">hr.employee.form.carwash</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_carwash_jobcards" type="object" class="oe_stat_button" icon="fa-wrench"
+                        invisible="not carwash_role_ids" groups="carwash_base.group_carwash_user">
+                    <field name="carwash_jobcard_count" widget="statinfo" string="Jobs Done"/>
+                </button>
+                <field name="carwash_commission_enabled" invisible="1"/>
+                <field name="carwash_rating_enabled" invisible="1"/>
+                <button name="action_view_carwash_commissions" type="object" class="oe_stat_button" icon="fa-money"
+                        invisible="not carwash_role_ids or not carwash_commission_enabled" groups="carwash_base.group_carwash_manager">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="carwash_commission_due" widget="monetary"
+                                                           options="{'currency_field': 'carwash_currency_id'}"/></span>
+                        <span class="o_stat_text">Staff Payable Due</span>
+                    </div>
+                </button>
+                <button name="action_view_carwash_ratings" type="object" class="oe_stat_button" icon="fa-smile-o"
+                        invisible="not carwash_rating_count or not carwash_rating_enabled" groups="carwash_base.group_carwash_user">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="carwash_rating_avg"/> / 5</span>
+                        <span class="o_stat_text"><field name="carwash_rating_count"/> Ratings</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//notebook/page[@name='work_information']" position="after">
+                <page string="Staff Role" name="carwash_staff_role">
+                    <div class="text-muted small mb-2">
+                        <i class="fa fa-id-badge me-1" title="Staff role"/>What this person does at the car wash. Roles decide who can be put on a job card or do the
+                        quality check, and give the default staff payable.
+                    </div>
+                    <field name="carwash_role_ids" options="{'no_create': True}" nolabel="1">
+                        <list string="Staff Roles">
+                            <field name="name"/>
+                            <field name="can_do_jobs" string="Works on Job Cards"/>
+                            <field name="can_do_qc" string="Does Quality Checks"/>
+                            <field name="commission_type" string="Role Staff Payable" widget="badge" decoration-info="commission_type != 'none'"
+                                   groups="carwash_jobcard.group_carwash_commission"/>
+                            <field name="commission_rate" string="%" invisible="commission_type != 'percent'" groups="carwash_jobcard.group_carwash_commission"/>
+                            <field name="commission_fixed" string="Per Job" invisible="commission_type != 'fixed'" groups="carwash_jobcard.group_carwash_commission"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <group groups="carwash_base.group_carwash_manager">
+                        <field name="carwash_individual_pay_enabled" invisible="1"/>
+                        <group string="Individual Staff Pay" invisible="not carwash_individual_pay_enabled">
+                            <field name="carwash_commission_type"/>
+                            <field name="carwash_commission_rate" invisible="carwash_commission_type != 'percent'"/>
+                            <field name="carwash_commission_fixed" invisible="carwash_commission_type != 'fixed'"/>
+                            <field name="carwash_currency_id" invisible="1"/>
+                        </group>
+                        <group string="Performance">
+                            <field name="carwash_jobcard_count"/>
+                            <field name="carwash_rating_avg" string="Customer Rating (out of 5)" invisible="not carwash_rating_enabled"/>
+                            <field name="carwash_rating_count" invisible="not carwash_rating_enabled"/>
+                            <field name="carwash_commission_due" invisible="not carwash_commission_enabled"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_tree_carwash" model="ir.ui.view">
+        <field name="name">hr.employee.list.carwash</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="carwash_role_ids" widget="many2many_tags" options="{'color_field': 'color'}" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_filter_carwash" model="ir.ui.view">
+        <field name="name">hr.employee.search.carwash</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="carwash_role_ids" string="Car Wash Role"/>
+            </xpath>
+            <xpath expr="//filter[@name='inactive']" position="before">
+                <filter string="Car Wash Staff" name="carwash_staff" domain="[('carwash_role_ids', '!=', False)]"/>
+                <filter string="Works on Job Cards" name="carwash_jobs" domain="[('carwash_role_ids.can_do_jobs', '=', True)]"/>
+                <filter string="QC Inspectors" name="carwash_qc" domain="[('carwash_role_ids.can_do_qc', '=', True)]"/>
+                <separator/>
+            </xpath>
+            <xpath expr="//filter[@name='group_job']" position="before">
+                <filter name="group_carwash_role" string="Car Wash Role" context="{'group_by': 'carwash_role_ids'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_carwash_staff" model="ir.actions.act_window">
+        <field name="name">Staff</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="hr.view_employee_filter"/>
+        <!-- staff are created as a user first: Staff > New Staff Member -->
+        <field name="context">{'search_default_carwash_staff': 1, 'search_default_group_carwash_role': 1, 'chat_icon': True, 'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add your car wash staff with Staff &gt; New Staff Member</p>
+            <p>Each staff member gets a user (to log in) and an employee linked to it, with one or more Car Wash Roles
+                (Washer, Detailer, QC Inspector...). Only staff with a user can be assigned to job cards.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Staff Payables ===================== -->
+    <record id="view_carwash_staff_commission_list" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.list</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="arch" type="xml">
+            <list string="Staff Payables" sample="1" decoration-muted="state == 'cancelled'" decoration-success="state == 'paid'">
+                <header>
+                    <button name="action_pay" type="object" string="Pay" class="btn-primary"
+                            groups="carwash_base.group_carwash_manager"/>
+                    <button name="action_create_bill" type="object" string="Create Bill"
+                            groups="carwash_base.group_carwash_manager"/>
+                </header>
+                <field name="jobcard_id" class="fw-bold"/>
+                <field name="date"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="payable_role" widget="badge" decoration-info="payable_role == 'qc'"/>
+                <field name="appointment_id" optional="show"/>
+                <field name="customer_id" widget="many2one_avatar" optional="hide"/>
+                <field name="commission_type" optional="show"/>
+                <field name="base_amount" optional="show" sum="Total"/>
+                <field name="rate" optional="hide"/>
+                <field name="amount" sum="Total" class="fw-bold"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="company_id" string="Branch" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge" decoration-warning="state == 'to_pay'" decoration-success="state == 'paid'"/>
+                <field name="bill_id" optional="show"/>
+                <field name="bill_payment_state" string="Bill Status" widget="badge" optional="show"
+                       decoration-success="bill_payment_state in ('paid', 'in_payment')"
+                       decoration-danger="bill_payment_state == 'not_paid'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_commission_form" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.form</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="arch" type="xml">
+            <form string="Staff Payable" class="o_cw_form">
+                <header>
+                    <field name="bill_id" invisible="1"/>
+                    <button name="action_pay" type="object" string="Pay" icon="fa-money" class="btn-primary"
+                            invisible="state != 'to_pay'" groups="carwash_base.group_carwash_manager"
+                            help="Pay this amount: the bill is created first when there is none, then the payment opens (Cash by default). Paid once registered."/>
+                    <button name="action_create_bill" type="object" string="Create Bill" icon="fa-file-text-o"
+                            invisible="state != 'to_pay' or bill_id" groups="carwash_base.group_carwash_manager"
+                            help="Create and validate the staff member's bill for this amount - pay it later with Pay."/>
+                    <button name="action_reset_to_pay" type="object" string="Reset to To Pay"
+                            invisible="state == 'to_pay'" groups="carwash_base.group_carwash_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state != 'to_pay'" groups="carwash_base.group_carwash_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="to_pay,paid"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-danger" invisible="state != 'cancelled'"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg"><i class="fa fa-money" title="Staff Payable"/></span>
+                        <div class="oe_title">
+                            <label for="employee_id" string="Staff Payable for"/>
+                            <h1><field name="employee_id" widget="many2one_avatar_employee" placeholder="Staff member"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip" invisible="not jobcard_id">
+                                    <i class="fa fa-wrench" title="Job card"/>
+                                    <field name="jobcard_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip" invisible="not appointment_id">
+                                    <i class="fa fa-calendar-check-o" title="Booking"/>
+                                    <field name="appointment_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="not paid_date">
+                                    <i class="fa fa-check-circle" title="Paid on"/>Paid on <field name="paid_date" readonly="1" nolabel="1"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi">
+                                <field name="amount" readonly="1" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Staff Payable</span>
+                            </div>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Job" name="job">
+                            <field name="payable_role" widget="radio" options="{'horizontal': true}"/>
+                            <field name="jobcard_id"/>
+                            <field name="appointment_id"/>
+                            <field name="customer_id" widget="many2one_avatar"/>
+                            <field name="date"/>
+                            <field name="company_id" string="Branch" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Amount" name="amount_group">
+                            <field name="commission_type" widget="radio" options="{'horizontal': true}"/>
+                            <!-- % of Service Value: only the rate is entered; the service value comes from the job card
+                                 and the staff payable (shown at the top) is calculated -->
+                            <field name="rate" invisible="commission_type != 'percent'"/>
+                            <field name="base_amount" invisible="1"/>
+                            <div class="text-muted small" colspan="2" invisible="commission_type != 'percent'">
+                                <i class="fa fa-calculator me-1" title="Calculated"/>Calculated on this staff member's share of the
+                                job card's service value - the staff payable is shown at the top.
+                            </div>
+                            <!-- Fixed per Job: the amount itself -->
+                            <field name="amount" string="Staff Payable Amount" invisible="commission_type != 'fixed'"/>
+                            <field name="paid_date" invisible="not paid_date"/>
+                            <field name="bill_id" invisible="not bill_id"/>
+                            <field name="bill_payment_state" string="Bill Status" widget="badge" invisible="not bill_id"
+                                   decoration-success="bill_payment_state in ('paid', 'in_payment')"
+                                   decoration-warning="bill_payment_state == 'partial'"
+                                   decoration-danger="bill_payment_state == 'not_paid'"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_commission_pivot" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.pivot</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="arch" type="xml">
+            <pivot string="Staff Payables">
+                <field name="employee_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_commission_search" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.search</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="arch" type="xml">
+            <search string="Staff Payables">
+                <field name="employee_id"/>
+                <field name="jobcard_id"/>
+                <field name="appointment_id"/>
+                <filter string="To Pay" name="to_pay" domain="[('state', '=', 'to_pay')]"/>
+                <filter string="Paid" name="paid" domain="[('state', '=', 'paid')]"/>
+                <separator/>
+                <filter string="Staff" name="role_staff" domain="[('payable_role', '=', 'staff')]"/>
+                <filter string="QC" name="role_qc" domain="[('payable_role', '=', 'qc')]"/>
+                <separator/>
+                <filter string="Date" name="date" date="date"/>
+                <group>
+                    <filter string="Staff" name="group_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date:month'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="For" name="group_role" context="{'group_by': 'payable_role'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_staff_commission" model="ir.actions.act_window">
+        <field name="name">Staff Payables</field>
+        <field name="res_model">carwash.staff.commission</field>
+        <field name="view_mode">list,kanban,pivot,form</field>
+        <field name="context">{'search_default_to_pay': 1, 'search_default_group_employee': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No staff payables yet</p>
+            <p>Staff Payables are recorded automatically for the staff on a job card when it passes QC, based on
+                their role's (or their own) staff payable. <b>Create Bill</b> makes the staff member's bill; <b>Pay</b> (or
+                <b>Pay Staff</b> / <b>Pay QC</b> on the booking) creates it when needed and opens the payment - the
+                staff payable is Paid once the payment is registered.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Reviews & ratings (Odoo rating.rating) ===================== -->
+    <record id="view_carwash_rating_list" model="ir.ui.view">
+        <field name="name">rating.rating.list.carwash</field>
+        <field name="model">rating.rating</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <list string="Reviews &amp; Ratings" create="false" edit="false" sample="1">
+                <field name="carwash_booking_id" class="fw-bold"/>
+                <field name="rated_on" string="Date"/>
+                <field name="partner_id" string="Customer" widget="many2one_avatar"/>
+                <field name="carwash_vehicle_id" class="o_cw_plate_cell" optional="show"/>
+                <field name="rated_partner_id" string="Staff" widget="many2one_avatar" optional="show"/>
+                <field name="carwash_company_id" optional="show" groups="base.group_multi_company"/>
+                <field name="carwash_stars" widget="priority" readonly="1"/>
+                <field name="rating_text" string="Feeling" widget="badge" optional="show"
+                       decoration-danger="rating_text == 'ko'" decoration-warning="rating_text == 'ok'" decoration-success="rating_text == 'top'"/>
+                <field name="feedback" string="Review"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_rating_kanban" model="ir.ui.view">
+        <field name="name">rating.rating.kanban.carwash</field>
+        <field name="model">rating.rating</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <kanban create="false" class="o_cw_kanban" sample="1">
+                <field name="carwash_stars"/>
+                <field name="carwash_vehicle_id"/>
+                <field name="feedback"/>
+                <templates>
+                    <t t-name="card">
+                        <!-- coloured left edge by stars -->
+                        <span t-att-class="{
+                            'o_cw_tone_success': ['4', '5'].includes(record.carwash_stars.raw_value),
+                            'o_cw_tone_warning': record.carwash_stars.raw_value == '3',
+                            'o_cw_tone_danger': ['1', '2'].includes(record.carwash_stars.raw_value)
+                        }"/>
+                        <div class="o_cw_card_head">
+                            <div class="min-w-0">
+                                <field name="partner_id" class="o_cw_card_title"/>
+                                <div class="o_cw_card_sub"><field name="carwash_booking_id"/></div>
+                            </div>
+                            <field name="carwash_stars" widget="priority" readonly="1" class="text-nowrap"/>
+                        </div>
+                        <div class="o_cw_meta" t-if="record.carwash_vehicle_id.raw_value">
+                            <div><i class="fa fa-car" title="Vehicle"/><field name="carwash_vehicle_id" class="o_cw_plate"/></div>
+                        </div>
+                        <div t-if="record.feedback.raw_value" class="mt-1 fst-italic text-break o_cw_clamp">
+                            <i class="fa fa-quote-left me-1 text-muted" title="Review"/><field name="feedback"/>
+                        </div>
+                        <footer>
+                            <span class="min-w-0 text-truncate"><i class="fa fa-user me-1" title="Staff"/><field name="rated_partner_id"/></span>
+                            <span class="ms-auto text-nowrap"><i class="fa fa-calendar me-1" title="Date"/><field name="rated_on" widget="date"/></span>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_rating_form" model="ir.ui.view">
+        <field name="name">rating.rating.form.carwash</field>
+        <field name="model">rating.rating</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <form string="Review" create="false" edit="false" class="o_cw_form">
+                <sheet>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_success" invisible="carwash_stars not in ('4', '5')">
+                            <i class="fa fa-smile-o" title="Happy"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="carwash_stars != '3'">
+                            <i class="fa fa-meh-o" title="Neutral"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_danger" invisible="carwash_stars not in ('1', '2')">
+                            <i class="fa fa-frown-o" title="Unhappy"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_muted" invisible="carwash_stars in ('1', '2', '3', '4', '5')">
+                            <i class="fa fa-star-o" title="Not rated"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="partner_id" string="Review by"/>
+                            <h1><field name="partner_id" readonly="1" options="{'no_open': True}"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip" invisible="not carwash_booking_id">
+                                    <i class="fa fa-calendar-check-o" title="Booking"/>
+                                    <field name="carwash_booking_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                                <span class="o_cw_chip" invisible="not carwash_vehicle_id">
+                                    <i class="fa fa-car" title="Vehicle"/>
+                                    <field name="carwash_vehicle_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi">
+                                <field name="carwash_stars" widget="priority" readonly="1" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Rating</span>
+                            </div>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Wash" name="wash">
+                            <field name="carwash_booking_id"/>
+                            <field name="partner_id" string="Customer"/>
+                            <field name="carwash_vehicle_id"/>
+                            <field name="rated_partner_id" string="Staff" widget="many2one_avatar"/>
+                            <field name="carwash_company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Rating" name="rating">
+                            <field name="carwash_stars" widget="priority" readonly="1"/>
+                            <field name="rating_text" string="Feeling"/>
+                            <field name="rated_on" string="Date"/>
+                        </group>
+                    </group>
+                    <label for="feedback" string="Review"/>
+                    <field name="feedback" placeholder="No written review"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_rating_search" model="ir.ui.view">
+        <field name="name">rating.rating.search.carwash</field>
+        <field name="model">rating.rating</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <search string="Reviews &amp; Ratings">
+                <field name="partner_id" string="Customer"/>
+                <field name="carwash_booking_id"/>
+                <field name="carwash_vehicle_id"/>
+                <field name="rated_partner_id" string="Staff"/>
+                <field name="feedback" string="Review"/>
+                <filter string="5 Stars" name="stars_5" domain="[('carwash_stars', '=', '5')]"/>
+                <filter string="4 Stars" name="stars_4" domain="[('carwash_stars', '=', '4')]"/>
+                <filter string="3 Stars" name="stars_3" domain="[('carwash_stars', '=', '3')]"/>
+                <filter string="1-2 Stars" name="stars_low" domain="[('carwash_stars', 'in', ('1', '2'))]"/>
+                <separator/>
+                <filter string="With a Written Review" name="with_feedback" domain="[('feedback', '!=', False)]"/>
+                <separator/>
+                <filter string="Date" name="filter_rated_on" date="rated_on"/>
+                <group>
+                    <filter string="Stars" name="group_stars" context="{'group_by': 'carwash_stars'}"/>
+                    <filter string="Staff" name="group_staff" context="{'group_by': 'rated_partner_id'}"/>
+                    <filter string="Customer" name="group_customer" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Branch" name="group_branch" context="{'group_by': 'carwash_company_id'}" groups="base.group_multi_company"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'rated_on:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_rating" model="ir.actions.act_window">
+        <field name="name">Reviews &amp; Ratings</field>
+        <field name="res_model">rating.rating</field>
+        <field name="view_mode">list,kanban,form,pivot,graph</field>
+        <field name="domain">[('res_model', '=', 'carwash.appointment'), ('consumed', '=', True), ('rating', '&gt;=', 1)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="search_view_id" ref="view_carwash_rating_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_rating_list')}),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_carwash_rating_kanban')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_carwash_rating_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No reviews yet</p>
+            <p>When a booking is done the customer rates it (1-5 stars and a review) from the rating
+                email or from <i>My Bookings</i> on the website; the front desk can also record it with
+                <b>Add Review</b> on the booking. All reviews are listed here.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Add / edit review (booking done) ===================== -->
+    <record id="view_carwash_review_wizard_form" model="ir.ui.view">
+        <field name="name">carwash.review.wizard.form</field>
+        <field name="model">carwash.review.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Customer Review">
+                <group>
+                    <field name="appointment_id" force_save="1"/>
+                    <field name="customer_id"/>
+                    <field name="stars" widget="priority" class="o_cw_review_stars"/>
+                    <field name="feedback" placeholder="What did the customer say about the wash?"/>
+                </group>
+                <footer>
+                    <button name="action_save" type="object" string="Save Review" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -21,8 +21,8 @@ class ResPartner(models.Model):
         """The active membership this customer can use on a booking right now (sudo), if any."""
         self.ensure_one()
         membership = self.sudo().carwash_active_membership_id
-        if not membership:
-            return membership
+        if not membership or not self.env["carwash.feature"]._enabled("carwash_membership.group_carwash_membership"):
+            return membership.browse()
         try:
             membership._check_usable()
         except UserError:

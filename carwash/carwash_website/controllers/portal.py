@@ -8,6 +8,10 @@ from odoo.http import request
 MEMBERSHIP_EDITABLE_STATES = ("draft", "confirmed", "arrived")
 
 
+def _carwash_reviews_enabled():
+    return request.env["carwash.feature"].sudo()._enabled("carwash_jobcard.group_carwash_rating")
+
+
 class CustomerPortal(BaseCustomerPortal):
 
     def _prepare_home_portal_values(self, counters):
@@ -43,6 +47,7 @@ class CustomerPortal(BaseCustomerPortal):
                 "pager": pager,
                 "default_url": "/my/bookings",
                 "membership": partner._carwash_get_usable_membership(),
+                "review_enabled": _carwash_reviews_enabled(),
             }
         )
         return values
@@ -80,6 +85,7 @@ class CustomerPortal(BaseCustomerPortal):
                 "membership_preview": preview,
                 "can_apply_membership": bool(preview and preview["has_benefit"]),
                 "can_remove_membership": bool(editable and appointment_sudo.membership_id),
+                "review_enabled": _carwash_reviews_enabled(),
                 "message": kwargs.get("message"),
                 "error": kwargs.get("error"),
             },
@@ -111,3 +117,21 @@ class CustomerPortal(BaseCustomerPortal):
         except UserError:
             return request.redirect(f"{url}?error=no_benefit")
         return request.redirect(f"{url}?message={'applied' if apply == '1' else 'removed'}")
+
+    @http.route(["/my/bookings/<int:appointment_id>/review"], type="http", auth="user", website=True,
+                methods=["POST"])
+    def portal_booking_review(self, appointment_id, stars=None, feedback=None, **kwargs):
+        """Customer rates their completed booking: 1-5 stars + a review (Odoo rating.rating)."""
+        try:
+            appointment_sudo = self._document_check_access("carwash.appointment", appointment_id)
+        except (AccessError, MissingError):
+            return request.redirect("/my/bookings")
+        url = f"/my/bookings/{appointment_sudo.id}"
+        if appointment_sudo.state != "done":
+            return request.redirect(f"{url}?error=review_not_done")
+        try:
+            with request.env.cr.savepoint():
+                appointment_sudo._carwash_apply_review(int(stars or 0), (feedback or "")[:2000])
+        except (UserError, ValueError):
+            return request.redirect(f"{url}?error=review#carwash_review")
+        return request.redirect(f"{url}?message=reviewed#carwash_review")

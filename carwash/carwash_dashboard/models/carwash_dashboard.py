@@ -7,16 +7,6 @@ from odoo import api, fields, models
 
 PERIOD_DAYS = {"today": 0, "week": 6, "month": 29, "quarter": 89, "year": 364}
 ACTIVE_STATES = ("confirmed", "arrived", "in_service", "ready")
-VEHICLE_ICONS = {
-    "hatchback": "fa-car",
-    "sedan": "fa-car",
-    "suv": "fa-car",
-    "truck": "fa-truck",
-    "van": "fa-bus",
-    "bike": "fa-motorcycle",
-    "other": "fa-car",
-}
-BAY_TYPE_ICONS = {"hand": "fa-hand-paper-o", "tunnel": "fa-road", "detail": "fa-diamond"}
 
 
 def _initials(name):
@@ -53,7 +43,7 @@ class CarwashDashboard(models.AbstractModel):
 
     def _fmt_datetime(self, dt):
         local = self._to_local(dt)
-        return local.strftime("%d %b, %H:%M") if local else ""
+        return local.strftime("%d %b, %y %H:%M") if local else ""
 
     # ------------------------------------------------------------------
     # Entry point
@@ -68,8 +58,8 @@ class CarwashDashboard(models.AbstractModel):
 
         # The company switcher (top right) sets env.companies - scope the "what's
         # happening right now" sections to it, so switching branches updates the
-        # view. The owner-only business-overview section deliberately ignores this
-        # and always aggregates every branch the owner can see (that's its point).
+        # view. The owner-only business-overview section covers the branches the owner
+        # has ticked (all of them by default).
         company_ids = self.env.companies.ids
         now_local = self._local_now()
         today = now_local.date()
@@ -81,15 +71,20 @@ class CarwashDashboard(models.AbstractModel):
             "role": "owner" if is_owner else "manager" if is_manager else "qc" if is_qc else "washer" if is_washer else "user",
             "user_name": user.name,
             "company_name": ", ".join(self.env.companies.mapped("name")),
-            "today_label": now_local.strftime("%A, %d %B %Y"),
+            "today_label": now_local.strftime("%A, %d %b, %y"),
             "today": fields.Date.to_string(today),
             "currency": {"symbol": currency.symbol or "", "position": currency.position or "before"},
             "has_washer_data": is_washer and not is_manager,
             "has_qc_data": is_qc,
             "has_manager_data": is_manager,
             "has_owner_data": is_owner,
+            # New Booking: front desk / managers - staff (washers) and QC inspectors don't create bookings
+            "can_create_booking": self.env["carwash.appointment"].has_access("create"),
         }
         data.update(self._get_live_data(company_ids, today_start, tomorrow_start))
+        requests = self._get_booking_requests(company_ids)
+        if requests is not None:
+            data["booking_requests"] = requests
 
         if self.env["carwash.jobcard"].has_access("read"):
             data["jobcards"] = self._get_jobcards(company_ids, only_mine=is_washer and not is_manager and not is_qc)
@@ -98,6 +93,12 @@ class CarwashDashboard(models.AbstractModel):
 
         if is_washer and not is_manager:
             data["my_jobcards"] = self._get_my_jobcard_counts(today_start)
+
+        # staff / QC: what they earn on job cards (Settings > Staff Payable)
+        if (is_washer or is_qc) and self.env["carwash.feature"]._enabled("carwash_jobcard.group_carwash_commission"):
+            earnings = self._get_my_earnings_data(today)
+            if earnings:
+                data["my_earnings"] = earnings
 
         if is_qc:
             data["pending_qc"] = len([j for j in data["jobcards"] if j["stage"] == "qc"])
@@ -108,6 +109,7 @@ class CarwashDashboard(models.AbstractModel):
             data["period_from"] = fields.Date.to_string(period_from)
             data["period_to"] = fields.Date.to_string(period_to)
             data.update(self._get_manager_data(company_ids, today_start, tomorrow_start, period_from, period_to))
+            data["payments"] = self._get_payments_data(company_ids, period_from, period_to)
 
         if is_owner:
             data.update(self._get_owner_data(today))
@@ -124,6 +126,124 @@ class CarwashDashboard(models.AbstractModel):
         if not previous:
             return None if not current else 100.0
         return round((current - previous) / previous * 100, 1)
+
+    # ------------------------------------------------------------------
+    # Booking calendar (every role): one week of bookings + open requests
+    # ------------------------------------------------------------------
+    def _get_booking_requests(self, company_ids, limit=12):
+        """New booking requests (leads of carwash_crm, which the dashboard doesn't depend on) not
+        confirmed into a booking yet, whatever their requested date - newest first. None when
+        CRM booking requests aren't installed or the user can't read them."""
+        Lead = self.env["crm.lead"] if "crm.lead" in self.env else None
+        if Lead is None or "carwash_appointment_id" not in Lead._fields or not Lead.has_access("read"):
+            return None
+        domain = [
+            ("is_carwash_booking", "=", True),
+            ("carwash_appointment_id", "=", False),
+            ("company_id", "in", company_ids + [False]),
+        ]
+        leads = Lead.search(domain, order="create_date desc, id desc", limit=limit)
+        action = self.env.ref("carwash_crm.action_carwash_booking_requests", raise_if_not_found=False)
+        return {
+            "count": Lead.search_count(domain),
+            "action_id": action.id if action else False,
+            "items": [
+                {
+                    "id": lead.id,
+                    "name": lead.name or "",
+                    "customer": lead.partner_id.name or lead.contact_name or "",
+                    "phone": lead.phone or "",
+                    "plate": lead.carwash_license_plate or lead.carwash_vehicle_id.license_plate or "",
+                    "requested": self._fmt_datetime(lead.carwash_booking_date) if lead.carwash_booking_date else "",
+                    "received": self._fmt_datetime(lead.create_date),
+                    "services": ", ".join(filter(None, [lead.carwash_package_id.name or ""] + lead.carwash_service_ids.mapped("name"))),
+                }
+                for lead in leads
+            ],
+        }
+
+    @api.model
+    def get_calendar_data(self, start=None, days=7):
+        """Bookings (and booking requests not confirmed yet) per local day, from `start`
+        (ISO date, default: Monday of this week) for `days` days, in the ticked branches."""
+        today = self._local_now().date()
+        try:
+            first = fields.Date.to_date(start) if start else None
+        except ValueError:
+            first = None
+        first = first or today - timedelta(days=today.weekday())
+        days = max(1, min(int(days or 7), 31))
+        last = first + timedelta(days=days)
+        range_start, range_end = self._day_start_utc(first), self._day_start_utc(last)
+        company_ids = self.env.companies.ids
+
+        by_day = {first + timedelta(days=i): {"bookings": [], "requests": []} for i in range(days)}
+        state_labels = dict(self.env["carwash.appointment"]._fields["state"]._description_selection(self.env))
+        bookings = self.env["carwash.appointment"].search([
+            ("appointment_date", ">=", range_start),
+            ("appointment_date", "<", range_end),
+            ("company_id", "in", company_ids),
+            ("state", "not in", ("cancelled", "no_show")),
+        ], order="appointment_date")
+        for appt in bookings:
+            local = self._to_local(appt.appointment_date)
+            by_day[local.date()]["bookings"].append({
+                "id": appt.id,
+                "name": appt.name,
+                "time": local.strftime("%H:%M"),
+                "end": (local + timedelta(hours=appt.duration or 0.5)).strftime("%H:%M"),
+                "state": appt.state,
+                "state_label": state_labels.get(appt.state, appt.state),
+                "plate": appt.vehicle_id.license_plate or "",
+                "vehicle_icon": appt.vehicle_id.vehicle_type_id.icon or "fa-car",
+                "customer": appt.customer_id.name or "",
+                "bay": appt.bay_id.name or "",
+                "services": ", ".join(appt._service_lines().product_id.mapped("name")),
+            })
+
+        # booking requests come from carwash_crm, which the dashboard doesn't depend on
+        Lead = self.env["crm.lead"] if "crm.lead" in self.env else None
+        show_requests = bool(Lead is not None and "carwash_booking_date" in Lead._fields and Lead.has_access("read"))
+        if show_requests:
+            requests = Lead.search([
+                ("is_carwash_booking", "=", True),
+                ("carwash_appointment_id", "=", False),
+                ("carwash_booking_date", ">=", range_start),
+                ("carwash_booking_date", "<", range_end),
+                ("company_id", "in", company_ids + [False]),
+            ], order="carwash_booking_date")
+            for lead in requests:
+                local = self._to_local(lead.carwash_booking_date)
+                by_day[local.date()]["requests"].append({
+                    "id": lead.id,
+                    "name": lead.name,
+                    "time": local.strftime("%H:%M"),
+                    "plate": lead.carwash_license_plate or "",
+                    "customer": lead.partner_id.name or lead.contact_name or "",
+                    "services": ", ".join(filter(None, [lead.carwash_package_id.name or ""]
+                                                 + lead.carwash_service_ids.mapped("name"))),
+                })
+
+        return {
+            "start": fields.Date.to_string(first),
+            "end": fields.Date.to_string(last - timedelta(days=1)),
+            "range_label": f"{first.strftime('%d %b')} - {(last - timedelta(days=1)).strftime('%d %b, %y')}",
+            "is_current": first <= today < last,
+            "show_requests": show_requests,
+            "total_bookings": len(bookings),
+            "total_requests": sum(len(d["requests"]) for d in by_day.values()),
+            "days": [
+                {
+                    "date": fields.Date.to_string(day),
+                    "weekday": day.strftime("%a"),
+                    "label": day.strftime("%d %b"),
+                    "is_today": day == today,
+                    "is_past": day < today,
+                    **entries,
+                }
+                for day, entries in sorted(by_day.items())
+            ],
+        }
 
     # ------------------------------------------------------------------
     # Live floor: pipeline, bays, hourly load (every role)
@@ -144,7 +264,7 @@ class CarwashDashboard(models.AbstractModel):
             "state": appt.state,
             "plate": vehicle.license_plate or "",
             "vehicle": " ".join(filter(None, [vehicle.make, vehicle.vehicle_model])),
-            "vehicle_icon": VEHICLE_ICONS.get(vehicle.vehicle_type, "fa-car"),
+            "vehicle_icon": vehicle.vehicle_type_id.icon or "fa-car",
             "customer": appt.customer_id.name or "",
             "bay": appt.bay_id.name or "",
             "time": self._fmt_time(appt.appointment_date),
@@ -200,7 +320,6 @@ class CarwashDashboard(models.AbstractModel):
             upcoming = {}
             for appt in active.filtered(lambda a: a.state in ("confirmed", "arrived") and a.bay_id):
                 upcoming.setdefault(appt.bay_id.id, appt)
-            bay_types = dict(self.env["carwash.bay"]._fields["bay_type"].selection)
             for bay in self.env["carwash.bay"].search([("company_id", "in", company_ids)]):
                 current = in_service.get(bay.id)
                 nxt = upcoming.get(bay.id)
@@ -208,8 +327,8 @@ class CarwashDashboard(models.AbstractModel):
                     {
                         "id": bay.id,
                         "name": bay.name,
-                        "type": bay_types.get(bay.bay_type, ""),
-                        "type_icon": BAY_TYPE_ICONS.get(bay.bay_type, "fa-tint"),
+                        "type": bay.bay_type_id.name or "",
+                        "type_icon": bay.bay_type_id.icon or "fa-tint",
                         "state": bay.state,
                         "current": self._appointment_card(current, now) if current else False,
                         "next": {"plate": nxt.vehicle_id.license_plate, "time": self._fmt_time(nxt.appointment_date)}
@@ -267,6 +386,41 @@ class CarwashDashboard(models.AbstractModel):
             )
         return result
 
+    def _get_my_earnings_data(self, today):
+        """The logged-in staff member's / QC inspector's staff payables: still to receive, received, the latest
+        ones (the full list is My Earnings)."""
+        employee = self.env.user.sudo().employee_id
+        if not employee:
+            return None
+        # sudo: their own payables only (the employee is the user's own)
+        mine = self.env["carwash.staff.commission"].sudo().search(
+            [("employee_id", "=", employee.id), ("state", "!=", "cancelled")], order="date desc, id desc",
+        )
+        month_start = today.replace(day=1)
+        to_receive = mine.filtered(lambda p: p.state == "to_pay")
+        received = mine.filtered(lambda p: p.state == "paid")
+        return {
+            "to_receive": sum(to_receive.mapped("amount")),
+            "to_receive_count": len(to_receive),
+            "received_month": sum(received.filtered(lambda p: p.paid_date and p.paid_date >= month_start).mapped("amount")),
+            "earned_month": sum(mine.filtered(lambda p: p.date >= month_start).mapped("amount")),
+            "received_total": sum(received.mapped("amount")),
+            "form_view_id": self.env.ref("carwash_jobcard.view_carwash_my_earnings_form").id,
+            "recent": [
+                {
+                    "id": payable.id,
+                    "day": payable.date.strftime("%d %b"),
+                    "jobcard": payable.jobcard_id.name or "",
+                    "booking": payable.appointment_id.name or "",
+                    "role": self.env._("QC") if payable.payable_role == "qc" else self.env._("Staff"),
+                    "amount": payable.amount,
+                    "received": payable.state == "paid",
+                    "paid_day": payable.paid_date.strftime("%d %b") if payable.paid_date else "",
+                }
+                for payable in mine[:5]
+            ],
+        }
+
     def _get_my_jobcard_counts(self, today_start):
         jobcard = self.env["carwash.jobcard"]
         mine = [("assigned_employee_ids", "in", self.env.user.employee_id.ids)]
@@ -279,6 +433,104 @@ class CarwashDashboard(models.AbstractModel):
     # ------------------------------------------------------------------
     # Manager: money, services, consumables
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Manager: payments - money in from customers, out to staff and QC
+    # ------------------------------------------------------------------
+    def _get_payments_data(self, company_ids, period_from, period_to):
+        """Customer payments received in the period and what is still to collect; staff / QC paid in the period and
+        what they are still owed (per person); what the car wash keeps; the latest payments in and out."""
+        # sudo: the manager's overview of every payment / payable of the branches
+        Payment = self.env["account.payment"].sudo()
+        received = Payment.search([
+            ("company_id", "in", company_ids), ("payment_type", "=", "inbound"), ("partner_type", "=", "customer"),
+            ("state", "not in", ("draft", "canceled", "rejected")),
+            ("date", ">=", period_from), ("date", "<=", period_to),
+        ], order="date desc, id desc")
+        received_total = sum(received.mapped("amount_company_currency_signed"))
+
+        # still to collect: bookings whose service ended (Ready) or done, not fully paid
+        Appointment = self.env["carwash.appointment"].sudo()
+        to_collect = Appointment.search([
+            ("company_id", "in", company_ids), ("state", "in", ("ready", "done")), ("sale_order_id", "!=", False),
+            "|", "|",
+            ("sale_order_id.state", "in", ("draft", "sent")),
+            ("sale_order_id.invoice_status", "=", "to invoice"),
+            "&", ("sale_order_id.invoice_ids.state", "=", "posted"),
+            ("sale_order_id.invoice_ids.payment_state", "in", ("not_paid", "partial")),
+        ])
+        due_by_booking = {}
+        for booking in to_collect:
+            due = booking.amount_due if booking.payment_state != "quotation" else booking.sale_order_id.amount_total
+            if due > 0.005:
+                due_by_booking[booking.id] = due
+
+        data = {
+            "received": received_total,
+            "received_count": len(received),
+            "received_ids": received.ids,
+            "due": sum(due_by_booking.values()),
+            "due_count": len(due_by_booking),
+            "due_booking_ids": list(due_by_booking),
+            "has_payables": self.env["carwash.feature"]._enabled("carwash_jobcard.group_carwash_commission"),
+            "staff_paid": 0.0, "qc_paid": 0.0, "staff_to_pay": 0.0, "qc_to_pay": 0.0,
+            "owed": [],
+        }
+        events = [
+            {
+                "key": f"in-{payment.id}", "kind": "in", "model": "account.payment", "id": payment.id,
+                "date": payment.date, "day": payment.date.strftime("%d %b"),
+                "who": payment.partner_id.name or "", "what": payment.memo or payment.name or "",
+                "amount": payment.amount_company_currency_signed,
+            }
+            for payment in received[:8]
+        ]
+        if data["has_payables"]:
+            Payable = self.env["carwash.staff.commission"].sudo()
+            to_pay = Payable.search([("company_id", "in", company_ids), ("state", "=", "to_pay")])
+            paid = Payable.search([
+                ("company_id", "in", company_ids), ("state", "=", "paid"),
+                ("paid_date", ">=", period_from), ("paid_date", "<=", period_to),
+            ], order="paid_date desc, id desc")
+            for role in ("staff", "qc"):
+                data[f"{role}_paid"] = sum(paid.filtered(lambda p: p.payable_role == role).mapped("amount"))
+                data[f"{role}_to_pay"] = sum(to_pay.filtered(lambda p: p.payable_role == role).mapped("amount"))
+            owed = {}
+            for payable in to_pay:
+                entry = owed.setdefault((payable.employee_id.id, payable.payable_role), {
+                    "key": f"{payable.employee_id.id}-{payable.payable_role}", "employee_id": payable.employee_id.id,
+                    "name": payable.employee_id.name, "initials": _initials(payable.employee_id.name),
+                    "role": payable.payable_role, "role_label": self.env._("QC") if payable.payable_role == "qc" else self.env._("Staff"),
+                    "amount": 0.0, "count": 0,
+                })
+                entry["amount"] += payable.amount
+                entry["count"] += 1
+            data["owed"] = sorted(owed.values(), key=lambda e: -e["amount"])[:6]
+            events += [
+                {
+                    "key": f"out-{payable.id}", "kind": "out_qc" if payable.payable_role == "qc" else "out",
+                    "model": "carwash.staff.commission", "id": payable.id,
+                    "date": payable.paid_date, "day": payable.paid_date.strftime("%d %b"),
+                    "who": payable.employee_id.name or "",
+                    "what": f"{self.env._('QC') if payable.payable_role == 'qc' else self.env._('Staff')} · {payable.jobcard_id.name or ''}",
+                    "amount": payable.amount,
+                }
+                for payable in paid[:8]
+            ]
+        paid_out = data["staff_paid"] + data["qc_paid"]
+        data["paid_out"] = paid_out
+        data["kept"] = received_total - paid_out
+        base = max(received_total, paid_out) or 1.0
+        data["split"] = {
+            "staff": round(data["staff_paid"] / base * 100, 1),
+            "qc": round(data["qc_paid"] / base * 100, 1),
+            "kept": round(max(data["kept"], 0.0) / base * 100, 1),
+        }
+        events.sort(key=lambda e: (e["date"], e["kind"] == "in"), reverse=True)
+        for event in events:
+            del event["date"]
+        data["recent"] = events[:7]
+        return data
+
     def _get_manager_data(self, company_ids, today_start, tomorrow_start, period_from, period_to):
         Appointment = self.env["carwash.appointment"]
         start = self._day_start_utc(period_from)
@@ -340,7 +592,7 @@ class CarwashDashboard(models.AbstractModel):
         elif span_days <= 180:
             bucket_days, date_fmt = 7, "%d %b"
         else:
-            bucket_days, date_fmt = 30, "%b %Y"
+            bucket_days, date_fmt = 30, "%b, %y"
 
         buckets = []
         cursor = date_from
@@ -398,7 +650,8 @@ class CarwashDashboard(models.AbstractModel):
 
         branch_stats = {}
         for appt in appointment.search([("state", "=", "done")]):
-            stat = branch_stats.setdefault(appt.company_id.name, {"revenue": 0.0, "washes": 0})
+            # sudo: a branch's name - the owner may not have every branch ticked in the switcher
+            stat = branch_stats.setdefault(appt.company_id.sudo().name, {"revenue": 0.0, "washes": 0})
             stat["revenue"] += appt.amount_total
             stat["washes"] += 1
         branch_breakdown = sorted(
@@ -425,7 +678,8 @@ class CarwashDashboard(models.AbstractModel):
             "staff_leaderboard": staff_leaderboard,
             "membership_totals": {
                 "active": len(active_memberships),
-                "mrr": sum(active_memberships.mapped("plan_id.product_id.list_price")),
+                # monthly revenue: a yearly member counts 1/12 of the yearly amount
+                "mrr": sum(m.amount / 12 if m.billing_period == "yearly" else m.amount for m in active_memberships),
             },
             "billing_overdue": len(active_memberships.filtered(is_overdue)),
             "memberships": [
@@ -436,7 +690,7 @@ class CarwashDashboard(models.AbstractModel):
                     "plan": m.plan_id.name or "",
                     "used": m.washes_used,
                     "allowance": m.wash_allowance,
-                    "next_billing": m.next_billing_date.strftime("%d %b %Y") if m.next_billing_date else "",
+                    "next_billing": m.next_billing_date.strftime("%d %b, %y") if m.next_billing_date else "",
                     "overdue": is_overdue(m),
                 }
                 for m in active_memberships[:40]

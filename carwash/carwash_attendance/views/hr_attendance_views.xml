@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_attendance_tree_carwash" model="ir.ui.view">
+        <field name="name">hr.attendance.list.carwash</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_id']" position="after">
+                <field name="carwash_branch_id" optional="show" groups="base.group_multi_company"
+                       options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_attendance_view_form_carwash" model="ir.ui.view">
+        <field name="name">hr.attendance.form.carwash</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_id']" position="after">
+                <field name="carwash_branch_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_attendance_view_filter_carwash" model="ir.ui.view">
+        <field name="name">hr.attendance.search.carwash</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_id']" position="after">
+                <field name="carwash_branch_id" groups="base.group_multi_company"/>
+                <field name="employee_id" string="Car Wash Role" filter_domain="[('employee_id.carwash_role_ids', 'ilike', self)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='nocheckout']" position="before">
+                <filter string="Today" name="carwash_today" domain="[('check_in', '&gt;=', 'today')]"/>
+                <filter string="Car Wash Staff" name="carwash_staff" domain="[('employee_id.carwash_role_ids', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='employee']" position="before">
+                <filter string="Branch" name="carwash_group_branch" context="{'group_by': 'carwash_branch_id'}"
+                        groups="base.group_multi_company"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Car Wash attendance list (every role: staff see their own shifts, managers everyone's) -->
+    <record id="view_carwash_my_attendance_list" model="ir.ui.view">
+        <field name="name">hr.attendance.list.carwash.mine</field>
+        <field name="model">hr.attendance</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <!-- New / edit / delete for managers (attendance officers); staff only read their own (Odoo's rights) -->
+            <list string="Attendance" sample="1" class="o_cw_attendance_list"
+                  decoration-success="carwash_status == 'on_shift'" decoration-warning="carwash_status == 'no_checkout'">
+                <field name="employee_id" widget="many2one_avatar_employee" optional="show"/>
+                <field name="date"/>
+                <field name="carwash_in_time" string="Check In"/>
+                <field name="carwash_out_time" string="Check Out"/>
+                <field name="worked_hours" string="Hours" widget="float_time" sum="Total"/>
+                <field name="validated_overtime_hours" string="Extra Hours" widget="float_time" optional="hide" sum="Total"/>
+                <field name="in_mode" string="Checked In Via" optional="hide"/>
+                <field name="carwash_branch_id" string="Branch" groups="base.group_multi_company" optional="show"/>
+                <field name="carwash_status" widget="badge" decoration-success="carwash_status == 'on_shift'"
+                       decoration-info="carwash_status == 'done'" decoration-warning="carwash_status == 'no_checkout'"/>
+                <field name="check_in" column_invisible="1"/>
+                <field name="check_out" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Car Wash attendance form: one shift - who, when, how long, how they checked in / out -->
+    <record id="view_carwash_attendance_form" model="ir.ui.view">
+        <field name="name">hr.attendance.form.carwash.shift</field>
+        <field name="model">hr.attendance</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Attendance" class="o_cw_form o_cw_attendance_form" duplicate="false">
+                <field name="is_manager" invisible="1"/>
+                <field name="in_latitude" invisible="1"/>
+                <field name="out_latitude" invisible="1"/>
+                <header>
+                    <button name="action_approve_overtime" type="object" string="Approve Extra Hours" class="btn-primary"
+                            invisible="not is_manager or overtime_status not in ('to_approve', 'refused')"
+                            groups="hr_attendance.group_hr_attendance_officer"/>
+                    <button name="action_refuse_overtime" type="object" string="Refuse Extra Hours"
+                            invisible="not is_manager or overtime_status not in ('to_approve', 'approved')"
+                            groups="hr_attendance.group_hr_attendance_officer"/>
+                    <field name="overtime_status" widget="statusbar" readonly="1" invisible="not overtime_status"/>
+                </header>
+                <sheet>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_success" invisible="carwash_status != 'on_shift'">
+                            <i class="fa fa-sign-in" title="On shift"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="carwash_status != 'done'">
+                            <i class="fa fa-check" title="Checked out"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="carwash_status != 'no_checkout'">
+                            <i class="fa fa-exclamation" title="No check-out"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="employee_id" string="Staff Member"/>
+                            <h1>
+                                <field name="employee_id" readonly="1" options="{'no_open': True}"
+                                       groups="!hr_attendance.group_hr_attendance_user"/>
+                                <field name="employee_id" placeholder="Pick the staff member" options="{'no_create': True}"
+                                       domain="[('company_id', 'in', allowed_company_ids)]"
+                                       groups="hr_attendance.group_hr_attendance_user"/>
+                            </h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip o_cw_chip_success" invisible="carwash_status != 'on_shift'">
+                                    <i class="fa fa-circle" title="Status"/> On Shift
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_info" invisible="carwash_status != 'done'">
+                                    <i class="fa fa-check-circle" title="Status"/> Checked Out
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_warning" invisible="carwash_status != 'no_checkout'">
+                                    <i class="fa fa-exclamation-triangle" title="Status"/> No Check-out
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_muted" invisible="not date">
+                                    <i class="fa fa-calendar" title="Date"/> <field name="date" readonly="1" nolabel="1"/>
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_muted" groups="base.group_multi_company" invisible="not carwash_branch_id">
+                                    <i class="fa fa-map-marker" title="Branch"/>
+                                    <field name="carwash_branch_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi">
+                                <field name="worked_hours" widget="float_time" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Hours Worked</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not validated_overtime_hours">
+                                <field name="validated_overtime_hours" widget="float_time" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Extra Hours</span>
+                            </div>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Shift">
+                            <field name="check_in" options="{'rounding': 0}" readonly="not is_manager"/>
+                            <field name="check_out" options="{'rounding': 0}" placeholder="Still checked in"
+                                   readonly="not is_manager"/>
+                            <field name="carwash_branch_id" groups="base.group_multi_company"
+                                   options="{'no_create': True}" readonly="not is_manager"/>
+                        </group>
+                        <group string="Hours">
+                            <field name="worked_hours" string="Worked" widget="float_time"/>
+                            <field name="expected_hours" string="Regular" widget="float_time"/>
+                            <field name="overtime_hours" string="Extra Worked" widget="float_time" invisible="not overtime_hours"/>
+                            <field name="validated_overtime_hours" string="Extra Approved" widget="float_time"
+                                   invisible="not overtime_status"/>
+                        </group>
+                        <group string="Checked In" invisible="not id">
+                            <field name="in_mode" string="Via" readonly="1"/>
+                            <field name="in_location" string="Location" readonly="1" invisible="not in_location"/>
+                            <button name="action_in_attendance_maps" type="object" string="View on Maps" icon="oi-arrow-right"
+                                    class="btn btn-link ps-0" invisible="not in_latitude" colspan="2"/>
+                        </group>
+                        <group string="Checked Out" invisible="not check_out or not id">
+                            <field name="out_mode" string="Via" readonly="1"/>
+                            <field name="out_location" string="Location" readonly="1" invisible="not out_location"/>
+                            <button name="action_out_attendance_maps" type="object" string="View on Maps" icon="oi-arrow-right"
+                                    class="btn btn-link ps-0" invisible="not out_latitude" colspan="2"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Car Wash > Staff > Attendance (and Configuration > Staff > Attendance): today's shifts, by branch -->
+    <record id="action_carwash_attendance" model="ir.actions.act_window">
+        <field name="name">Attendances</field>
+        <field name="res_model">hr.attendance</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="context">{'search_default_carwash_today': 1, 'search_default_carwash_group_branch': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_my_attendance_list')}),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('hr_attendance.view_hr_attendance_kanban')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_carwash_attendance_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No attendance today yet</p>
+            <p>Staff check in and out with the <b>Check In</b> button on the Car Wash dashboard (My Attendance) or the
+                attendance icon in the top bar. Each attendance records the branch the staff member worked at.</p>
+        </field>
+    </record>
+
+    <!-- Attendance (top menu): managers see everyone's shifts, with a "My Attendances" filter; staff / QC / front
+         desk see only their own (Odoo's attendance rules) -->
+    <record id="action_carwash_my_attendance" model="ir.actions.act_window">
+        <field name="name">Attendance</field>
+        <field name="res_model">hr.attendance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="search_view_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="context">{}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_my_attendance_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_carwash_attendance_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No attendance yet</p>
+            <p>Check in when you start your shift and check out when you leave: the <b>Check In</b> button on the
+                Car Wash dashboard (My Attendance) or the attendance icon in the top bar.</p>
+        </field>
+    </record>
+</odoo>

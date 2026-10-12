@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Booking Request (lead) - printed from the request's "Print Request" button -->
+    <record id="action_report_carwash_booking_request" model="ir.actions.report">
+        <field name="name">Booking Request</field>
+        <field name="model">crm.lead</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_crm.report_carwash_booking_request</field>
+        <field name="report_file">carwash_crm.report_carwash_booking_request</field>
+        <field name="print_report_name">'Booking Request - %s' % (object.partner_id.name or object.contact_name or object.name)</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+    </record>
+
+    <template id="report_carwash_booking_request_document">
+        <t t-call="carwash_base.carwash_external_layout">
+            <t t-set="currency" t-value="(o.company_id or o.env.company).currency_id"/>
+            <t t-set="booking" t-value="o.carwash_appointment_id"/>
+            <t t-set="extras" t-value="o._carwash_extra_services()"/>
+            <div class="page o_cw_report">
+                <table class="o_cw_title">
+                    <tr>
+                        <td>
+                            <h2>Booking Request</h2>
+                            <div class="o_cw_ref" t-esc="o.name"/>
+                            <div class="o_cw_sub">Received on <t t-esc="o._slot_local(o.create_date).strftime('%d %b, %y %I:%M %p')"/></div>
+                        </td>
+                        <td class="text-end">
+                            <span t-if="booking" class="o_cw_badge o_cw_badge_ok">Confirmed</span>
+                            <span t-elif="not o.active" class="o_cw_badge o_cw_badge_bad">Lost / Declined</span>
+                            <span t-else="" class="o_cw_badge o_cw_badge_warn">Awaiting confirmation</span>
+                            <div class="small text-muted mt-1" t-esc="o.stage_id.name"/>
+                        </td>
+                    </tr>
+                </table>
+
+                <table class="o_cw_boxes">
+                    <tr>
+                        <td>
+                            <h6>Customer</h6>
+                            <div class="o_cw_big" t-esc="o.partner_id.name or o.contact_name or o.partner_name or '-'"/>
+                            <div t-if="o.phone or o.partner_id.phone" t-esc="o.phone or o.partner_id.phone"/>
+                            <div t-if="o.email_from" t-esc="o.email_from"/>
+                        </td>
+                        <td>
+                            <h6>Vehicle</h6>
+                            <div class="o_cw_big" t-esc="o.carwash_license_plate or '-'"/>
+                            <div t-esc="' '.join(filter(None, [o.carwash_vehicle_make, o.carwash_vehicle_model]))"/>
+                            <div class="text-muted small" t-esc="o.carwash_vehicle_type_id.name"/>
+                        </td>
+                        <td>
+                            <h6>Requested</h6>
+                            <table class="o_cw_kv">
+                                <tr><td>Date &amp; time</td>
+                                    <td><strong t-esc="o._slot_local(o.carwash_booking_date).strftime('%d %b, %y %I:%M %p') if o.carwash_booking_date else '-'"/></td></tr>
+                                <tr><td>Branch</td><td t-esc="(o.company_id or o.env.company).name"/></tr>
+                                <tr t-if="o.carwash_bay_id"><td>Preferred bay</td><td t-esc="o.carwash_bay_id.name"/></tr>
+                                <tr t-if="o.carwash_duration"><td>Duration</td><td><t t-esc="'%d:%02d' % (int(o.carwash_duration), round(o.carwash_duration % 1 * 60))"/> h</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <h5 class="o_cw_section">Requested Services</h5>
+                <table class="o_cw_table">
+                    <thead>
+                        <tr><th>Service</th><th class="text-end" style="width: 20%">Price</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-if="o.carwash_package_id">
+                            <td>
+                                <strong>Package: <t t-esc="o.carwash_package_id.name"/></strong>
+                                <span class="o_cw_note" t-esc="', '.join(o.carwash_package_id.line_ids.product_id.mapped('name'))"/>
+                            </td>
+                            <td class="text-end" t-esc="o.carwash_package_amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        </tr>
+                        <tr t-if="not o.carwash_package_id and not extras">
+                            <td colspan="2" class="text-muted">No services selected yet.</td>
+                        </tr>
+                        <tr t-foreach="extras" t-as="service">
+                            <td t-esc="service.display_name"/>
+                            <td class="text-end" t-esc="service.list_price" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="o_cw_totals">
+                    <tr t-if="o.carwash_package_id and o.carwash_package_saving" class="o_cw_saving">
+                        <td>Package saving</td>
+                        <td class="text-end">- <t t-esc="o.carwash_package_saving" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                    </tr>
+                    <tr t-if="o.carwash_use_membership and o.carwash_member_saving" class="o_cw_saving">
+                        <td>Membership saving</td>
+                        <td class="text-end">- <t t-esc="o.carwash_member_saving" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                    </tr>
+                    <tr class="o_cw_grand">
+                        <td>Estimated Total</td>
+                        <td class="text-end" t-esc="o.expected_revenue" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                    </tr>
+                </table>
+
+                <div t-if="booking" class="o_cw_callout">
+                    <strong>Confirmed as booking <t t-esc="booking.name"/></strong>
+                    for <t t-esc="booking._carwash_report_datetime(booking.appointment_date)"/><t t-if="booking.bay_id"> on <t t-esc="booking.bay_id.name"/></t>.
+                </div>
+                <div t-elif="o.active" class="o_cw_callout o_cw_callout_warn">
+                    This is a request, not a confirmed booking yet - we will confirm the time with you shortly.
+                </div>
+                <div t-if="o.description" class="o_cw_callout o_cw_keep">
+                    <strong>Notes:</strong> <span t-field="o.description"/>
+                </div>
+                <p class="o_cw_thanks">Thank you for choosing <t t-esc="(o.company_id or o.env.company).name"/>.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_carwash_booking_request">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="carwash_crm.report_carwash_booking_request_document"/>
+            </t>
+        </t>
+    </template>
+</odoo>

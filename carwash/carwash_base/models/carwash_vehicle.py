@@ -11,22 +11,16 @@ class CarwashVehicle(models.Model):
     customer_id = fields.Many2one("res.partner", required=True, tracking=True, index=True, ondelete="restrict")
     make = fields.Char()
     vehicle_model = fields.Char(string="Model")
-    vehicle_type = fields.Selection(
-        [
-            ("hatchback", "Hatchback"),
-            ("sedan", "Sedan"),
-            ("suv", "SUV"),
-            ("truck", "Truck/Pickup"),
-            ("van", "Van"),
-            ("bike", "Motorcycle"),
-            ("other", "Other"),
-        ],
-        default="sedan",
+    vehicle_type_id = fields.Many2one(
+        "carwash.vehicle.type", string="Vehicle Type", ondelete="restrict", index=True,
+        default=lambda self: self.env["carwash.vehicle.type"]._default_type(),
     )
+    vehicle_type_icon = fields.Selection(related="vehicle_type_id.icon", string="Type Icon")
     color = fields.Char()
     year = fields.Char()
     vin = fields.Char(string="VIN / Chassis No.")
     image_1920 = fields.Image(string="Photo")
+    image_128 = fields.Image(related="image_1920", max_width=128, max_height=128, store=True, string="Photo (small)")
     notes = fields.Text()
     active = fields.Boolean(default=True)
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company)
@@ -35,6 +29,23 @@ class CarwashVehicle(models.Model):
     appointment_count = fields.Integer(compute="_compute_appointment_count", string="Booking Count")
     visit_count = fields.Integer(compute="_compute_service_history", store=True)
     last_service_date = fields.Datetime(compute="_compute_service_history", store=True)
+
+    @staticmethod
+    def _normalize_plate(plate):
+        """'  gj01 ab 1234 ' -> 'GJ01 AB 1234' - so the same plate typed differently is one vehicle."""
+        return " ".join(plate.split()).upper() if isinstance(plate, str) else plate
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("license_plate"):
+                vals["license_plate"] = self._normalize_plate(vals["license_plate"])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get("license_plate"):
+            vals["license_plate"] = self._normalize_plate(vals["license_plate"])
+        return super().write(vals)
 
     _license_plate_company_uniq = models.Constraint(
         "UNIQUE(license_plate, company_id)",

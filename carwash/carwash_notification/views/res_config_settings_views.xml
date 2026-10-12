@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_carwash_mail_templates" model="ir.actions.act_window">
+        <field name="name">Car Wash Email Templates</field>
+        <field name="res_model">mail.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('name', 'ilike', 'Car Wash:')]</field>
+    </record>
+
+    <record id="res_config_settings_view_form_carwash_notification" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.carwash.notification</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="carwash_base.res_config_settings_view_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='carwash_customer_settings']" position="after">
+                <block title="Notifications" name="carwash_notification_settings">
+                    <setting id="carwash_notify_booking" string="Booking emails"
+                             help="Emails to the customer during a booking (Odoo mail, logged in the chatter).">
+                        <div class="content-group mt-2">
+                            <div><field name="carwash_notify_booking_request" class="w-auto"/><label for="carwash_notify_booking_request"/></div>
+                            <div><field name="carwash_notify_booking_confirmed" class="w-auto"/><label for="carwash_notify_booking_confirmed" string="Booking confirmed (services, package, membership saving)"/></div>
+                            <div><field name="carwash_notify_booking_updated" class="w-auto"/><label for="carwash_notify_booking_updated" string="Booking updated (time or package changed)"/></div>
+                            <div><field name="carwash_notify_booking_reminder" class="w-auto"/><label for="carwash_notify_booking_reminder"/></div>
+                            <div><field name="carwash_notify_booking_ready" class="w-auto"/><label for="carwash_notify_booking_ready"/></div>
+                            <div><field name="carwash_notify_booking_cancelled" class="w-auto"/><label for="carwash_notify_booking_cancelled"/></div>
+                        </div>
+                    </setting>
+                    <setting id="carwash_notify_membership" string="Membership emails"
+                             help="Emails to the member during the membership life cycle.">
+                        <div class="content-group mt-2">
+                            <div><field name="carwash_notify_membership_payment_request" class="w-auto"/><label for="carwash_notify_membership_payment_request"/></div>
+                            <div><field name="carwash_notify_membership_activated" class="w-auto"/><label for="carwash_notify_membership_activated"/></div>
+                            <div><field name="carwash_notify_membership_renewed" class="w-auto"/><label for="carwash_notify_membership_renewed"/></div>
+                            <div><field name="carwash_notify_membership_expiring" class="w-auto"/><label for="carwash_notify_membership_expiring" string="Ending soon - auto-renew reminder"/></div>
+                            <div><field name="carwash_notify_membership_expired" class="w-auto"/><label for="carwash_notify_membership_expired"/></div>
+                            <div><field name="carwash_notify_membership_cancelled" class="w-auto"/><label for="carwash_notify_membership_cancelled"/></div>
+                        </div>
+                    </setting>
+                    <setting id="carwash_notify_timing" string="Reminder timing"
+                             help="When the reminders go out (checked hourly / daily by scheduled actions).">
+                        <div class="content-group mt-2">
+                            <div class="row">
+                                <label for="carwash_booking_reminder_hours" class="col-lg-7 o_light_label"/>
+                                <field name="carwash_booking_reminder_hours" class="col-lg-2"/>
+                            </div>
+                            <div class="row">
+                                <label for="carwash_membership_expiry_days" class="col-lg-7 o_light_label"/>
+                                <field name="carwash_membership_expiry_days" class="col-lg-2"/>
+                            </div>
+                        </div>
+                        <div class="mt8">
+                            <button name="%(action_carwash_mail_templates)d" type="action" string="Email Templates"
+                                    icon="oi-arrow-right" class="btn-link"/>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

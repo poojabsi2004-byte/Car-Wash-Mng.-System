@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_carwash_staff_performance" model="ir.actions.report">
+        <field name="name">Staff Performance</field>
+        <field name="model">carwash.staff.performance.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">carwash_jobcard.report_carwash_staff_performance</field>
+        <field name="report_file">carwash_jobcard.report_carwash_staff_performance</field>
+        <field name="print_report_name">'Staff Performance - %s' % object._period_label()</field>
+        <field name="paperformat_id" ref="carwash_base.paperformat_carwash_a4"/>
+    </record>
+
+    <!-- stars of a rating (0 - 5) -->
+    <template id="report_carwash_perf_stars">
+        <span class="o_cw_stars o_cw_perf_stars">
+            <t t-foreach="range(5)" t-as="i"><span t-attf-class="{{'' if i &lt; int(stars + 0.5) else 'o_cw_star_off'}}">&#9733;</span></t>
+        </span>
+    </template>
+
+    <!-- one KPI tile -->
+    <template id="report_carwash_perf_tile">
+        <td t-attf-class="o_cw_perf_tile {{tile_class or ''}}">
+            <div class="o_cw_perf_tile_value"><t t-out="tile_value"/></div>
+            <div class="o_cw_perf_tile_label" t-esc="tile_label"/>
+            <div t-if="tile_sub" class="o_cw_perf_tile_sub" t-esc="tile_sub"/>
+        </td>
+    </template>
+
+    <template id="report_carwash_staff_performance_page">
+        <t t-set="data" t-value="o._carwash_report_data()"/>
+        <t t-set="s" t-value="data['summary']"/>
+        <t t-set="currency" t-value="data['currency']"/>
+        <t t-set="company" t-value="o._companies()[:1]"/>
+        <t t-set="cw_doc_ref" t-value="'Staff Performance'"/>
+        <t t-call="carwash_base.carwash_external_layout">
+            <div class="page o_cw_report o_cw_perf">
+                <table class="o_cw_title">
+                    <tr>
+                        <td>
+                            <h2>Staff Performance</h2>
+                            <div class="o_cw_ref" t-esc="data['period']"/>
+                            <div class="o_cw_sub"><t t-esc="data['branches']"/> · <t t-esc="len(data['rows'])"/> staff member(s)</div>
+                        </td>
+                        <td class="text-end">
+                            <span class="o_cw_badge">Ranked by jobs completed</span>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ============ team KPIs ============ -->
+                <table class="o_cw_perf_tiles">
+                    <tr>
+                        <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                            <t t-set="tile_value" t-value="s['jobs']"/>
+                            <t t-set="tile_label" t-value="'Jobs completed'"/>
+                            <t t-set="tile_sub" t-value="'%s services done' % s['services']"/>
+                            <t t-set="tile_class" t-value="'o_cw_perf_tile_main'"/>
+                        </t>
+                        <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                            <t t-set="tile_value" t-value="'%.0f min' % s['avg_minutes'] if s['services'] else '-'"/>
+                            <t t-set="tile_label" t-value="'Avg time per service'"/>
+                            <t t-set="tile_sub" t-value="''"/>
+                            <t t-set="tile_class" t-value="''"/>
+                        </t>
+                        <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                            <t t-set="tile_value" t-value="str(s['pass_rate']) + '%' if s['jobs'] else '-'"/>
+                            <t t-set="tile_label" t-value="'QC first-time pass'"/>
+                            <t t-set="tile_sub" t-value="'%s rework(s)' % s['reworks']"/>
+                            <t t-set="tile_class" t-value="'o_cw_perf_tile_ok' if s['jobs'] and s['pass_rate'] &gt;= 90 else 'o_cw_perf_tile_warn' if s['jobs'] else ''"/>
+                        </t>
+                        <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                            <t t-set="tile_value" t-value="'%.1f / 5' % s['rating'] if s['rated'] else '-'"/>
+                            <t t-set="tile_label" t-value="'Customer rating'"/>
+                            <t t-set="tile_sub" t-value="'%s review(s)' % s['rated']"/>
+                            <t t-set="tile_class" t-value="''"/>
+                        </t>
+                        <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                            <t t-set="tile_value" t-value="currency.format(s['commission'])"/>
+                            <t t-set="tile_label" t-value="'Staff Payable earned'"/>
+                            <t t-set="tile_sub" t-value="''"/>
+                            <t t-set="tile_class" t-value="''"/>
+                        </t>
+                        <t t-if="data['show_hours']" t-call="carwash_jobcard.report_carwash_perf_tile">
+                            <t t-set="tile_value" t-value="'%.1f h' % s['hours']"/>
+                            <t t-set="tile_label" t-value="'Hours worked'"/>
+                            <t t-set="tile_sub" t-value="''"/>
+                            <t t-set="tile_class" t-value="''"/>
+                        </t>
+                    </tr>
+                </table>
+
+                <!-- ============ highlights ============ -->
+                <table t-if="data['highlights']" class="o_cw_perf_highlights">
+                    <tr>
+                        <td t-foreach="data['highlights']" t-as="h">
+                            <div class="o_cw_perf_hl_label" t-esc="h[0]"/>
+                            <div class="o_cw_perf_hl_name" t-esc="h[1]['employee'].name"/>
+                            <div class="o_cw_perf_hl_value"><t t-esc="h[1][h[2]]"/><t t-esc="h[3]"/></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ============ ranking ============ -->
+                <h5 class="o_cw_section">Ranking</h5>
+                <table class="o_cw_table o_cw_perf_table">
+                    <thead>
+                        <tr>
+                            <th style="width: 4%">#</th>
+                            <th>Staff</th>
+                            <th style="width: 15%">Jobs</th>
+                            <th class="text-end">Services</th>
+                            <th class="text-end">Avg / Std (min)</th>
+                            <th class="text-end">Speed</th>
+                            <th class="text-end">QC Pass</th>
+                            <th class="text-end">Reworks</th>
+                            <th class="text-center">Rating</th>
+                            <th t-if="data['show_qc']" class="text-end">QC Checks</th>
+                            <th t-if="data['show_hours']" class="text-end">Hours</th>
+                            <th t-if="data['show_hours']" class="text-end">Jobs / h</th>
+                            <th class="text-end">Staff Payable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="data['rows']" t-as="row" t-attf-class="{{'o_cw_perf_top' if row['rank'] == 1 and row['jobs'] else ''}} {{'o_cw_perf_idle' if not row['jobs'] else ''}}">
+                            <td><span class="o_cw_perf_rank" t-esc="row['rank']"/></td>
+                            <td>
+                                <strong t-esc="row['employee'].name"/>
+                                <span t-if="row['roles']" class="o_cw_note" t-esc="row['roles']"/>
+                            </td>
+                            <td>
+                                <strong t-esc="row['jobs']"/>
+                                <div class="o_cw_perf_bar"><span t-attf-style="width: {{row['bar']}}%"/></div>
+                            </td>
+                            <td class="text-end" t-esc="row['services']"/>
+                            <td class="text-end">
+                                <t t-if="row['services']"><t t-esc="'%.0f' % row['avg_minutes']"/> / <span class="text-muted" t-esc="'%.0f' % row['standard_minutes']"/></t>
+                                <t t-else="">-</t>
+                            </td>
+                            <td class="text-end">
+                                <span t-if="row['speed']" t-attf-class="{{'o_cw_perf_good' if row['speed'] &gt;= 100 else 'o_cw_perf_low'}}" t-esc="str(row['speed']) + '%'"/>
+                                <t t-else="">-</t>
+                            </td>
+                            <td class="text-end">
+                                <span t-if="row['jobs']" t-attf-class="{{'o_cw_perf_good' if row['pass_rate'] &gt;= 90 else 'o_cw_perf_low' if row['pass_rate'] &lt; 75 else ''}}" t-esc="str(row['pass_rate']) + '%'"/>
+                                <t t-else="">-</t>
+                            </td>
+                            <td class="text-end" t-esc="row['reworks'] or '-'"/>
+                            <td class="text-center">
+                                <t t-if="row['rated']">
+                                    <t t-call="carwash_jobcard.report_carwash_perf_stars"><t t-set="stars" t-value="row['rating']"/></t>
+                                    <div class="o_cw_perf_small"><t t-esc="row['rating']"/> (<t t-esc="row['rated']"/>)</div>
+                                </t>
+                                <t t-else="">-</t>
+                            </td>
+                            <td t-if="data['show_qc']" class="text-end" t-esc="row['qc_checks'] or '-'"/>
+                            <td t-if="data['show_hours']" class="text-end" t-esc="'%.1f' % row['hours'] if row['hours'] else '-'"/>
+                            <td t-if="data['show_hours']" class="text-end" t-esc="row['jobs_per_hour'] or '-'"/>
+                            <td class="text-end" t-esc="currency.format(row['commission'])"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <p t-if="not data['rows']" class="text-muted">No staff with a car wash role at these branches.</p>
+
+                <div class="o_cw_callout o_cw_perf_legend o_cw_keep">
+                    <strong>How to read it:</strong>
+                    <b>Avg / Std</b> = average minutes per service against the services' standard time.
+                    <b>Speed</b> = standard time ÷ time taken (above 100% is faster than standard).
+                    <b>QC Pass</b> = job cards that passed quality control without rework.
+                    A job card done by a crew of several counts for each of them.
+                </div>
+
+                <!-- ============ one page per staff member ============ -->
+                <t t-if="o.detailed">
+                    <t t-foreach="[r for r in data['rows'] if r['jobs'] or o.employee_ids]" t-as="row">
+                        <t t-set="details" t-value="o._carwash_staff_details(row)"/>
+                        <div class="o_cw_perf_staff_page">
+                            <table class="o_cw_title">
+                                <tr>
+                                    <td>
+                                        <h2 t-esc="row['employee'].name"/>
+                                        <div class="o_cw_ref"><t t-esc="row['roles'] or 'Staff'"/></div>
+                                        <div class="o_cw_sub"><t t-esc="data['period']"/> · <t t-esc="row['employee'].company_id.name"/></div>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="o_cw_badge">Rank <t t-esc="row['rank']"/> of <t t-esc="len(data['rows'])"/></span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table class="o_cw_perf_tiles">
+                                <tr>
+                                    <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                                        <t t-set="tile_value" t-value="row['jobs']"/>
+                                        <t t-set="tile_label" t-value="'Jobs completed'"/>
+                                        <t t-set="tile_sub" t-value="'%s services' % row['services']"/>
+                                        <t t-set="tile_class" t-value="'o_cw_perf_tile_main'"/>
+                                    </t>
+                                    <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                                        <t t-set="tile_value" t-value="'%.0f min' % row['avg_minutes'] if row['services'] else '-'"/>
+                                        <t t-set="tile_label" t-value="'Avg per service'"/>
+                                        <t t-set="tile_sub" t-value="'standard %.0f min' % row['standard_minutes'] if row['services'] else ''"/>
+                                        <t t-set="tile_class" t-value="'o_cw_perf_tile_ok' if row['speed'] &gt;= 100 else ''"/>
+                                    </t>
+                                    <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                                        <t t-set="tile_value" t-value="str(row['pass_rate']) + '%' if row['jobs'] else '-'"/>
+                                        <t t-set="tile_label" t-value="'QC first-time pass'"/>
+                                        <t t-set="tile_sub" t-value="'%s rework(s)' % row['reworks']"/>
+                                        <t t-set="tile_class" t-value="'o_cw_perf_tile_ok' if row['jobs'] and row['pass_rate'] &gt;= 90 else 'o_cw_perf_tile_warn' if row['jobs'] else ''"/>
+                                    </t>
+                                    <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                                        <t t-set="tile_value" t-value="'%.1f / 5' % row['rating'] if row['rated'] else '-'"/>
+                                        <t t-set="tile_label" t-value="'Customer rating'"/>
+                                        <t t-set="tile_sub" t-value="'%s review(s)' % row['rated']"/>
+                                        <t t-set="tile_class" t-value="''"/>
+                                    </t>
+                                    <t t-call="carwash_jobcard.report_carwash_perf_tile">
+                                        <t t-set="tile_value" t-value="currency.format(row['commission'])"/>
+                                        <t t-set="tile_label" t-value="'Staff Payable'"/>
+                                        <t t-set="tile_sub" t-value="'%s to pay' % currency.format(row['commission_to_pay'])"/>
+                                        <t t-set="tile_class" t-value="''"/>
+                                    </t>
+                                    <t t-if="row['hours']" t-call="carwash_jobcard.report_carwash_perf_tile">
+                                        <t t-set="tile_value" t-value="'%.1f h' % row['hours']"/>
+                                        <t t-set="tile_label" t-value="'Hours worked'"/>
+                                        <t t-set="tile_sub" t-value="'%s jobs / hour' % row['jobs_per_hour'] if row['hours'] else ''"/>
+                                        <t t-set="tile_class" t-value="''"/>
+                                    </t>
+                                </tr>
+                            </table>
+
+                            <h5 class="o_cw_section">Day by Day</h5>
+                            <table t-if="details['days']" class="o_cw_table">
+                                <thead>
+                                    <tr><th>Date</th><th class="text-end">Jobs</th><th class="text-end">Services</th>
+                                        <th class="text-end">Avg min / service</th><th class="text-end">Reworks</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="details['days']" t-as="day">
+                                        <td t-esc="day['date'].strftime('%a, %d %b, %y')"/>
+                                        <td class="text-end" t-esc="day['jobs']"/>
+                                        <td class="text-end" t-esc="day['services']"/>
+                                        <td class="text-end" t-esc="'%.0f' % day['avg'] if day['services'] else '-'"/>
+                                        <td class="text-end" t-esc="day['reworks'] or '-'"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p t-else="" class="text-muted">No job card completed in this period.</p>
+
+                            <table class="o_cw_perf_two">
+                                <tr>
+                                    <td>
+                                        <h5 class="o_cw_section">Reworks</h5>
+                                        <table t-if="details['reworks']" class="o_cw_table">
+                                            <thead><tr><th>Job Card</th><th>Booking</th><th class="text-end">Times</th></tr></thead>
+                                            <tbody>
+                                                <tr t-foreach="details['reworks']" t-as="jobcard">
+                                                    <td t-esc="jobcard.name"/>
+                                                    <td t-esc="jobcard.appointment_id.name"/>
+                                                    <td class="text-end" t-esc="jobcard.rework_count"/>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <p t-else="" class="o_cw_perf_none">No rework - every job passed quality control first time.</p>
+                                    </td>
+                                    <td>
+                                        <h5 class="o_cw_section">Customer Reviews</h5>
+                                        <div t-foreach="details['reviews']" t-as="review" class="o_cw_perf_review">
+                                            <t t-call="carwash_jobcard.report_carwash_perf_stars"><t t-set="stars" t-value="review.rating"/></t>
+                                            <span class="o_cw_perf_small"><t t-esc="review.partner_id.name or ''"/></span>
+                                            <div t-if="review.feedback" class="o_cw_perf_feedback" t-esc="review.feedback"/>
+                                        </div>
+                                        <p t-if="not details['reviews']" class="o_cw_perf_none">No customer review in this period.</p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <h5 class="o_cw_section">Staff Payable</h5>
+                            <table class="o_cw_kv o_cw_perf_commission">
+                                <tr><td>Staff Payable earned</td><td class="text-end" t-esc="currency.format(row['commission'])"/></tr>
+                                <tr><td>Paid</td><td class="text-end" t-esc="currency.format(row['commission_paid'])"/></tr>
+                                <tr><td>To pay</td><td class="text-end"><strong t-esc="currency.format(row['commission_to_pay'])"/></td></tr>
+                            </table>
+                        </div>
+                    </t>
+                </t>
+
+                <table class="o_cw_signatures">
+                    <tr>
+                        <td><div class="o_cw_sign_line"/>Branch Manager</td>
+                        <td><div class="o_cw_sign_line"/>Owner</td>
+                    </tr>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_carwash_staff_performance">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="carwash_jobcard.report_carwash_staff_performance_page"/>
+            </t>
+        </t>
+    </template>
+</odoo>

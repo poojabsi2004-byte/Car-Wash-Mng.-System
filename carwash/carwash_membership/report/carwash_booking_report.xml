@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Membership on the Booking Confirmation / Service Receipt -->
+    <template id="report_carwash_booking_document_membership" inherit_id="carwash_base.report_carwash_booking_document">
+        <xpath expr="//div[@name='booking_banners']" position="inside">
+            <div t-if="o.membership_id" class="o_cw_callout">
+                <strong><t t-esc="o.membership_id.plan_id.name"/> membership</strong> (<t t-esc="o.membership_id.name"/>) applied
+                <t t-if="o.membership_saving"> - you save
+                    <t t-esc="o.membership_saving" t-options="{'widget': 'monetary', 'display_currency': currency}"/></t>
+            </div>
+        </xpath>
+        <xpath expr="//td[@name='line_service']" position="inside">
+            <span t-if="line.membership_covered" class="o_cw_badge o_cw_badge_ok">Free with membership</span>
+        </xpath>
+        <xpath expr="//table[@name='totals']/tr[hasclass('o_cw_grand')]" position="before">
+            <tr t-if="o.membership_id and o.membership_saving" class="o_cw_saving">
+                <td>Membership saving</td>
+                <td class="text-end">- <t t-esc="o.membership_saving" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+            </tr>
+        </xpath>
+    </template>
+</odoo>

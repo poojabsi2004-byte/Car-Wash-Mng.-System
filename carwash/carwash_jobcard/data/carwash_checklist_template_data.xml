@@ -1,49 +1,188 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <!-- Process checklists loaded automatically on each step; edit or untick
-         "Apply Automatically" under Configuration > Checklist Templates. -->
+    <!-- Process checklists, loaded automatically at each step:
+         - Check-in: when the vehicle arrives (Vehicle Arrived) - gates Start Service
+         - Pre-Wash / Post-Wash inspection: when the inspection is opened - gates Complete Inspection
+         - Job card: the crew's tasks, loaded on every new job card - all ticked before Submit for QC
+         A template with a Vehicle Type is used for that type; the general one for every other vehicle.
+         Edit them under Configuration > Checklist Templates. -->
+
+    <!-- ===================== Vehicle check-in (on arrival) ===================== -->
     <record id="checklist_template_booking_checkin" model="carwash.checklist.template">
-        <field name="name">Vehicle Check-in</field>
-        <field name="checklist_type">booking</field>
+        <field name="name">Vehicle Check-in - Car</field>
+        <field name="checklist_type_id" ref="checklist_type_booking"/>
         <field name="is_default" eval="True"/>
         <field name="sequence">10</field>
-        <field name="description">Done at the counter when the vehicle arrives - mandatory tasks must be ticked before the service can start.</field>
-        <field name="item_ids" eval="[
-            (0, 0, {'name': 'Customer identity and booking confirmed', 'sequence': 10, 'is_required': True}),
-            (0, 0, {'name': 'Services and price explained to the customer', 'sequence': 20, 'is_required': True}),
-            (0, 0, {'name': 'Keys received and tagged with the token', 'sequence': 30, 'is_required': True}),
-            (0, 0, {'name': 'Valuables removed from the vehicle', 'sequence': 40, 'is_required': True}),
-            (0, 0, {'name': 'Fuel level and odometer noted', 'sequence': 50, 'is_required': False}),
+        <field name="description">Front Desk, at the counter when the car arrives. Mandatory tasks must be ticked before the washer can start the service.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'is_required': True, 'name': 'Booking, customer and services confirmed with the customer'}),
+            (0, 0, {'sequence': 20, 'is_required': True, 'name': 'Keys received and tagged with the token number'}),
+            (0, 0, {'sequence': 30, 'is_required': True, 'name': 'Customer asked to remove valuables and personal items'}),
+            (0, 0, {'sequence': 40, 'is_required': True, 'name': 'Windows, sunroof and doors fully closed'}),
+            (0, 0, {'sequence': 50, 'is_required': True, 'name': 'Antenna retracted, wipers off, mirrors folded'}),
+            (0, 0, {'sequence': 60, 'is_required': False, 'name': 'Aftermarket parts noted (roof rack, spoiler, body kit, dash cam)'}),
+            (0, 0, {'sequence': 70, 'is_required': False, 'name': 'Fuel level and odometer reading noted'}),
+            (0, 0, {'sequence': 80, 'is_required': False, 'name': 'Special requests noted (pet hair, stains, odour)'}),
         ]"/>
     </record>
 
+    <record id="checklist_template_booking_checkin_bike" model="carwash.checklist.template">
+        <field name="name">Vehicle Check-in - Two-Wheeler</field>
+        <field name="checklist_type_id" ref="checklist_type_booking"/>
+        <field name="vehicle_type_ids" eval="[(6, 0, [ref('carwash_base.vehicle_type_bike')])]"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">11</field>
+        <field name="description">Front Desk, when the two-wheeler arrives.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'is_required': True, 'name': 'Booking, customer and services confirmed with the customer'}),
+            (0, 0, {'sequence': 20, 'is_required': True, 'name': 'Keys received and tagged with the token number'}),
+            (0, 0, {'sequence': 30, 'is_required': True, 'name': 'Helmet, gloves and accessories kept safely or returned to the customer'}),
+            (0, 0, {'sequence': 40, 'is_required': True, 'name': 'Storage box and saddle bags emptied'}),
+            (0, 0, {'sequence': 50, 'is_required': False, 'name': 'Aftermarket parts noted (crash guard, visor, phone holder)'}),
+            (0, 0, {'sequence': 60, 'is_required': False, 'name': 'Fuel level and odometer reading noted'}),
+        ]"/>
+    </record>
+
+    <!-- ===================== Pre-wash inspection ===================== -->
     <record id="checklist_template_inspection_pre" model="carwash.checklist.template">
-        <field name="name">Pre-Wash Inspection</field>
-        <field name="checklist_type">inspection</field>
+        <field name="name">Pre-Wash Inspection - Car</field>
+        <field name="checklist_type_id" ref="checklist_type_inspection"/>
         <field name="inspection_type_id" ref="inspection_type_pre"/>
         <field name="is_default" eval="True"/>
         <field name="sequence">20</field>
-        <field name="item_ids" eval="[
-            (0, 0, {'name': 'Body panels checked for scratches and dents', 'sequence': 10, 'is_required': True}),
-            (0, 0, {'name': 'Windshield, windows and mirrors checked', 'sequence': 20, 'is_required': True}),
-            (0, 0, {'name': 'Wheels, rims and tyres checked', 'sequence': 30, 'is_required': True}),
-            (0, 0, {'name': 'Interior condition noted', 'sequence': 40, 'is_required': True}),
-            (0, 0, {'name': 'Photos of existing damage taken', 'sequence': 50, 'is_required': False}),
+        <field name="description">Record the car's condition before washing so existing damage can't be disputed later.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'is_required': True, 'name': 'Paint scratches, swirl marks and chips recorded'}),
+            (0, 0, {'sequence': 20, 'is_required': True, 'name': 'Dents and bumper damage recorded'}),
+            (0, 0, {'sequence': 30, 'is_required': True, 'name': 'Windshield and windows checked for chips and cracks'}),
+            (0, 0, {'sequence': 40, 'is_required': True, 'name': 'Headlights, tail lights and mirrors checked'}),
+            (0, 0, {'sequence': 50, 'is_required': True, 'name': 'Wheels, rims and tyres checked (kerb rash, low pressure)'}),
+            (0, 0, {'sequence': 60, 'is_required': True, 'name': 'Loose trims, badges or parts that may come off noted'}),
+            (0, 0, {'sequence': 70, 'is_required': True, 'name': 'Interior condition noted (stains, tears, odour)'}),
+            (0, 0, {'sequence': 80, 'is_required': False, 'name': 'Photos of all four sides and existing damage taken'}),
         ]"/>
     </record>
 
+    <record id="checklist_template_inspection_pre_bike" model="carwash.checklist.template">
+        <field name="name">Pre-Wash Inspection - Two-Wheeler</field>
+        <field name="checklist_type_id" ref="checklist_type_inspection"/>
+        <field name="inspection_type_id" ref="inspection_type_pre"/>
+        <field name="vehicle_type_ids" eval="[(6, 0, [ref('carwash_base.vehicle_type_bike')])]"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">21</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'is_required': True, 'name': 'Tank, fairing and body panels checked for scratches and dents'}),
+            (0, 0, {'sequence': 20, 'is_required': True, 'name': 'Headlight, indicators and mirrors checked'}),
+            (0, 0, {'sequence': 30, 'is_required': True, 'name': 'Seat condition checked'}),
+            (0, 0, {'sequence': 40, 'is_required': True, 'name': 'Ignition, exposed wiring and electricals covered before washing'}),
+            (0, 0, {'sequence': 50, 'is_required': True, 'name': 'Tyres and wheels checked'}),
+            (0, 0, {'sequence': 60, 'is_required': False, 'name': 'Photos of existing damage taken'}),
+        ]"/>
+    </record>
+
+    <!-- ===================== Post-wash inspection (before handover) ===================== -->
     <record id="checklist_template_inspection_post" model="carwash.checklist.template">
-        <field name="name">Post-Wash Inspection</field>
-        <field name="checklist_type">inspection</field>
+        <field name="name">Post-Wash Inspection - Car</field>
+        <field name="checklist_type_id" ref="checklist_type_inspection"/>
         <field name="inspection_type_id" ref="inspection_type_post"/>
         <field name="is_default" eval="True"/>
         <field name="sequence">30</field>
-        <field name="item_ids" eval="[
-            (0, 0, {'name': 'Exterior clean and dry, no soap residue', 'sequence': 10, 'is_required': True}),
-            (0, 0, {'name': 'Glass and mirrors streak-free', 'sequence': 20, 'is_required': True}),
-            (0, 0, {'name': 'Interior vacuumed and wiped', 'sequence': 30, 'is_required': True}),
-            (0, 0, {'name': 'No new damage compared with the pre-wash inspection', 'sequence': 40, 'is_required': True}),
-            (0, 0, {'name': 'Customer walk-around done', 'sequence': 50, 'is_required': False}),
+        <field name="description">Quality check before the car is handed back to the customer.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'is_required': True, 'name': 'Exterior clean and dry - no soap residue or water spots'}),
+            (0, 0, {'sequence': 20, 'is_required': True, 'name': 'Glass, mirrors and lights streak-free'}),
+            (0, 0, {'sequence': 30, 'is_required': True, 'name': 'Wheels and tyres cleaned and dressed'}),
+            (0, 0, {'sequence': 40, 'is_required': True, 'name': 'Door jambs, boot and fuel-lid area wiped'}),
+            (0, 0, {'sequence': 50, 'is_required': True, 'name': 'Interior vacuumed, dashboard and console wiped'}),
+            (0, 0, {'sequence': 60, 'is_required': True, 'name': 'Floor mats cleaned and refitted'}),
+            (0, 0, {'sequence': 70, 'is_required': True, 'name': 'No new damage compared with the pre-wash inspection'}),
+            (0, 0, {'sequence': 80, 'is_required': False, 'name': 'Antenna, mirrors and seat settings restored'}),
+            (0, 0, {'sequence': 90, 'is_required': False, 'name': 'Walk-around done with the customer'}),
+        ]"/>
+    </record>
+
+    <record id="checklist_template_inspection_post_bike" model="carwash.checklist.template">
+        <field name="name">Post-Wash Inspection - Two-Wheeler</field>
+        <field name="checklist_type_id" ref="checklist_type_inspection"/>
+        <field name="inspection_type_id" ref="inspection_type_post"/>
+        <field name="vehicle_type_ids" eval="[(6, 0, [ref('carwash_base.vehicle_type_bike')])]"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">31</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'is_required': True, 'name': 'Body clean and dry - no soap residue'}),
+            (0, 0, {'sequence': 20, 'is_required': True, 'name': 'Chain, brakes and electricals dry'}),
+            (0, 0, {'sequence': 30, 'is_required': True, 'name': 'Seat, mirrors and lights clean'}),
+            (0, 0, {'sequence': 40, 'is_required': True, 'name': 'No new damage compared with the pre-wash inspection'}),
+            (0, 0, {'sequence': 50, 'is_required': True, 'name': 'Helmet and accessories handed back'}),
+            (0, 0, {'sequence': 60, 'is_required': False, 'name': 'Walk-around done with the customer'}),
+        ]"/>
+    </record>
+
+    <!-- ===================== Job card: the crew's tasks ===================== -->
+    <!-- (record ids kept from the demo data they used to be, so a database with demo data gets no duplicates) -->
+    <record id="demo_checklist_template_standard" model="carwash.checklist.template">
+        <field name="name">Standard Wash Checklist</field>
+        <field name="checklist_type_id" ref="checklist_type_jobcard"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">10</field>
+        <field name="description">The crew's tasks on every car's job card. Every task must be ticked before the job card goes to quality check.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'name': 'Exterior rinse'}),
+            (0, 0, {'sequence': 20, 'name': 'Soap and foam application'}),
+            (0, 0, {'sequence': 30, 'name': 'Scrub and rinse'}),
+            (0, 0, {'sequence': 40, 'name': 'Dry and wipe exterior'}),
+            (0, 0, {'sequence': 50, 'name': 'Interior vacuum'}),
+            (0, 0, {'sequence': 60, 'name': 'Dashboard and console wipe'}),
+            (0, 0, {'sequence': 70, 'name': 'Tire shine'}),
+        ]"/>
+    </record>
+
+    <record id="checklist_template_jobcard_bike" model="carwash.checklist.template">
+        <field name="name">Two-Wheeler Wash Checklist</field>
+        <field name="checklist_type_id" ref="checklist_type_jobcard"/>
+        <field name="vehicle_type_ids" eval="[(6, 0, [ref('carwash_base.vehicle_type_bike')])]"/>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">11</field>
+        <field name="description">The crew's tasks on a two-wheeler's job card.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'name': 'Low-pressure rinse (electricals and air filter covered)'}),
+            (0, 0, {'sequence': 20, 'name': 'Foam and scrub body, wheels and engine casing'}),
+            (0, 0, {'sequence': 30, 'name': 'Chain and sprockets cleaned'}),
+            (0, 0, {'sequence': 40, 'name': 'Rinse and blow-dry (switches, connectors, chain)'}),
+            (0, 0, {'sequence': 50, 'name': 'Seat, mirrors, lights and dashboard wiped'}),
+            (0, 0, {'sequence': 60, 'name': 'Chain lubricated'}),
+            (0, 0, {'sequence': 70, 'name': 'Tire shine'}),
+        ]"/>
+    </record>
+
+    <record id="demo_checklist_template_quick" model="carwash.checklist.template">
+        <field name="name">Quick Wash Checklist</field>
+        <field name="checklist_type_id" ref="checklist_type_jobcard"/>
+        <field name="sequence">20</field>
+        <field name="description">A short task list for a quick exterior wash - pick it on the job card's Tasks tab.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'name': 'Exterior rinse'}),
+            (0, 0, {'sequence': 20, 'name': 'Soap and foam application'}),
+            (0, 0, {'sequence': 30, 'name': 'Rinse and dry'}),
+            (0, 0, {'sequence': 40, 'name': 'Tire shine'}),
+        ]"/>
+    </record>
+
+    <record id="demo_checklist_template_premium" model="carwash.checklist.template">
+        <field name="name">Premium Detailing Checklist</field>
+        <field name="checklist_type_id" ref="checklist_type_jobcard"/>
+        <field name="sequence">30</field>
+        <field name="description">The full detailing task list - pick it on the job card's Tasks tab for premium / detailing services.</field>
+        <field name="item_ids" eval="[(5, 0, 0),
+            (0, 0, {'sequence': 10, 'name': 'Exterior pre-rinse'}),
+            (0, 0, {'sequence': 20, 'name': 'Foam cannon wash'}),
+            (0, 0, {'sequence': 30, 'name': 'Wheel and rim scrub'}),
+            (0, 0, {'sequence': 40, 'name': 'Hand wax application'}),
+            (0, 0, {'sequence': 50, 'name': 'Interior vacuum'}),
+            (0, 0, {'sequence': 60, 'name': 'Dashboard and console detailing'}),
+            (0, 0, {'sequence': 70, 'name': 'Engine bay wipe-down'}),
+            (0, 0, {'sequence': 80, 'name': 'Headlight polish'}),
+            (0, 0, {'sequence': 90, 'name': 'Tire dressing'}),
         ]"/>
     </record>
 </odoo>

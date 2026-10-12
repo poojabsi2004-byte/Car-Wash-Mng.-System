@@ -6,3 +6,4 @@ from . import payment_transaction
 from . import res_partner
 from . import product_template
 from . import carwash_appointment
+from . import res_config_settings

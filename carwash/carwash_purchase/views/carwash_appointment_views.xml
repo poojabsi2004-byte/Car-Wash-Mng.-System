@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Booking: what its consumables cost (managers) -->
+    <record id="view_carwash_appointment_form_purchase" model="ir.ui.view">
+        <field name="name">carwash.appointment.form.purchase</field>
+        <field name="model">carwash.appointment</field>
+        <field name="inherit_id" ref="carwash_base.view_carwash_appointment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="carwash_currency_id" invisible="1"/>
+                <field name="carwash_consumable_cost" invisible="state != 'done'" groups="carwash_base.group_carwash_manager"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Consumption Analysis: cost of what was used -->
+    <record id="view_carwash_consumption_list_cost" model="ir.ui.view">
+        <field name="name">stock.move.list.carwash.consumption.cost</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="carwash_consumable.view_carwash_consumption_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="carwash_unit_cost" optional="hide"/>
+                <field name="carwash_cost" sum="Total Cost" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_carwash_consumption_pivot_cost" model="ir.ui.view">
+        <field name="name">stock.move.pivot.carwash.consumption.cost</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="carwash_consumable.view_carwash_consumption_pivot"/>
+        <field name="arch" type="xml">
+            <xpath expr="//pivot" position="inside">
+                <field name="carwash_cost" type="measure"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

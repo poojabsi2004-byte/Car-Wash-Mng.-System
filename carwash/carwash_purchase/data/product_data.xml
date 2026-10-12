@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Car wash purchases are valued at their average purchase cost (set per branch on install) -->
+    <record id="product_category_carwash_supplies" model="product.category">
+        <field name="name">Car Wash Supplies</field>
+    </record>
+
+    <!-- HSN codes of the starter consumables (carwash_base) for GST -->
+    <record id="carwash_base.demo_material_shampoo" model="product.product">
+        <field name="l10n_in_hsn_code">3402</field>
+    </record>
+    <record id="carwash_base.demo_material_wax" model="product.product">
+        <field name="l10n_in_hsn_code">3405</field>
+    </record>
+    <record id="carwash_base.demo_material_cloth" model="product.product">
+        <field name="l10n_in_hsn_code">6307</field>
+    </record>
+    <record id="carwash_base.demo_material_tire_shine" model="product.product">
+        <field name="l10n_in_hsn_code">3405</field>
+    </record>
+    <record id="carwash_base.demo_material_headlight_compound" model="product.product">
+        <field name="l10n_in_hsn_code">3405</field>
+    </record>
+
+    <!-- ===================== Equipment & spare parts ===================== -->
+    <record id="product_pressure_washer" model="product.product">
+        <field name="name">Pressure Washer (Commercial)</field>
+        <field name="type">consu</field>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">equipment</field>
+        <field name="l10n_in_hsn_code">8424</field>
+        <field name="standard_price">45000</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="description_purchase">High-pressure washer for a wash bay (motor, pump, hose and gun).</field>
+    </record>
+    <record id="product_vacuum_cleaner" model="product.product">
+        <field name="name">Wet &amp; Dry Vacuum Cleaner</field>
+        <field name="type">consu</field>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">equipment</field>
+        <field name="l10n_in_hsn_code">8508</field>
+        <field name="standard_price">12000</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+    </record>
+    <record id="product_nozzle_kit" model="product.product">
+        <field name="name">Pressure Washer Nozzle Kit</field>
+        <field name="type">consu</field>
+        <field name="is_storable" eval="True"/>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">equipment</field>
+        <field name="l10n_in_hsn_code">8424</field>
+        <field name="standard_price">1500</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+    </record>
+    <record id="product_foam_lance" model="product.product">
+        <field name="name">Foam Lance</field>
+        <field name="type">consu</field>
+        <field name="is_storable" eval="True"/>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">equipment</field>
+        <field name="l10n_in_hsn_code">8424</field>
+        <field name="standard_price">2500</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+    </record>
+
+    <!-- ===================== Maintenance services ===================== -->
+    <record id="product_bay_maintenance" model="product.product">
+        <field name="name">Bay Maintenance Service</field>
+        <field name="type">service</field>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">maintenance</field>
+        <field name="l10n_in_hsn_code">998719</field>
+        <field name="standard_price">2000</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="description_purchase">Periodic servicing / repair of a wash bay and its machines.</field>
+    </record>
+    <record id="product_pressure_washer_repair" model="product.product">
+        <field name="name">Pressure Washer Repair</field>
+        <field name="type">service</field>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">maintenance</field>
+        <field name="l10n_in_hsn_code">998719</field>
+        <field name="standard_price">3500</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+    </record>
+    <record id="product_plumbing_repair" model="product.product">
+        <field name="name">Plumbing &amp; Drainage Repair</field>
+        <field name="type">service</field>
+        <field name="categ_id" ref="product_category_carwash_supplies"/>
+        <field name="carwash_supply_type">maintenance</field>
+        <field name="l10n_in_hsn_code">995465</field>
+        <field name="standard_price">2500</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+    </record>
+</odoo>

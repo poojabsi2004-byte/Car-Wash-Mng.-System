@@ -230,7 +230,7 @@
         align-items: center;
         gap: 10px;
         margin: 0;
-        width: 360px;
+        width: 440px;
         max-width: 70vw;
         padding: 10px 14px;
         border-radius: 14px;
@@ -812,58 +812,6 @@
         }
     }
 
-    // ---------- per-card search ----------
-    .o_cwd_search {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0;
-        width: 230px;
-        max-width: 100%;
-        padding: 7px 12px;
-        border-radius: 11px;
-        border: 1px solid var(--cw-border);
-        background: var(--cw-surface-2);
-        color: var(--cw-muted);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease, width 0.3s ease, background 0.2s ease;
-        cursor: text;
-
-        input {
-            flex: 1;
-            min-width: 0;
-            border: 0;
-            outline: 0;
-            background: transparent;
-            color: var(--cw-ink);
-            font-size: 0.84rem;
-
-            &::placeholder {
-                color: var(--cw-faint);
-            }
-
-            &::-webkit-search-cancel-button {
-                display: none;
-            }
-        }
-
-        &:focus-within,
-        &.o_cwd_search_active {
-            border-color: var(--cw-aqua);
-            box-shadow: 0 0 0 3px var(--cw-aqua-soft);
-            background: var(--cw-surface-solid);
-            color: var(--cw-aqua);
-        }
-
-        &:focus-within {
-            width: 270px;
-        }
-    }
-
-    .o_cwd_card > .o_cwd_search {
-        width: 100%;
-        margin: 6px 0 10px;
-    }
-
     .o_cwd_search_clear {
         border: 0;
         background: transparent;
@@ -981,6 +929,7 @@
         &.o_cwd_pill_qc { background: var(--cw-amber-soft); color: var(--cw-amber); }
         &.o_cwd_pill_low { background: var(--cw-coral-soft); color: var(--cw-coral); }
         &.o_cwd_pill_plan { background: var(--cw-violet-soft); color: var(--cw-violet); }
+        &.o_cwd_pill_request { background: var(--cw-coral-soft); color: var(--cw-coral); }
     }
 
     .o_cwd_dot {
@@ -1585,6 +1534,11 @@
             box-shadow: var(--cw-shadow-hover);
         }
 
+        &.o_cwd_job_request {
+            border-color: var(--cw-coral-soft);
+            box-shadow: inset 3px 0 0 var(--cw-coral);
+        }
+
         &.o_cwd_job_qc {
             border-color: var(--cw-amber-soft);
             box-shadow: inset 3px 0 0 var(--cw-amber);
@@ -2184,11 +2138,6 @@
             grid-template-columns: minmax(0, 1fr);
         }
 
-        .o_cwd_search,
-        .o_cwd_search:focus-within {
-            width: 100%;
-        }
-
         .o_cwd_card_head > div:first-child {
             width: 100%;
         }
@@ -2355,4 +2304,870 @@
 @keyframes cwd-skeleton {
     from { background-position: 100% 0; }
     to { background-position: -100% 0; }
+}
+
+// =====================================================================
+// BOOKING CALENDAR - a week of bookings and open booking requests
+// =====================================================================
+.o_cwd {
+    .o_cwd_cal_tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .o_cwd_cal_open {
+        border: 1px solid var(--cw-border);
+        background: var(--cw-surface);
+        color: var(--cw-aqua);
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 7px 12px;
+        border-radius: 11px;
+        box-shadow: var(--cw-shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--cw-shadow-hover);
+        }
+    }
+
+    .o_cwd_cal {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(150px, 1fr));
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .o_cwd_cal_day {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-radius: var(--cw-radius-sm);
+        background: var(--cw-surface);
+        border: 1px solid var(--cw-border);
+
+        &.o_cwd_cal_past {
+            opacity: 0.72;
+        }
+
+        &.o_cwd_cal_today {
+            border-color: var(--cw-aqua);
+            box-shadow: 0 0 0 2px var(--cw-aqua-soft);
+
+            .o_cwd_cal_head {
+                background: linear-gradient(135deg, var(--cw-hero-3), var(--cw-hero-4));
+                color: #ffffff;
+
+                .o_cwd_cal_wd {
+                    color: rgba(255, 255, 255, 0.8);
+                }
+            }
+        }
+    }
+
+    .o_cwd_cal_head {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        width: 100%;
+        border: 0;
+        padding: 8px 10px;
+        border-radius: var(--cw-radius-sm) var(--cw-radius-sm) 0 0;
+        background: var(--cw-aqua-soft);
+        color: var(--cw-ink);
+        text-align: left;
+
+        .o_cwd_cal_wd {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--cw-muted);
+        }
+
+        strong {
+            font-size: 0.9rem;
+        }
+
+        .o_cwd_cal_count {
+            margin-left: auto;
+            min-width: 22px;
+            padding: 1px 7px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-align: center;
+            background: var(--cw-surface-solid);
+            color: var(--cw-aqua);
+        }
+    }
+
+    .o_cwd_cal_events {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+        max-height: 340px;
+        overflow-y: auto;
+    }
+
+    .o_cwd_cal_event {
+        --cw-cal: var(--cw-aqua);
+        --cw-cal-soft: var(--cw-aqua-soft);
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 9px;
+        border-left: 4px solid var(--cw-cal);
+        background: var(--cw-cal-soft);
+        font-size: 0.78rem;
+        line-height: 1.3;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--cw-shadow-hover);
+        }
+
+        .o_cwd_cal_time {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 800;
+            color: var(--cw-cal);
+        }
+
+        .o_cwd_cal_bay {
+            margin-left: auto;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--cw-muted);
+            white-space: nowrap;
+        }
+
+        .o_cwd_cal_plate {
+            font-weight: 700;
+            color: var(--cw-ink);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .o_cwd_cal_cust {
+            color: var(--cw-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    // one colour per booking state (legend chips use the same classes)
+    .o_cwd_cal_confirmed { --cw-cal: var(--cw-aqua); --cw-cal-soft: var(--cw-aqua-soft); }
+    .o_cwd_cal_arrived { --cw-cal: var(--cw-amber); --cw-cal-soft: var(--cw-amber-soft); }
+    .o_cwd_cal_in_service { --cw-cal: var(--cw-violet); --cw-cal-soft: var(--cw-violet-soft); }
+    .o_cwd_cal_ready { --cw-cal: var(--cw-teal); --cw-cal-soft: var(--cw-teal-soft); }
+    .o_cwd_cal_done { --cw-cal: var(--cw-faint); --cw-cal-soft: var(--cw-border); }
+    .o_cwd_cal_draft { --cw-cal: var(--cw-muted); --cw-cal-soft: var(--cw-border); }
+    .o_cwd_cal_request {
+        --cw-cal: var(--cw-coral);
+        --cw-cal-soft: var(--cw-coral-soft);
+    }
+
+    .o_cwd_cal_event.o_cwd_cal_request {
+        border-left-style: dashed;
+        background: repeating-linear-gradient(135deg, var(--cw-cal-soft) 0 8px, transparent 8px 14px);
+    }
+
+    .o_cwd_cal_free {
+        padding: 10px 4px;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--cw-faint);
+    }
+
+    .o_cwd_cal_legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 12px;
+        font-size: 0.75rem;
+        color: var(--cw-muted);
+    }
+
+    .o_cwd_cal_key {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        &::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: var(--cw-cal);
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .o_cwd_cal_tools {
+            justify-content: flex-start;
+        }
+    }
+}
+
+// New booking requests card (leads not confirmed yet)
+.o_cwd {
+    .o_cwd_requests_tools {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .o_cwd_requests_services {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 55%;
+        text-align: right;
+    }
+}
+
+// ---------------------------------------------------------------- My Earnings (staff / QC)
+.o_cwd {
+    .o_cwe_link {
+        border: 0;
+        background: none;
+        padding: 4px 0;
+        color: var(--cw-aqua);
+        font-weight: 600;
+        font-size: 0.85rem;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .o_cwe_stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+
+        @media (max-width: 767.98px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    .o_cwe_stat {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 12px 14px;
+        border: 1px solid var(--cw-border);
+        border-radius: var(--cw-radius-sm);
+        background: var(--cw-surface-2);
+        color: var(--cw-ink);
+        text-align: left;
+
+        strong {
+            font-size: 1.3rem;
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+        }
+
+        span {
+            color: var(--cw-muted);
+            font-size: 0.8rem;
+        }
+    }
+
+    button.o_cwe_stat {
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+        &:hover {
+            box-shadow: var(--cw-shadow-hover);
+            transform: translateY(-1px);
+        }
+    }
+
+    .o_cwe_stat_due {
+        border-color: transparent;
+        background: var(--cw-amber-soft);
+
+        strong {
+            color: var(--cw-amber);
+        }
+    }
+
+    .o_cwe_stat_got strong {
+        color: var(--cw-teal);
+    }
+
+    .o_cwe_list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .o_cwe_row {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr) auto auto auto;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 12px;
+        border: 1px solid var(--cw-border);
+        border-radius: var(--cw-radius-sm);
+        background: var(--cw-surface-solid);
+        color: var(--cw-ink);
+        text-align: left;
+        transition: box-shadow 0.2s ease;
+
+        &:hover {
+            box-shadow: var(--cw-shadow-hover);
+        }
+    }
+
+    .o_cwe_day {
+        color: var(--cw-muted);
+        font-size: 0.82rem;
+    }
+
+    .o_cwe_job {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        strong,
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        small {
+            color: var(--cw-faint);
+        }
+    }
+
+    .o_cwe_role {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--cw-aqua-soft);
+        color: var(--cw-aqua);
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .o_cwe_amount {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .o_cwe_badge {
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .o_cwe_badge_due {
+        background: var(--cw-amber-soft);
+        color: var(--cw-amber);
+    }
+
+    .o_cwe_badge_got {
+        background: var(--cw-teal-soft);
+        color: var(--cw-teal);
+    }
+
+    @media (max-width: 575.98px) {
+        .o_cwe_row {
+            grid-template-columns: 50px minmax(0, 1fr) auto auto;
+        }
+
+        .o_cwe_role {
+            display: none;
+        }
+    }
+}
+
+// ---------------------------------------------------------------- Payments (manager): customers -> car wash -> staff & QC
+.o_cwd {
+    .o_cwpay {
+        --cwpay-in: var(--cw-teal);
+        --cwpay-in-soft: var(--cw-teal-soft);
+        --cwpay-staff: var(--cw-violet);
+        --cwpay-staff-soft: var(--cw-violet-soft);
+        --cwpay-qc: var(--cw-amber);
+        --cwpay-qc-soft: var(--cw-amber-soft);
+    }
+
+    // the money flow: three nodes joined by flowing lines
+    .o_cwpay_flow {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr) 56px minmax(0, 1.1fr);
+        align-items: stretch;
+        margin-bottom: 18px;
+
+        &.o_cwpay_flow_short {
+            grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
+        }
+
+        @media (max-width: 991.98px) {
+            grid-template-columns: minmax(0, 1fr) !important;
+            row-gap: 0;
+        }
+    }
+
+    .o_cwpay_node {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px;
+        border-radius: var(--cw-radius-sm);
+        border: 1px solid var(--cw-border);
+        min-width: 0;
+    }
+
+    .o_cwpay_node_in {
+        background: linear-gradient(160deg, var(--cwpay-in-soft), transparent 70%), var(--cw-surface-solid);
+    }
+
+    .o_cwpay_node_out {
+        background: linear-gradient(160deg, var(--cwpay-staff-soft), transparent 70%), var(--cw-surface-solid);
+    }
+
+    // the car wash in the middle: a filled brand card
+    .o_cwpay_node_hub {
+        border-color: transparent;
+        background: linear-gradient(135deg, var(--cw-hero-2), var(--cw-hero-3) 60%, var(--cw-hero-4));
+        color: #ffffff;
+        box-shadow: 0 14px 30px -18px rgba(0, 119, 182, 0.75);
+
+        .o_cwpay_node_head,
+        .o_cwpay_main > span {
+            color: rgba(255, 255, 255, 0.78);
+        }
+
+        .o_cwpay_main strong {
+            color: #ffffff;
+        }
+
+        .o_cwpay_icon {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+        }
+    }
+
+    .o_cwpay_node_head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--cw-muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .o_cwpay_icon {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--cw-surface-2);
+        color: var(--cw-aqua);
+        font-size: 0.8rem;
+    }
+
+    .o_cwpay_node_in .o_cwpay_icon {
+        background: var(--cwpay-in-soft);
+        color: var(--cwpay-in);
+    }
+
+    .o_cwpay_node_out .o_cwpay_icon {
+        background: var(--cwpay-staff-soft);
+        color: var(--cwpay-staff);
+    }
+
+    .o_cwpay_main {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--cw-ink);
+        text-align: left;
+
+        > strong {
+            font-size: 1.65rem;
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+        }
+
+        > span {
+            color: var(--cw-muted);
+            font-size: 0.82rem;
+        }
+    }
+
+    button.o_cwpay_main:hover strong {
+        color: var(--cwpay-in);
+    }
+
+    .o_cwpay_sub {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border: 0;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: var(--cw-surface-2);
+        color: var(--cw-muted);
+    }
+
+    .o_cwpay_sub_due {
+        background: var(--cw-amber-soft);
+        color: var(--cw-amber);
+
+        &:hover {
+            box-shadow: var(--cw-shadow-hover);
+        }
+    }
+
+    .o_cwpay_sub_ok {
+        background: var(--cwpay-in-soft);
+        color: var(--cwpay-in);
+    }
+
+    .o_cwpay_sub_hub {
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+    }
+
+    // flowing line between two nodes (money moving left to right)
+    .o_cwpay_link {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        @media (max-width: 991.98px) {
+            height: 28px;
+        }
+    }
+
+    .o_cwpay_link_line {
+        position: relative;
+        width: 100%;
+        height: 4px;
+        border-radius: 4px;
+        background: repeating-linear-gradient(90deg, var(--cwpay-in) 0 8px, transparent 8px 14px);
+        background-size: 28px 100%;
+        animation: cwpay-flow 1.1s linear infinite;
+        opacity: 0.75;
+
+        // arrow head
+        &::after {
+            content: "";
+            position: absolute;
+            right: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 7px solid transparent;
+            border-left-color: var(--cwpay-in);
+            border-right-width: 0;
+        }
+
+        @media (max-width: 991.98px) {
+            width: 4px;
+            height: 100%;
+            background: repeating-linear-gradient(180deg, var(--cwpay-in) 0 8px, transparent 8px 14px);
+            background-size: 100% 28px;
+            animation-name: cwpay-flow-down;
+
+            &::after {
+                right: auto;
+                left: 50%;
+                top: auto;
+                bottom: -6px;
+                transform: translateX(-50%);
+                border: 7px solid transparent;
+                border-top-color: var(--cwpay-in);
+                border-bottom-width: 0;
+            }
+        }
+    }
+
+    .o_cwpay_link_out .o_cwpay_link_line {
+        background-image: repeating-linear-gradient(90deg, var(--cwpay-staff) 0 8px, transparent 8px 14px);
+
+        &::after {
+            border-left-color: var(--cwpay-staff);
+        }
+
+        @media (max-width: 991.98px) {
+            background-image: repeating-linear-gradient(180deg, var(--cwpay-staff) 0 8px, transparent 8px 14px);
+
+            &::after {
+                border-left-color: transparent;
+                border-top-color: var(--cwpay-staff);
+            }
+        }
+    }
+
+    @keyframes cwpay-flow {
+        from { background-position: 0 0; }
+        to { background-position: 28px 0; }
+    }
+
+    @keyframes cwpay-flow-down {
+        from { background-position: 0 0; }
+        to { background-position: 0 28px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .o_cwpay_link_line {
+            animation: none;
+        }
+    }
+
+    // staff / QC rows in the right node
+    .o_cwpay_role {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas: "name paid" "name due";
+        align-items: center;
+        column-gap: 12px;
+        padding: 8px 10px;
+        border: 1px solid var(--cw-border);
+        border-radius: 10px;
+        background: var(--cw-surface-solid);
+        color: var(--cw-ink);
+        text-align: left;
+        transition: box-shadow 0.2s ease;
+
+        &:hover {
+            box-shadow: var(--cw-shadow-hover);
+        }
+    }
+
+    .o_cwpay_role_name {
+        grid-area: name;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .o_cwpay_role_staff .o_cwpay_role_name {
+        background: var(--cwpay-staff-soft);
+        color: var(--cwpay-staff);
+    }
+
+    .o_cwpay_role_qc .o_cwpay_role_name {
+        background: var(--cwpay-qc-soft);
+        color: var(--cwpay-qc);
+    }
+
+    .o_cwpay_role_paid {
+        grid-area: paid;
+        font-size: 0.85rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .o_cwpay_role_due {
+        grid-area: due;
+        color: var(--cw-amber);
+        font-size: 0.76rem;
+        font-weight: 600;
+    }
+
+    // split bar: of the money received, what went to staff / QC and what was kept
+    .o_cwpay_split {
+        display: flex;
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--cw-surface-2);
+    }
+
+    .o_cwpay_seg {
+        height: 100%;
+        transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .o_cwpay_seg_staff { background: var(--cwpay-staff); }
+    .o_cwpay_seg_qc { background: var(--cwpay-qc); }
+    .o_cwpay_seg_kept { background: var(--cwpay-in); }
+
+    .o_cwpay_legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 8px 0 18px;
+        color: var(--cw-muted);
+        font-size: 0.8rem;
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        b {
+            color: var(--cw-ink);
+        }
+    }
+
+    .o_cwpay_dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+    }
+
+    // who is still owed / recent payments
+    .o_cwpay_lists {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+
+        &.o_cwpay_lists_one {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @media (max-width: 767.98px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        h4 {
+            margin: 0 0 8px;
+            color: var(--cw-muted);
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+    }
+
+    .o_cwpay_list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .o_cwpay_row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--cw-border);
+        border-radius: 10px;
+        background: var(--cw-surface-solid);
+        color: var(--cw-ink);
+        text-align: left;
+        transition: box-shadow 0.2s ease;
+
+        &:hover {
+            box-shadow: var(--cw-shadow-hover);
+        }
+    }
+
+    .o_cwpay_avatar,
+    .o_cwpay_dir {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .o_cwpay_avatar {
+        background: var(--cwpay-staff-soft);
+        color: var(--cwpay-staff);
+    }
+
+    .o_cwpay_dir_in {
+        background: var(--cwpay-in-soft);
+        color: var(--cwpay-in);
+    }
+
+    .o_cwpay_dir_out {
+        background: var(--cwpay-staff-soft);
+        color: var(--cwpay-staff);
+    }
+
+    .o_cwpay_dir_out_qc {
+        background: var(--cwpay-qc-soft);
+        color: var(--cwpay-qc);
+    }
+
+    .o_cwpay_row_main {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        strong,
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        small {
+            color: var(--cw-faint);
+        }
+    }
+
+    .o_cwpay_badge {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .o_cwpay_badge_staff {
+        background: var(--cwpay-staff-soft);
+        color: var(--cwpay-staff);
+    }
+
+    .o_cwpay_badge_qc {
+        background: var(--cwpay-qc-soft);
+        color: var(--cwpay-qc);
+    }
+
+    .o_cwpay_amount {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .o_cwpay_amount_in { color: var(--cwpay-in); }
+    .o_cwpay_amount_out { color: var(--cwpay-staff); }
+    .o_cwpay_amount_out_qc { color: var(--cwpay-qc); }
+
+    .o_cwpay_none {
+        padding: 14px;
+        border: 1px dashed var(--cw-border);
+        border-radius: 10px;
+        color: var(--cw-faint);
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    .o_cwpay_list .o_cwpay_row:has(.o_cwpay_dir) {
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+    }
 }

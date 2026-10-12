@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- My Earnings: a washer's / QC inspector's own staff payables - what they still receive and what they
+         received (history), in one list: grouped To Receive / Received with their totals. Their own records only
+         (record rule + the action's domain); read-only. -->
+    <record id="view_carwash_my_earnings_list" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.list.my.earnings</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="My Earnings" create="0" edit="0" delete="0" expand="1" sample="1"
+                  default_order="earning_state desc, date desc, id desc"
+                  decoration-muted="earning_state == 'cancelled'">
+                <field name="currency_id" column_invisible="1"/>
+                <field name="date"/>
+                <field name="appointment_id" string="Booking" options="{'no_open': True}"/>
+                <field name="jobcard_id" options="{'no_open': True}"/>
+                <field name="payable_role" string="For" widget="badge" decoration-info="payable_role == 'qc'"/>
+                <field name="customer_id" string="Customer" optional="hide" options="{'no_open': True}"/>
+                <field name="base_amount" string="Service Value" widget="monetary" optional="show"/>
+                <field name="commission_type" column_invisible="1"/>
+                <field name="rate" string="%" optional="show" invisible="commission_type != 'percent'"/>
+                <field name="amount" string="Amount" widget="monetary" sum="Total" decoration-bf="1"/>
+                <field name="paid_date" string="Received On"/>
+                <field name="earning_state" string="Status" widget="badge"
+                       decoration-warning="earning_state == 'to_receive'" decoration-success="earning_state == 'received'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_carwash_my_earnings_form" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.form.my.earnings</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Earning" create="0" edit="0" delete="0" class="o_cw_form">
+                <sheet>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="earning_state != 'to_receive'">
+                            <i class="fa fa-hourglass-half" title="To receive"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_success" invisible="earning_state != 'received'">
+                            <i class="fa fa-check" title="Received"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_muted" invisible="earning_state != 'cancelled'">
+                            <i class="fa fa-ban" title="Cancelled"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="jobcard_id" string="Job Card"/>
+                            <h1><field name="jobcard_id" readonly="1" options="{'no_open': True}"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip o_cw_chip_warning" invisible="earning_state != 'to_receive'">
+                                    <i class="fa fa-hourglass-half" title="Status"/> To Receive
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="earning_state != 'received'">
+                                    <i class="fa fa-check-circle" title="Status"/> Received
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_muted" invisible="earning_state != 'cancelled'">Cancelled</span>
+                                <span class="o_cw_chip o_cw_chip_info">
+                                    <i class="fa fa-user" title="For"/> <field name="payable_role" readonly="1" nolabel="1"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis">
+                            <div class="o_cw_hero_kpi">
+                                <field name="amount" widget="monetary" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Amount</span>
+                            </div>
+                        </div>
+                    </div>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="earning_state" invisible="1"/>
+                    <group>
+                        <group string="Job">
+                            <field name="date"/>
+                            <field name="appointment_id" string="Booking" options="{'no_open': True}"/>
+                            <field name="customer_id" string="Customer" options="{'no_open': True}"/>
+                        </group>
+                        <group string="How it's worked out">
+                            <field name="commission_type" string="Pay"/>
+                            <field name="base_amount" string="Service Value" widget="monetary"/>
+                            <field name="rate" string="Rate (%)" invisible="commission_type != 'percent'"/>
+                            <field name="amount" widget="monetary"/>
+                            <field name="paid_date" string="Received On" invisible="not paid_date"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_my_earnings_search" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.search.my.earnings</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search string="My Earnings">
+                <field name="appointment_id" string="Booking"/>
+                <field name="jobcard_id"/>
+                <filter string="To Receive" name="to_receive" domain="[('earning_state', '=', 'to_receive')]"/>
+                <filter string="Received" name="received" domain="[('earning_state', '=', 'received')]"/>
+                <separator/>
+                <filter string="Date" name="filter_date" date="date"/>
+                <group>
+                    <filter string="Status" name="group_earning_state" context="{'group_by': 'earning_state'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date:month'}"/>
+                    <filter string="For" name="group_role" context="{'group_by': 'payable_role'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_my_earnings" model="ir.actions.act_window">
+        <field name="name">My Earnings</field>
+        <field name="res_model">carwash.staff.commission</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid), ('earning_state', '!=', 'cancelled')]</field>
+        <field name="context">{'search_default_group_earning_state': 1}</field>
+        <field name="search_view_id" ref="view_carwash_my_earnings_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_my_earnings_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_carwash_my_earnings_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No earnings yet</p>
+            <p>When a job card you worked on (or checked as QC) passes QC, what you earn on it shows here as
+                <b>To Receive</b>. Once you are paid it moves to <b>Received</b>, with the date.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_carwash_my_earnings" name="My Earnings" parent="carwash_base.menu_carwash_root"
+              action="action_carwash_my_earnings" sequence="37"
+              groups="carwash_jobcard.group_carwash_washer,carwash_jobcard.group_carwash_qc"/>
+</odoo>

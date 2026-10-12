@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_carwash_attendance" model="ir.ui.view">
+        <field name="name">hr.employee.form.carwash.attendance</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="carwash_jobcard.view_employee_form_carwash"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='carwash_staff_role']" position="after">
+                <page string="Attendance" name="carwash_attendance"
+                      groups="hr_attendance.group_hr_attendance_officer" invisible="not carwash_attendance_enabled">
+                    <field name="carwash_attendance_enabled" invisible="1"/>
+                    <div class="o_cw_attendance_status d-flex flex-wrap align-items-center gap-3 mb-3">
+                        <span class="o_cw_tile o_cw_tile_sm o_cw_tile_success" invisible="attendance_state != 'checked_in'">
+                            <i class="fa fa-sign-in" title="Checked in"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_sm o_cw_tile_muted" invisible="attendance_state == 'checked_in'">
+                            <i class="fa fa-sign-out" title="Checked out"/>
+                        </span>
+                        <field name="attendance_state" widget="badge" readonly="1"
+                               decoration-success="attendance_state == 'checked_in'"
+                               decoration-muted="attendance_state != 'checked_in'"/>
+                        <button name="action_carwash_check_in_out" type="object" string="Check In"
+                                icon="fa-sign-in" class="btn-primary" invisible="attendance_state == 'checked_in'"/>
+                        <button name="action_carwash_check_in_out" type="object" string="Check Out"
+                                icon="fa-sign-out" class="btn-secondary" invisible="attendance_state != 'checked_in'"/>
+                        <button name="action_carwash_view_attendances" type="object" string="All Attendances"
+                                icon="fa-list" class="btn-link"/>
+                    </div>
+                    <group>
+                        <group string="Last Shift">
+                            <field name="last_check_in" string="Last Check In"/>
+                            <field name="last_check_out" string="Last Check Out"/>
+                        </group>
+                        <group string="Today">
+                            <field name="carwash_today_hours" widget="float_time"/>
+                        </group>
+                    </group>
+                    <field name="attendance_ids" readonly="1" nolabel="1">
+                        <list default_order="check_in desc" limit="20"
+                              decoration-success="carwash_status == 'on_shift'" decoration-warning="carwash_status == 'no_checkout'">
+                            <field name="date"/>
+                            <field name="carwash_in_time" string="Check In"/>
+                            <field name="carwash_out_time" string="Check Out"/>
+                            <field name="worked_hours" string="Hours" widget="float_time" sum="Total"/>
+                            <field name="carwash_branch_id" string="Branch" groups="base.group_multi_company"/>
+                            <field name="carwash_status" widget="badge" decoration-success="carwash_status == 'on_shift'"
+                                   decoration-info="carwash_status == 'done'" decoration-warning="carwash_status == 'no_checkout'"/>
+                            <field name="check_in" column_invisible="1"/>
+                            <field name="check_out" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

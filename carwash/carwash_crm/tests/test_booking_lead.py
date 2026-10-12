@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+import pytz
+
 from odoo import http
 from odoo.exceptions import UserError
 from odoo.tests import HttpCase, tagged
@@ -8,10 +10,26 @@ from odoo.tests import HttpCase, tagged
 @tagged("post_install", "-at_install")
 class TestWebsiteBookingLead(HttpCase):
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # these tests use packages and memberships - make sure they are switched on
+        cls.env.ref("base.group_user").write({"implied_ids": [(4, cls.env.ref(x).id) for x in (
+            "carwash_jobcard.group_carwash_package", "carwash_membership.group_carwash_membership",
+        )]})
+
+    def _free_slot(self, company, service, package=None, days=30):
+        """UTC start of the first slot the website offers on a working day `days` ahead (branch local hours)."""
+        day = (datetime.now() + timedelta(days=days)).date()
+        while day.weekday() >= 5:
+            day += timedelta(days=1)
+        tz = pytz.timezone(company.resource_calendar_id.tz or "UTC")
+        duration = ((package.duration if package else 0.0) + (service.carwash_duration if service else 0.0)) or 0.5
+        slots = self.env["carwash.appointment"]._get_available_slots(company, day, service, duration=duration, tz=tz)
+        self.assertTrue(slots, "the branch needs a free slot for this test")
+        return slots[0]["start"]
+
     def _confirm(self, lead):
-        """Staff tick the request-verification checklist, then confirm the lead into a booking."""
-        self.assertTrue(lead.checklist_line_ids, "website requests get the default request checklist")
-        lead.checklist_line_ids.write({"is_done": True})
         lead.with_user(self.env.ref("base.user_admin")).action_confirm_carwash_booking()
 
     def test_website_booking_creates_lead_then_confirm_creates_booking(self):
@@ -26,7 +44,7 @@ class TestWebsiteBookingLead(HttpCase):
         )
         company = self.env["carwash.bay"].search([("active", "=", True)], limit=1).company_id
         service = self.env["product.product"].search([("is_carwash_service", "=", True)], limit=1)
-        start = (datetime.now() + timedelta(days=30)).replace(hour=5, minute=0, second=0, microsecond=0)
+        start = self._free_slot(company, service)
 
         self.authenticate("portal_booker", "portal_booker_pw")
         response = self.url_open(
@@ -78,7 +96,10 @@ class TestWebsiteBookingLead(HttpCase):
                 "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
             }
         )
-        services = self.env["product.product"].search([("is_carwash_service", "=", True), ("list_price", ">", 0)], limit=3)
+        # the shortest services, so package + extra fit in one working period of the branch
+        services = self.env["product.product"].search(
+            [("is_carwash_service", "=", True), ("list_price", ">", 0)]
+        ).sorted(lambda p: (p.carwash_duration, p.id))[:3]
         self.assertGreaterEqual(len(services), 3, "test needs 3 priced car wash services")
         package = self.env["carwash.service.package"].create(
             {
@@ -90,7 +111,7 @@ class TestWebsiteBookingLead(HttpCase):
         )
         extra = services[2]
         company = self.env["carwash.bay"].search([("active", "=", True)], limit=1).company_id
-        start = (datetime.now() + timedelta(days=31)).replace(hour=6, minute=0, second=0, microsecond=0)
+        start = self._free_slot(company, extra, package, days=31)
 
         self.authenticate("package_booker", "package_booker_pw")
         start_page = self.url_open(f"/car-wash/book?package_id={package.id}")
@@ -183,10 +204,13 @@ class TestWebsiteBookingLead(HttpCase):
 
         # booking online offers the membership; the request carries it to the lead and the booking
         company = self.env["carwash.bay"].search([("active", "=", True)], limit=1).company_id
-        date = (datetime.now() + timedelta(days=32)).date().isoformat()
+        day = (datetime.now() + timedelta(days=32)).date()
+        while day.weekday() >= 5:  # a working day, so the branch has open slots
+            day += timedelta(days=1)
+        date = day.isoformat()
         slots_page = self.url_open(f"/car-wash/book/slots?company_id={company.id}&product_id={wash.id}&date={date}")
         self.assertIn("Use my Web Gold membership", slots_page.text)
-        start = (datetime.now() + timedelta(days=32)).replace(hour=7, minute=0, second=0, microsecond=0)
+        start = self._free_slot(company, wash, days=32)
         response = self.url_open(
             "/car-wash/book/confirm",
             data={
@@ -203,7 +227,8 @@ class TestWebsiteBookingLead(HttpCase):
         self.assertEqual(booking.membership_id, membership)
         self.assertEqual(booking.amount_total, 0.0, "the covered wash is free")
 
-    def test_request_checklist_gates_confirmation(self):
+    def test_request_confirms_without_checklist(self):
+        """Checklists start when the vehicle arrives - a booking request has none and confirms directly."""
         partner = self.env["res.partner"].create({"name": "Phone Caller", "phone": "123"})
         service = self.env["product.product"].search([("is_carwash_service", "=", True)], limit=1)
         lead = self.env["crm.lead"].create(
@@ -217,18 +242,11 @@ class TestWebsiteBookingLead(HttpCase):
                 "carwash_license_plate": "CALL 1",
             }
         )
-        template = self.env.ref("carwash_crm.checklist_template_lead_verification")
-        self.assertEqual(lead.checklist_template_id, template)
-        with self.assertRaisesRegex(UserError, "mandatory checklist"):
-            lead.action_confirm_carwash_booking()
-        self.assertFalse(lead.carwash_appointment_id)
-        lead.checklist_line_ids.filtered("is_required").write({"is_done": True})
+        self.assertNotIn("checklist_line_ids", lead._fields)
         lead.action_confirm_carwash_booking()
-        self.assertTrue(lead.carwash_appointment_id)
-
-        # leads that aren't car wash requests get no checklist
-        other = self.env["crm.lead"].create({"name": "Fleet deal", "type": "opportunity"})
-        self.assertFalse(other.checklist_line_ids)
+        booking = lead.carwash_appointment_id
+        self.assertEqual(booking.state, "confirmed")
+        self.assertFalse(booking.checklist_line_ids, "no checklist before the vehicle arrives")
 
     def test_member_portal_apply_remove_renew(self):
         portal = self.env["res.users"].create(
@@ -383,3 +401,86 @@ class TestWebsiteBookingLead(HttpCase):
 
         self._confirm(lead)
         self.assertEqual(lead.carwash_appointment_id.membership_id, membership)
+
+    def test_website_slot_times_follow_the_branch_timezone(self):
+        """Slots are branch-local times; the posted slot is checked server-side; bad input never errors."""
+        self.env["res.users"].create({
+            "name": "Slot Booker", "login": "slot_booker", "password": "slot_booker_pw",
+            "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
+        })
+        company = self.env["carwash.bay"].search([("active", "=", True)], limit=1).company_id
+        company.resource_calendar_id.tz = "Asia/Kolkata"
+        service = self.env["product.product"].search([("is_carwash_service", "=", True)], limit=1)
+        start = self._free_slot(company, service)
+        local = pytz.utc.localize(start).astimezone(pytz.timezone("Asia/Kolkata"))
+        self.authenticate("slot_booker", "slot_booker_pw")
+        page = self.url_open(f"/car-wash/book/slots?company_id={company.id}&product_id={service.id}&date={local.date().isoformat()}")
+        self.assertIn(f'value="{start.isoformat()}"', page.text)
+        self.assertIn(local.strftime("%I:%M %p"), page.text, "slot labels are branch-local times")
+
+        csrf = http.Request.csrf_token(self)
+        past = self.url_open("/car-wash/book/confirm", data={
+            "company_id": company.id, "product_id": service.id, "license_plate": "SLOT 1", "csrf_token": csrf,
+            "slot_start": (start - timedelta(days=60)).isoformat(),
+        }, allow_redirects=False)
+        self.assertEqual(past.status_code, 200)
+        self.assertIn("can&#39;t be booked any more", past.text.replace("'", "&#39;"))
+        for data in ({"slot_start": start.isoformat()}, {"company_id": company.id, "product_id": service.id,
+                                                       "slot_start": local.isoformat(), "license_plate": "SLOT 2"}):
+            response = self.url_open("/car-wash/book/confirm", data={**data, "csrf_token": csrf}, allow_redirects=False)
+            self.assertLess(response.status_code, 500, f"no server error for {data}")
+        lead = self.env["crm.lead"].search([("carwash_license_plate", "=", "SLOT 2")])
+        self.assertEqual(lead.carwash_booking_date, start, "a slot posted with a timezone is stored in UTC")
+
+    def test_booking_request_report(self):
+        self.env.company.external_report_layout_id = False
+        lead = self.env["crm.lead"].create({
+            "name": "Report request", "type": "opportunity", "is_carwash_booking": True,
+            "contact_name": "Walk-in Report", "carwash_license_plate": "REQ 9",
+            "carwash_booking_date": datetime.now() + timedelta(days=3),
+            "carwash_service_ids": [(6, 0, self.env["product.product"].search([("is_carwash_service", "=", True)], limit=1).ids)],
+        })
+        report = self.env.ref("carwash_crm.action_report_carwash_booking_request")
+        html = self.env["ir.actions.report"]._render_qweb_html(report.report_name, lead.ids)[0].decode()
+        self.assertIn("Booking Request", html)
+        self.assertIn("REQ 9", html)
+        self.assertIn("Awaiting confirmation", html)
+        self.assertIn("o_cw_letterhead", html)
+        self.assertEqual(lead.action_print_carwash_request()["type"], "ir.actions.report")
+
+    def _phone_request(self, **vals):
+        partner = self.env["res.partner"].create({"name": "Bay Caller", "phone": "456"})
+        service = self.env["product.product"].search([("is_carwash_service", "=", True)], limit=1)
+        return self.env["crm.lead"].create({
+            "name": "Bay request", "type": "opportunity", "is_carwash_booking": True, "partner_id": partner.id,
+            "carwash_booking_date": datetime.now() + timedelta(days=45), "carwash_service_ids": [(6, 0, service.ids)],
+            "carwash_license_plate": "BAY 1", **vals,
+        })
+
+    def test_confirm_needs_the_preferred_bay_free(self):
+        """A bay picked on the request must not be in maintenance; a vehicle in service on it doesn't block."""
+        bay = self.env["carwash.bay"].create({"name": "Request Bay"})
+        lead = self._phone_request(carwash_bay_id=bay.id)
+        bay.action_set_maintenance()
+        with self.assertRaisesRegex(UserError, "Bay Request Bay is under maintenance"):
+            lead.action_confirm_carwash_booking()
+        self.assertFalse(lead.carwash_appointment_id, "not confirmed")
+        bay.action_set_free()
+        bay.with_context(carwash_bay_by_service=True).state = "occupied"
+        lead.action_confirm_carwash_booking()
+        self.assertEqual((lead.carwash_appointment_id.bay_id, lead.carwash_appointment_id.state), (bay, "confirmed"))
+        self.assertNotIn("carwash_vehicle_make", self.env["crm.lead"].get_views([(False, "form")])["views"]["form"]["arch"],
+                         "no Make on the request form")
+
+    def test_new_request_on_dashboard(self):
+        """A new booking request shows on the dashboard until it is confirmed, whatever its date."""
+        if "carwash.dashboard" not in self.env:
+            self.skipTest("the dashboard isn't installed")
+        Dashboard = self.env["carwash.dashboard"]
+        lead = self._phone_request(carwash_booking_date=datetime.now() + timedelta(days=90))
+        requests = Dashboard._get_booking_requests(self.env.companies.ids)
+        self.assertIn(lead.id, [item["id"] for item in requests["items"]])
+        self.assertEqual(requests["items"][0]["id"], lead.id, "newest first")
+        lead.action_confirm_carwash_booking()
+        requests = Dashboard._get_booking_requests(self.env.companies.ids)
+        self.assertNotIn(lead.id, [item["id"] for item in requests["items"]])

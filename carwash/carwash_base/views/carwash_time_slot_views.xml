@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_carwash_time_slot_list" model="ir.ui.view">
+        <field name="name">carwash.time.slot.list</field>
+        <field name="model">carwash.time.slot</field>
+        <field name="arch" type="xml">
+            <list string="Time Slots" editable="bottom" multi_edit="1" sample="1" decoration-muted="not active">
+                <field name="hour" column_invisible="1"/>
+                <field name="hour_12" widget="float_time"/>
+                <field name="meridiem"/>
+                <field name="name" string="Shown As" class="fw-bold"/>
+                <field name="company_ids" widget="many2many_tags" placeholder="All branches" options="{'no_create': True}"
+                       groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- used by "Create and edit..." in the booking forms -->
+    <record id="view_carwash_time_slot_form" model="ir.ui.view">
+        <field name="name">carwash.time.slot.form</field>
+        <field name="model">carwash.time.slot</field>
+        <field name="arch" type="xml">
+            <form string="Time Slot" class="o_cw_form">
+                <sheet>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_info" invisible="hour &gt;= 12">
+                            <i class="fa fa-sun-o" title="Morning"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg o_cw_tile_warning" invisible="hour &lt; 12 or hour &gt;= 17">
+                            <i class="fa fa-sun-o" title="Afternoon"/>
+                        </span>
+                        <span class="o_cw_tile o_cw_tile_lg" invisible="hour &lt; 17">
+                            <i class="fa fa-moon-o" title="Evening"/>
+                        </span>
+                        <div class="oe_title">
+                            <label for="name" string="Shown As"/>
+                            <h1><field name="name"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip o_cw_chip_info" invisible="hour &gt;= 12">
+                                    <i class="fa fa-clock-o" title="Time of day"/> Morning
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_warning" invisible="hour &lt; 12 or hour &gt;= 17">
+                                    <i class="fa fa-clock-o" title="Time of day"/> Afternoon
+                                </span>
+                                <span class="o_cw_chip" invisible="hour &lt; 17">
+                                    <i class="fa fa-clock-o" title="Time of day"/> Evening
+                                </span>
+                                <span class="o_cw_chip o_cw_chip_muted" invisible="active">
+                                    <i class="fa fa-archive" title="Archived"/> Archived
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <group name="slot_details">
+                        <group string="Time" name="start_time">
+                            <field name="hour" invisible="1"/>
+                            <label for="hour_12" string="Start Time"/>
+                            <div class="o_row">
+                                <field name="hour_12" widget="float_time" class="oe_inline"/>
+                                <field name="meridiem" widget="radio" options="{'horizontal': true}" class="oe_inline"/>
+                            </div>
+                        </group>
+                        <group string="Availability" name="availability">
+                            <field name="company_ids" widget="many2many_tags" placeholder="All branches"
+                                   options="{'no_create': True}" groups="base.group_multi_company"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <div class="text-muted">
+                        <i class="fa fa-info-circle me-1" title="Info"/>Offered on a day when it fits the branch's working hours for the
+                        booking's duration and a bay is free.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_carwash_time_slot_search" model="ir.ui.view">
+        <field name="name">carwash.time.slot.search</field>
+        <field name="model">carwash.time.slot</field>
+        <field name="arch" type="xml">
+            <search string="Time Slots">
+                <field name="name"/>
+                <field name="company_ids"/>
+                <filter string="Morning" name="morning" domain="[('hour', '&lt;', 12)]"/>
+                <filter string="Afternoon" name="afternoon" domain="[('hour', '&gt;=', 12), ('hour', '&lt;', 17)]"/>
+                <filter string="Evening" name="evening" domain="[('hour', '&gt;=', 17)]"/>
+                <separator/>
+                <filter string="All Branches" name="all_branches" domain="[('company_ids', '=', False)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Branch" name="group_company" context="{'group_by': 'company_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_carwash_time_slot" model="ir.actions.act_window">
+        <field name="name">Time Slots</field>
+        <field name="res_model">carwash.time.slot</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a bookable start time</p>
+            <p>These are the start times staff can pick on a booking. A slot is only offered on a day
+                when it fits the branch's working hours for the booking's duration and a bay is free.
+                Archive the ones you don't offer; pick one or more Branches, or leave it empty to offer a slot at every branch.</p>
+        </field>
+    </record>
+</odoo>

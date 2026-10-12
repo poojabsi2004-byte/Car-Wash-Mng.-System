@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Kinds of checklist ("Used On" of a checklist template), editable in Configuration > Operations > Checklist Types -->
+    <record id="checklist_type_booking" model="carwash.checklist.type">
+        <field name="name">Booking Check-in</field>
+        <field name="applies_to">booking</field>
+        <field name="sequence">10</field>
+        <field name="description">Done at the counter when the vehicle arrives (Vehicle Arrived). Mandatory tasks must be ticked before the service can start.</field>
+    </record>
+    <record id="checklist_type_inspection" model="carwash.checklist.type">
+        <field name="name">Inspection</field>
+        <field name="applies_to">inspection</field>
+        <field name="sequence">20</field>
+        <field name="description">Pre-wash and post-wash inspections of the vehicle's condition. Mandatory checks must be ticked before the inspection can be completed.</field>
+    </record>
+    <record id="checklist_type_jobcard" model="carwash.checklist.type">
+        <field name="name">Job Card</field>
+        <field name="applies_to">jobcard</field>
+        <field name="sequence">30</field>
+        <field name="description">The crew's task list on the job card. Every task must be ticked before the job card goes to quality check.</field>
+    </record>
+</odoo>

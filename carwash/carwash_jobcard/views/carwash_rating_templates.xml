@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Opened from the star links of the 'your car wash is complete' email: 1-5 stars + a review -->
+    <template id="carwash_rating_page" name="Rate your car wash">
+        <t t-call="web.frontend_layout">
+            <style>
+                .o_cw_rate_stars { display: inline-flex; flex-direction: row-reverse; gap: 6px; }
+                .o_cw_rate_stars label { font-size: 2.6rem; line-height: 1; color: #ced4da; cursor: pointer; transition: color .15s ease, transform .15s ease; }
+                .o_cw_rate_stars input:checked ~ label,
+                .o_cw_rate_stars label:hover,
+                .o_cw_rate_stars label:hover ~ label { color: #f5a623; }
+                .o_cw_rate_stars label:hover { transform: scale(1.12); }
+            </style>
+            <div class="container py-5 o_cw_rating_page">
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6 text-center">
+                        <h1 class="h3 mb-1">How was your car wash?</h1>
+                        <p class="text-muted mb-1">
+                            <t t-out="booking.company_id.name"/> · booking <t t-out="booking.name"/>
+                            <t t-if="booking.vehicle_id.license_plate"> · <strong t-out="booking.vehicle_id.license_plate"/></t>
+                        </p>
+                        <p class="small text-muted" t-out="', '.join(booking.line_ids.filtered(lambda l: l.product_id and not l.is_discount_line).mapped('product_id.name'))"/>
+                        <div t-if="error" class="alert alert-warning mt-3">Choose a rating from 1 to 5 stars.</div>
+                        <form t-attf-action="/car-wash/rate/#{token}/submit" method="post" class="mt-4">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <div class="o_cw_rate_stars" role="radiogroup" aria-label="Rating">
+                                <t t-foreach="[5, 4, 3, 2, 1]" t-as="n">
+                                    <input type="radio" class="btn-check" name="stars" t-att-id="'cw_star_%s' % n"
+                                           t-att-value="n" t-att-checked="n == stars"/>
+                                    <label t-att-for="'cw_star_%s' % n" t-att-title="star_labels.get(str(n))">&#9733;</label>
+                                </t>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted mx-auto mt-1" style="max-width: 260px;">
+                                <span>Very poor</span><span>Excellent</span>
+                            </div>
+                            <label for="cw_feedback" class="form-label d-block text-start mt-4 fw-semibold">Your review</label>
+                            <textarea id="cw_feedback" name="feedback" class="form-control" rows="5"
+                                      placeholder="What did you like? What could we do better?"><t t-out="rating.feedback or ''"/></textarea>
+                            <button type="submit" class="btn btn-primary mt-4 px-4">Send review</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_carwash_membership" name="Memberships" parent="carwash_base.menu_carwash_customer_vehicle"
-              action="action_carwash_membership" groups="carwash_base.group_carwash_user" sequence="30"/>
+              action="action_carwash_membership" sequence="30"
+              groups="-carwash_base.group_carwash_user,carwash_membership.group_carwash_membership"/>
 
     <menuitem id="menu_carwash_config_membership_plan" name="Membership Plans"
-              parent="carwash_base.menu_carwash_config" action="action_carwash_membership_plan" sequence="50"/>
+              parent="carwash_base.menu_carwash_config_customers_head" action="action_carwash_membership_plan" groups="carwash_membership.group_carwash_membership" sequence="10"/>
 </odoo>

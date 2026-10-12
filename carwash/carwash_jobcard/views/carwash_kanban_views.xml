@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Inspections ===================== -->
+    <record id="view_carwash_inspection_kanban" model="ir.ui.view">
+        <field name="name">carwash.inspection.kanban</field>
+        <field name="model">carwash.inspection</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_cw_kanban" sample="1" quick_create="false">
+                <field name="state"/>
+                <field name="has_damage"/>
+                <field name="vehicle_id"/>
+                <progressbar field="state" colors='{"draft": "warning", "done": "success"}'/>
+                <templates>
+                    <t t-name="card">
+                        <!-- coloured left edge: damage first, then the state -->
+                        <span t-att-class="{
+                            'o_cw_tone_danger': record.has_damage.raw_value,
+                            'o_cw_tone_warning': !record.has_damage.raw_value and record.state.raw_value == 'draft',
+                            'o_cw_tone_success': !record.has_damage.raw_value and record.state.raw_value == 'done'
+                        }"/>
+                        <div class="o_cw_card_head">
+                            <div class="min-w-0">
+                                <field name="name" class="o_cw_card_title"/>
+                                <div class="o_cw_card_sub"><field name="inspection_type_id"/></div>
+                            </div>
+                            <span t-if="record.has_damage.raw_value" class="o_cw_chip o_cw_chip_danger">
+                                <i class="fa fa-exclamation-triangle" title="Damage found"/>Damage
+                            </span>
+                        </div>
+                        <div class="o_cw_meta">
+                            <div t-if="record.vehicle_id.raw_value">
+                                <i class="fa fa-car" title="Vehicle"/><field name="vehicle_id" class="o_cw_plate"/>
+                            </div>
+                            <div><i class="fa fa-calendar-check-o" title="Booking"/><field name="appointment_id"/></div>
+                        </div>
+                        <field name="checklist_progress" widget="progressbar" title="Checklist" groups="carwash_jobcard.group_carwash_checklist"/>
+                        <footer>
+                            <span class="text-nowrap"><i class="fa fa-clock-o me-1" title="Inspection date"/><field name="inspection_date" widget="date"/></span>
+                            <field name="inspector_id" widget="many2one_avatar_employee" class="ms-auto"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_inspection_type_kanban" model="ir.ui.view">
+        <field name="name">carwash.inspection.type.kanban</field>
+        <field name="model">carwash.inspection.type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <aside class="d-flex align-items-start me-3">
+                            <span class="o_cw_tile o_cw_tile_sm"><i class="fa fa-search" title="Inspection type"/></span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <field name="name" class="o_cw_card_title"/>
+                            <div class="o_cw_card_sub"><field name="description"/></div>
+                            <footer>
+                                <span><i class="fa fa-clipboard me-1" title="Inspections"/><field name="inspection_count"/> inspection(s)</span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== Checklist templates ===================== -->
+    <record id="view_carwash_checklist_template_kanban" model="ir.ui.view">
+        <field name="name">carwash.checklist.template.kanban</field>
+        <field name="model">carwash.checklist.template</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="checklist_type_id" class="o_cw_kanban" sample="1" quick_create="false">
+                <field name="is_default"/>
+                <field name="checklist_type"/>
+                <field name="inspection_type_id"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <span t-att-class="{'o_cw_tone_success': record.is_default.raw_value}"/>
+                        <aside class="d-flex align-items-start me-3">
+                            <span class="o_cw_tile o_cw_tile_sm">
+                                <i t-attf-class="fa {{ record.checklist_type.raw_value == 'booking' ? 'fa-calendar-check-o' : record.checklist_type.raw_value == 'inspection' ? 'fa-search' : 'fa-wrench' }}"
+                                   title="Checklist"/>
+                            </span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <div class="o_cw_card_head">
+                                <field name="name" class="o_cw_card_title"/>
+                                <span t-if="record.is_default.raw_value" class="o_cw_chip o_cw_chip_success">Automatic</span>
+                            </div>
+                            <div class="o_cw_meta">
+                                <div t-if="record.inspection_type_id.raw_value">
+                                    <i class="fa fa-search" title="Inspection type"/><field name="inspection_type_id"/>
+                                </div>
+                            </div>
+                            <field name="vehicle_type_ids" widget="many2many_tags" class="small"/>
+                            <footer>
+                                <span><i class="fa fa-repeat me-1" title="Usage"/>Used <field name="usage_count"/> time(s)</span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== Service packages ===================== -->
+    <record id="view_carwash_service_package_kanban" model="ir.ui.view">
+        <field name="name">carwash.service.package.kanban</field>
+        <field name="model">carwash.service.package</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="saving"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <aside class="d-flex align-items-start me-3">
+                            <span class="o_cw_tile"><i class="fa fa-gift" title="Service package"/></span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <div class="o_cw_card_head">
+                                <field name="name" class="o_cw_card_title"/>
+                                <span t-if="record.saving.raw_value" class="o_cw_chip o_cw_chip_success">Save <field name="saving"/></span>
+                            </div>
+                            <div class="mt-1">
+                                <field name="total_price" class="o_cw_kpi"/>
+                                <div class="o_cw_kpi_label">Package amount</div>
+                            </div>
+                            <div class="o_cw_meta">
+                                <div><i class="fa fa-list-ul" title="Services"/><span><field name="service_count"/> service(s)</span></div>
+                                <div><i class="fa fa-clock-o" title="Duration"/><span><field name="duration" widget="float_time"/> h</span></div>
+                            </div>
+                            <footer>
+                                <span><i class="fa fa-calendar-check-o me-1" title="Bookings"/><field name="booking_count"/> booking(s)</span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== Staff roles & commissions ===================== -->
+    <record id="view_carwash_staff_role_kanban" model="ir.ui.view">
+        <field name="name">carwash.staff.role.kanban</field>
+        <field name="model">carwash.staff.role</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1">
+                <field name="can_do_jobs"/>
+                <field name="can_do_qc"/>
+                <field name="commission_type"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <aside class="d-flex align-items-start me-3">
+                            <span class="o_cw_tile o_cw_tile_sm"><i class="fa fa-id-badge" title="Staff role"/></span>
+                        </aside>
+                        <main class="flex-grow-1 min-w-0">
+                            <field name="name" class="o_cw_card_title"/>
+                            <div class="d-flex flex-wrap gap-1 my-1">
+                                <span t-if="record.can_do_jobs.raw_value" class="o_cw_chip o_cw_chip_info">
+                                    <i class="fa fa-wrench" title="Job cards"/>Job cards
+                                </span>
+                                <span t-if="record.can_do_qc.raw_value" class="o_cw_chip o_cw_chip_warning">
+                                    <i class="fa fa-search" title="Quality checks"/>Quality checks
+                                </span>
+                            </div>
+                            <div class="o_cw_meta" groups="carwash_jobcard.group_carwash_commission">
+                                <div>
+                                    <i class="fa fa-money" title="Staff Payable"/>
+                                    <span>
+                                        <t t-if="record.commission_type.raw_value == 'percent'"><field name="commission_rate"/>% commission</t>
+                                        <t t-elif="record.commission_type.raw_value == 'fixed'"><field name="commission_fixed"/> per job</t>
+                                        <t t-else="">No commission</t>
+                                    </span>
+                                </div>
+                            </div>
+                            <footer>
+                                <span><i class="fa fa-users me-1" title="Staff"/><field name="employee_count"/> staff</span>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_carwash_staff_commission_kanban" model="ir.ui.view">
+        <field name="name">carwash.staff.commission.kanban</field>
+        <field name="model">carwash.staff.commission</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_cw_kanban" sample="1" quick_create="false" create="false">
+                <field name="state"/>
+                <field name="currency_id"/>
+                <progressbar field="state" colors='{"to_pay": "warning", "paid": "success", "cancelled": "200"}' sum_field="amount"/>
+                <templates>
+                    <t t-name="card">
+                        <span t-att-class="{
+                            'o_cw_tone_warning': record.state.raw_value == 'to_pay',
+                            'o_cw_tone_success': record.state.raw_value == 'paid',
+                            'o_cw_tone_muted': record.state.raw_value == 'cancelled'
+                        }"/>
+                        <div class="o_cw_card_head">
+                            <field name="employee_id" widget="many2one_avatar_employee" class="o_cw_card_title min-w-0"/>
+                            <field name="amount" widget="monetary" class="o_cw_kpi text-nowrap"/>
+                        </div>
+                        <div class="o_cw_meta">
+                            <div><i class="fa fa-wrench" title="Job card"/><field name="jobcard_id"/></div>
+                            <div><i class="fa fa-calendar-check-o" title="Booking"/><field name="appointment_id"/></div>
+                        </div>
+                        <footer>
+                            <span class="text-nowrap"><i class="fa fa-calendar me-1" title="Date"/><field name="date"/></span>
+                            <span class="o_cw_chip ms-auto"><field name="commission_type"/></span>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== Service lines (Revenue by Service) ===================== -->
+    <record id="view_carwash_appointment_line_kanban" model="ir.ui.view">
+        <field name="name">carwash.appointment.line.kanban</field>
+        <field name="model">carwash.appointment.line</field>
+        <field name="arch" type="xml">
+            <kanban class="o_cw_kanban" sample="1" create="false">
+                <field name="service_state"/>
+                <templates>
+                    <t t-name="card">
+                        <span t-att-class="{
+                            'o_cw_tone_muted': record.service_state.raw_value == 'pending',
+                            'o_cw_tone_info': record.service_state.raw_value == 'in_progress',
+                            'o_cw_tone_success': record.service_state.raw_value == 'done'
+                        }"/>
+                        <div class="o_cw_card_head">
+                            <field name="product_id" class="o_cw_card_title"/>
+                            <field name="price_subtotal" class="o_cw_kpi text-nowrap"/>
+                        </div>
+                        <div class="o_cw_card_sub"><i class="fa fa-calendar-check-o me-1" title="Booking"/><field name="appointment_id"/></div>
+                        <footer>
+                            <span>Qty <field name="quantity"/></span>
+                            <field name="service_state" widget="badge" class="ms-auto"
+                                   decoration-info="service_state == 'in_progress'" decoration-success="service_state == 'done'"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

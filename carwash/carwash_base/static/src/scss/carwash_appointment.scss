@@ -183,8 +183,8 @@ $cw-primary-active: darken($cw-primary, 10%);
     }
 }
 
-// Car Wash app navbar - same brand colour as the workflow buttons
-body.o_cw_app .o_main_navbar {
+// Top navbar of every app - the car wash brand colour (see primary_variables.scss) with light entries
+.o_main_navbar {
     --NavBar-entry-backgroundColor: transparent;
     --NavBar-entry-backgroundColor--hover: rgba(255, 255, 255, 0.14);
     --NavBar-entry-backgroundColor--focus: rgba(255, 255, 255, 0.14);

@@ -4,15 +4,23 @@
         <field name="name">carwash.membership.list</field>
         <field name="model">carwash.membership</field>
         <field name="arch" type="xml">
-            <list string="Memberships">
+            <list string="Memberships" sample="1" decoration-muted="state == 'cancelled'">
                 <field name="name"/>
-                <field name="partner_id"/>
+                <field name="partner_id" widget="many2one_avatar"/>
                 <field name="plan_id"/>
-                <field name="valid_until"/>
-                <field name="next_billing_date"/>
+                <field name="billing_period" widget="badge" decoration-info="billing_period == 'yearly'"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="start_date" optional="show"/>
+                <field name="valid_until" optional="show"/>
+                <field name="expiry_date" widget="remaining_days" optional="show" invisible="state != 'active'"/>
+                <field name="next_billing_date" optional="hide"/>
                 <field name="auto_renew" optional="hide"/>
-                <field name="washes_used"/>
-                <field name="washes_remaining"/>
+                <field name="wash_allowance" column_invisible="1"/>
+                <field name="washes_used" optional="show"/>
+                <field name="washes_remaining" invisible="wash_allowance == 0"
+                       decoration-danger="state == 'active' and washes_remaining == 0" decoration-bf="state == 'active'"/>
+                <field name="company_id" string="Branch" optional="hide" groups="base.group_multi_company"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'pending'"
                        decoration-success="state == 'active'"
@@ -26,14 +34,13 @@
         <field name="name">carwash.membership.form</field>
         <field name="model">carwash.membership</field>
         <field name="arch" type="xml">
-            <form string="Membership">
+            <form string="Membership" class="o_cw_form">
                 <header>
-                    <button name="action_request_payment" type="object" string="Request Payment" icon="fa-envelope"
-                            class="btn-primary" invisible="state == 'cancelled'"
-                            groups="carwash_base.group_carwash_user"
-                            help="Email the customer the billing order - they pay online and the membership activates."/>
+                    <!-- to activate a new membership, renew an expired one, or pay the renewal raised near the end of
+                         an active one - not for an active membership with nothing to pay -->
                     <button name="action_create_invoice" type="object" string="Create Invoice" icon="fa-file-text-o"
-                            invisible="state == 'cancelled'"
+                            class="btn-primary"
+                            invisible="state not in ('pending', 'expired') and not (state == 'active' and pending_order_id)"
                             groups="carwash_base.group_carwash_user"
                             help="Invoice the billing order - registering its payment activates the membership."/>
                     <button name="action_cancel" type="object" string="Cancel"
@@ -42,7 +49,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="pending,active,expired"/>
                 </header>
                 <div class="alert alert-info mb-0" role="alert" invisible="state != 'pending'">
-                    <i class="fa fa-info-circle me-1"/> This membership activates as soon as its billing order is paid -
+                    <i class="fa fa-info-circle me-1" title="Info"/> This membership activates as soon as its billing order is paid -
                     online from the customer portal, or in the backend by registering the invoice payment.
                 </div>
                 <sheet>
@@ -65,26 +72,72 @@
                             <field name="appointment_count" widget="statinfo" string="Bookings"/>
                         </button>
                     </div>
-                    <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                    <widget name="web_ribbon" title="Expired" bg_color="text-bg-warning" invisible="state != 'expired'"/>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-danger" invisible="state != 'cancelled'"/>
+                    <field name="pending_order_id" invisible="1"/>
+                    <div class="o_cw_hero">
+                        <span class="o_cw_tile o_cw_tile_lg"><i class="fa fa-id-card-o" title="Membership"/></span>
+                        <div class="oe_title">
+                            <label for="name" string="Membership"/>
+                            <h1><field name="name" readonly="1"/></h1>
+                            <div class="o_cw_hero_chips">
+                                <span class="o_cw_chip" invisible="not partner_id"><i class="fa fa-user" title="Customer"/><field name="partner_id" readonly="1" nolabel="1" options="{'no_open': True}"/></span>
+                                <span class="o_cw_chip o_cw_chip_info" invisible="not plan_id"><i class="fa fa-star" title="Plan"/><field name="plan_id" readonly="1" nolabel="1" options="{'no_open': True}"/></span>
+                                <span class="o_cw_chip" invisible="not plan_id"><i class="fa fa-refresh" title="Billing"/><field name="billing_period" readonly="1" nolabel="1"/></span>
+                                <span class="o_cw_chip o_cw_chip_success" invisible="not auto_renew or state == 'cancelled'"><i class="fa fa-refresh" title="Auto-renew"/>Auto-renew</span>
+                            </div>
+                        </div>
+                        <div class="o_cw_hero_kpis" invisible="not plan_id">
+                            <div class="o_cw_hero_kpi" invisible="wash_allowance == 0">
+                                <field name="washes_remaining" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">Free washes left</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="wash_allowance != 0">
+                                <span class="o_cw_hero_kpi_value">Unlimited</span>
+                                <span class="o_cw_hero_kpi_label">Free washes</span>
+                            </div>
+                            <div class="o_cw_hero_kpi">
+                                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label" invisible="billing_period != 'monthly'">Per month</span>
+                                <span class="o_cw_hero_kpi_label" invisible="billing_period != 'yearly'">Per year</span>
+                            </div>
+                            <div class="o_cw_hero_kpi" invisible="not valid_until">
+                                <field name="valid_until" widget="date" class="o_cw_hero_kpi_value"/>
+                                <span class="o_cw_hero_kpi_label">End date</span>
+                            </div>
+                        </div>
                     </div>
                     <group>
-                        <group>
+                        <group string="Member">
                             <field name="partner_id"/>
-                            <field name="plan_id"/>
-                            <field name="pending_order_id" invisible="1"/>
-                            <field name="start_date"/>
-                            <field name="period_start" string="Current Period"/>
-                            <field name="valid_until"/>
-                            <field name="paid_until"/>
-                            <field name="next_billing_date"/>
+                            <!-- plan and billing are fixed once the membership has been paid -->
+                            <field name="plan_id" readonly="state != 'pending'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="billing_period" widget="radio" options="{'horizontal': true}"
+                                   readonly="state != 'pending'"/>
+                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                             <field name="auto_renew" widget="boolean_toggle" invisible="state == 'cancelled'"/>
                         </group>
-                        <group>
+                        <group string="Validity">
+                            <field name="start_date" placeholder="Set when paid"/>
+                            <field name="valid_until" placeholder="Start date + 1 month / 1 year"/>
+                            <field name="expiry_date" placeholder="The day after the end date"/>
+                            <field name="next_billing_date" invisible="state not in ('active', 'pending')"/>
+                            <div class="text-muted small" colspan="2">
+                                <i class="fa fa-info-circle me-1" title="Info"/>Paid today: starts today, ends the same day next month
+                                (Monthly) or next year (Yearly) and expires automatically the day after, unless the renewal is paid.
+                                A renewal paid in time adds one month / year to the end date.
+                            </div>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Free Washes (this month)">
                             <field name="wash_allowance" readonly="1"/>
                             <field name="washes_used"/>
                             <field name="washes_reserved"/>
                             <field name="washes_remaining" invisible="wash_allowance == 0"/>
+                        </group>
+                        <group string="Member Discount" invisible="not discount_percent">
                             <field name="discount_percent" invisible="not discount_percent"/>
                         </group>
                     </group>
@@ -98,31 +151,54 @@
         <field name="name">carwash.membership.kanban</field>
         <field name="model">carwash.membership</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="state" class="o_kanban_small_column">
+            <kanban default_group_by="state" class="o_kanban_small_column o_cw_kanban" sample="1" quick_create="false">
                 <field name="state"/>
+                <field name="wash_allowance"/>
+                <field name="auto_renew"/>
+                <field name="currency_id"/>
                 <templates>
                     <t t-name="card">
-                        <main t-att-class="'border-start border-4 ps-2 ' + (
-                            record.state.raw_value === 'active' ? 'border-success' :
-                            record.state.raw_value === 'pending' ? 'border-info' :
-                            record.state.raw_value === 'expired' ? 'border-warning' :
-                            'border-danger'
-                        )">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong><field name="name"/></strong>
-                                <i t-att-class="'fa fa-fw text-muted ' + (
-                                    record.state.raw_value === 'active' ? 'fa-check-circle-o' :
-                                    record.state.raw_value === 'pending' ? 'fa-hourglass-half' :
-                                    record.state.raw_value === 'expired' ? 'fa-clock-o' :
-                                    'fa-ban'
-                                )" t-att-title="record.state.raw_value"/>
+                        <span t-att-class="{
+                            'o_cw_tone_info': record.state.raw_value === 'pending',
+                            'o_cw_tone_success': record.state.raw_value === 'active',
+                            'o_cw_tone_warning': record.state.raw_value === 'expired',
+                            'o_cw_tone_danger': record.state.raw_value === 'cancelled'
+                        }"/>
+                        <div class="o_cw_card_head">
+                            <div class="min-w-0">
+                                <field name="partner_id" class="o_cw_card_title d-block"/>
+                                <div class="o_cw_card_sub"><field name="name"/></div>
                             </div>
-                            <field name="partner_id"/>
-                            <field name="plan_id"/>
-                            <div class="text-muted">
-                                Next billing: <field name="next_billing_date"/>
+                            <field name="state" widget="badge" class="small"
+                                   decoration-info="state == 'pending'"
+                                   decoration-success="state == 'active'"
+                                   decoration-danger="state == 'cancelled'"
+                                   decoration-warning="state == 'expired'"/>
+                        </div>
+                        <div class="o_cw_meta">
+                            <div><i class="fa fa-id-card-o" title="Plan"/><field name="plan_id"/>
+                                <span class="text-muted">· <field name="billing_period"/> ·</span>
+                                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                             </div>
-                        </main>
+                            <div t-if="record.start_date.raw_value">
+                                <i class="fa fa-calendar" title="Start - end date"/><field name="start_date"/> → <field name="valid_until"/>
+                            </div>
+                            <div t-if="record.expiry_date.raw_value and record.state.raw_value === 'active'">
+                                <i class="fa fa-hourglass-end" title="Expires on"/>Expires <field name="expiry_date"/>
+                            </div>
+                            <div t-elif="record.valid_until.raw_value and record.state.raw_value === 'expired'">
+                                <i class="fa fa-hourglass-end" title="Expired on"/>Expired on <field name="expiry_date"/>
+                            </div>
+                        </div>
+                        <footer>
+                            <span t-if="record.wash_allowance.raw_value">
+                                <i class="fa fa-tint me-1" title="Free washes left"/><b><field name="washes_remaining"/></b> / <field name="wash_allowance"/> free washes left
+                            </span>
+                            <span t-else=""><i class="fa fa-tint me-1" title="Free washes"/>Unlimited free washes</span>
+                            <span t-if="record.auto_renew.raw_value and record.state.raw_value !== 'cancelled'" class="ms-auto">
+                                <i class="fa fa-refresh" title="Auto-renew"/>
+                            </span>
+                        </footer>
                     </t>
                 </templates>
             </kanban>
@@ -138,8 +214,15 @@
                 <field name="plan_id"/>
                 <filter string="Active" name="active_only" domain="[('state', '=', 'active')]"/>
                 <filter string="Pending Payment" name="pending" domain="[('state', '=', 'pending')]"/>
+                <separator/>
+                <filter string="Monthly" name="monthly" domain="[('billing_period', '=', 'monthly')]"/>
+                <filter string="Yearly" name="yearly" domain="[('billing_period', '=', 'yearly')]"/>
+                <separator/>
+                <filter string="Ending in 7 Days" name="ending_soon"
+                        domain="[('state', '=', 'active'), ('valid_until', '&lt;=', (context_today() + relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
                 <group>
                     <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
+                    <filter string="Billing" name="group_billing" context="{'group_by': 'billing_period'}"/>
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
                 </group>
             </search>

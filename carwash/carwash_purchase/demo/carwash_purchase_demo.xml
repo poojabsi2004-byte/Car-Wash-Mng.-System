@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Sample suppliers (one per category) with their prices - demo databases only -->
+    <record id="demo_supplier_aquashine" model="res.partner">
+        <field name="name">AquaShine Chemicals</field>
+        <field name="is_company" eval="True"/>
+        <field name="supplier_rank">1</field>
+        <field name="city">Ahmedabad</field>
+        <field name="state_id" ref="base.state_in_gj"/>
+        <field name="country_id" ref="base.in"/>
+        <field name="zip">380015</field>
+        <field name="vat">24AABCA1234A1ZP</field>
+        <field name="l10n_in_gst_treatment">regular</field>
+        <field name="phone">+91 79 4000 1200</field>
+        <field name="email">orders@aquashine.example.com</field>
+    </record>
+    <record id="demo_supplier_prowash" model="res.partner">
+        <field name="name">ProWash Equipment</field>
+        <field name="is_company" eval="True"/>
+        <field name="supplier_rank">1</field>
+        <field name="city">Pune</field>
+        <field name="state_id" ref="base.state_in_mh"/>
+        <field name="country_id" ref="base.in"/>
+        <field name="zip">411001</field>
+        <field name="vat">27AABCP5678B1ZE</field>
+        <field name="l10n_in_gst_treatment">regular</field>
+        <field name="phone">+91 20 6600 4500</field>
+        <field name="email">sales@prowash.example.com</field>
+    </record>
+    <record id="demo_supplier_baycare" model="res.partner">
+        <field name="name">BayCare Services</field>
+        <field name="is_company" eval="True"/>
+        <field name="supplier_rank">1</field>
+        <field name="city">Ahmedabad</field>
+        <field name="state_id" ref="base.state_in_gj"/>
+        <field name="country_id" ref="base.in"/>
+        <field name="zip">380009</field>
+        <field name="vat">24AABCB9012C1ZC</field>
+        <field name="l10n_in_gst_treatment">regular</field>
+        <field name="phone">+91 98250 11223</field>
+        <field name="email">service@baycare.example.com</field>
+    </record>
+    <record id="demo_supplier_price_1" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_aquashine"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_base.demo_material_shampoo').product_tmpl_id.id"/>
+        <field name="price">450</field>
+        <field name="min_qty">5</field>
+        <field name="delay">3</field>
+    </record>
+    <record id="demo_supplier_price_2" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_aquashine"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_base.demo_material_wax').product_tmpl_id.id"/>
+        <field name="price">650</field>
+        <field name="min_qty">5</field>
+        <field name="delay">3</field>
+    </record>
+    <record id="demo_supplier_price_3" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_aquashine"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_base.demo_material_cloth').product_tmpl_id.id"/>
+        <field name="price">60</field>
+        <field name="min_qty">20</field>
+        <field name="delay">3</field>
+    </record>
+    <record id="demo_supplier_price_4" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_aquashine"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_base.demo_material_tire_shine').product_tmpl_id.id"/>
+        <field name="price">380</field>
+        <field name="min_qty">5</field>
+        <field name="delay">3</field>
+    </record>
+    <record id="demo_supplier_price_5" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_aquashine"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_base.demo_material_headlight_compound').product_tmpl_id.id"/>
+        <field name="price">520</field>
+        <field name="min_qty">2</field>
+        <field name="delay">3</field>
+    </record>
+    <record id="demo_supplier_price_6" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_prowash"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_nozzle_kit').product_tmpl_id.id"/>
+        <field name="price">1450</field>
+        <field name="min_qty">1</field>
+        <field name="delay">7</field>
+    </record>
+    <record id="demo_supplier_price_7" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_prowash"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_foam_lance').product_tmpl_id.id"/>
+        <field name="price">2400</field>
+        <field name="min_qty">1</field>
+        <field name="delay">7</field>
+    </record>
+    <record id="demo_supplier_price_8" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_prowash"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_pressure_washer').product_tmpl_id.id"/>
+        <field name="price">43500</field>
+        <field name="min_qty">1</field>
+        <field name="delay">10</field>
+    </record>
+    <record id="demo_supplier_price_9" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_prowash"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_vacuum_cleaner').product_tmpl_id.id"/>
+        <field name="price">11800</field>
+        <field name="min_qty">1</field>
+        <field name="delay">10</field>
+    </record>
+    <record id="demo_supplier_price_10" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_baycare"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_bay_maintenance').product_tmpl_id.id"/>
+        <field name="price">2000</field>
+        <field name="min_qty">1</field>
+        <field name="delay">1</field>
+    </record>
+    <record id="demo_supplier_price_11" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_baycare"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_pressure_washer_repair').product_tmpl_id.id"/>
+        <field name="price">3500</field>
+        <field name="min_qty">1</field>
+        <field name="delay">2</field>
+    </record>
+    <record id="demo_supplier_price_12" model="product.supplierinfo">
+        <field name="partner_id" ref="demo_supplier_baycare"/>
+        <field name="product_tmpl_id" model="product.product" eval="obj().env.ref('carwash_purchase.product_plumbing_repair').product_tmpl_id.id"/>
+        <field name="price">2500</field>
+        <field name="min_qty">1</field>
+        <field name="delay">1</field>
+    </record>
+</odoo>

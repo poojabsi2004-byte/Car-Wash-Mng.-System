@@ -4,7 +4,7 @@
         <field name="name">carwash.appointment.graph</field>
         <field name="model">carwash.appointment</field>
         <field name="arch" type="xml">
-            <graph string="Wash Volume" type="bar">
+            <graph string="Wash Volume" type="bar" sample="1">
                 <field name="appointment_date" interval="day"/>
                 <field name="state"/>
             </graph>
@@ -15,7 +15,7 @@
         <field name="name">carwash.appointment.pivot</field>
         <field name="model">carwash.appointment</field>
         <field name="arch" type="xml">
-            <pivot string="Wash Analysis">
+            <pivot string="Wash Analysis" sample="1">
                 <field name="appointment_date" type="row" interval="day"/>
                 <field name="state" type="col"/>
                 <field name="amount_total" type="measure"/>
@@ -26,7 +26,7 @@
     <record id="action_carwash_dashboard" model="ir.actions.act_window">
         <field name="name">Wash Analysis</field>
         <field name="res_model">carwash.appointment</field>
-        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_mode">graph,pivot,list,kanban,calendar</field>
         <field name="context">{'search_default_active_queue': 0}</field>
     </record>
 
@@ -34,7 +34,7 @@
         <field name="name">carwash.jobcard.graph</field>
         <field name="model">carwash.jobcard</field>
         <field name="arch" type="xml">
-            <graph string="Employee Productivity" type="bar">
+            <graph string="Employee Productivity" type="bar" sample="1">
                 <field name="assigned_employee_ids"/>
                 <field name="stages"/>
             </graph>
@@ -45,7 +45,7 @@
         <field name="name">carwash.jobcard.pivot</field>
         <field name="model">carwash.jobcard</field>
         <field name="arch" type="xml">
-            <pivot string="Employee Productivity">
+            <pivot string="Employee Productivity" sample="1">
                 <field name="assigned_employee_ids" type="row"/>
                 <field name="stages" type="col"/>
             </pivot>
@@ -62,7 +62,7 @@
         <field name="name">carwash.appointment.line.graph</field>
         <field name="model">carwash.appointment.line</field>
         <field name="arch" type="xml">
-            <graph string="Revenue by Service" type="bar">
+            <graph string="Revenue by Service" type="bar" sample="1">
                 <field name="product_id"/>
                 <field name="price_subtotal" type="measure"/>
             </graph>
@@ -73,7 +73,7 @@
         <field name="name">carwash.appointment.line.pivot</field>
         <field name="model">carwash.appointment.line</field>
         <field name="arch" type="xml">
-            <pivot string="Revenue by Service">
+            <pivot string="Revenue by Service" sample="1">
                 <field name="product_id" type="row"/>
                 <field name="price_subtotal" type="measure"/>
                 <field name="quantity" type="measure"/>
@@ -84,7 +84,7 @@
     <record id="action_carwash_revenue_by_service" model="ir.actions.act_window">
         <field name="name">Revenue by Service</field>
         <field name="res_model">carwash.appointment.line</field>
-        <field name="view_mode">graph,pivot</field>
+        <field name="view_mode">graph,pivot,kanban</field>
         <field name="domain">[('appointment_id.state', '=', 'done')]</field>
     </record>
 </odoo>

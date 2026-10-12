@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Return to the supplier: why -->
+    <record id="view_stock_return_picking_form_carwash" model="ir.ui.view">
+        <field name="name">stock.return.picking.form.carwash</field>
+        <field name="model">stock.return.picking</field>
+        <field name="inherit_id" ref="stock.view_stock_return_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_return_moves']" position="before">
+                <group string="Return to Supplier" invisible="picking_type_code != 'incoming'">
+                    <field name="picking_type_code" invisible="1"/>
+                    <field name="carwash_return_reason" required="picking_type_code == 'incoming'"/>
+                    <field name="carwash_return_note" placeholder="e.g. 3 cans leaking, batch expired 08/2026"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_picking_form_carwash" model="ir.ui.view">
+        <field name="name">stock.picking.form.carwash</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="carwash_return_reason" widget="badge" invisible="not carwash_return_reason"
+                       decoration-danger="carwash_return_reason in ('damaged', 'expired')"
+                       decoration-warning="carwash_return_reason in ('wrong', 'quality')"
+                       decoration-info="carwash_return_reason in ('excess', 'other')"/>
+                <field name="carwash_return_note" invisible="not carwash_return_note"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Returns to Suppliers: Odoo's transfer list (all its buttons and columns) with the reason of the return -->
+    <record id="view_carwash_supplier_return_list" model="ir.ui.view">
+        <field name="name">stock.picking.list.carwash.supplier.return</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="mode">primary</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="string">Returns to Suppliers</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="string">Supplier</attribute>
+                <attribute name="widget">many2one_avatar</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="carwash_return_reason" widget="badge"
+                       decoration-danger="carwash_return_reason in ('damaged', 'expired')"
+                       decoration-warning="carwash_return_reason in ('wrong', 'quality')"
+                       decoration-info="carwash_return_reason in ('excess', 'other')"/>
+                <field name="carwash_return_note" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='date_done']" position="attributes">
+                <attribute name="string">Returned On</attribute>
+                <attribute name="optional">show</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Purchases > Receipts: goods coming from the suppliers to the branch -->
+    <record id="action_carwash_receipt" model="ir.actions.act_window">
+        <field name="name">Receipts</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('picking_type_code', '=', 'incoming')]</field>
+        <field name="context">{'contact_display': 'partner_address', 'search_default_available': 1, 'restricted_picking_type_code': 'incoming'}</field>
+        <field name="search_view_id" ref="stock.view_picking_internal_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No goods to receive</p>
+            <p>A confirmed purchase order creates the receipt. When the delivery arrives, check the quantities and
+                Validate. Delivered less? Validate and keep the rest as a backorder. Damaged or wrong goods: Return them.</p>
+        </field>
+    </record>
+
+    <record id="action_carwash_supplier_return" model="ir.actions.act_window">
+        <field name="name">Returns to Vendors</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('carwash_return_reason', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_carwash_supplier_return_list')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No returns</p>
+            <p>Return damaged, expired or wrong goods from their receipt (Return button) with a reason; then create
+                the credit note from the purchase order.</p>
+        </field>
+    </record>
+</odoo>

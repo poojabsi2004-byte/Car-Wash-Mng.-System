@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- A4 with room for the Car Wash letterhead and footer -->
+    <record id="paperformat_carwash_a4" model="report.paperformat">
+        <field name="name">Car Wash A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">40</field>
+        <field name="margin_bottom">28</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">35</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- Used when the server's wkhtmltopdf is the unpatched build (it can't print page headers /
+         footers): the letterhead is printed at the top of the document, and the footer is drawn
+         into the 20 mm bottom margin of every page afterwards (models/carwash_report_footer.py). -->
+    <record id="paperformat_carwash_a4_inline" model="report.paperformat">
+        <field name="name">Car Wash A4 (letterhead in page)</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">20</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <template id="carwash_letterhead_content">
+        <table class="o_cw_lh">
+            <tr>
+                <td class="o_cw_lh_logo">
+                    <img t-if="brand['logo']" t-att-src="image_data_uri(brand['logo'])"
+                         t-attf-class="{{'o_cw_lh_emblem' if brand['is_emblem'] else 'o_cw_lh_img'}}" alt="Logo"/>
+                </td>
+                <td class="o_cw_lh_brand">
+                    <div class="o_cw_lh_name" t-esc="brand['name']"/>
+                    <div t-if="brand['tagline']" class="o_cw_lh_tagline" t-esc="brand['tagline']"/>
+                    <div t-if="brand['vat']" class="o_cw_lh_vat">
+                        <t t-esc="brand['vat_label']"/>: <strong t-esc="brand['vat']"/>
+                    </div>
+                </td>
+                <td class="o_cw_lh_contact">
+                    <div t-foreach="brand['address_lines']" t-as="line">
+                        <t t-if="line_first"><i class="fa fa-map-marker"/> </t><t t-esc="line"/>
+                    </div>
+                    <div t-if="brand['phone']"><i class="fa fa-phone"/> <t t-esc="brand['phone']"/></div>
+                    <div t-if="brand['email']"><i class="fa fa-envelope"/> <t t-esc="brand['email']"/></div>
+                    <div t-if="brand['website']"><i class="fa fa-globe"/> <t t-esc="brand['website']"/></div>
+                </td>
+            </tr>
+        </table>
+        <div class="o_cw_lh_bar"><div/></div>
+    </template>
+
+    <template id="carwash_letterfoot_content">
+        <table class="o_cw_lf">
+            <tr>
+                <td class="o_cw_lf_company">
+                    <strong t-esc="brand['name']"/>
+                    <t t-if="brand['phone']"><span class="o_cw_lf_sep">|</span><i class="fa fa-phone"/> <t t-esc="brand['phone']"/></t>
+                    <t t-if="brand['email']"><span class="o_cw_lf_sep">|</span><i class="fa fa-envelope"/> <t t-esc="brand['email']"/></t>
+                    <t t-if="brand['website']"><span class="o_cw_lf_sep">|</span><i class="fa fa-globe"/> <t t-esc="brand['website']"/></t>
+                    <div t-if="brand['footer_note']" class="o_cw_lf_note" t-esc="brand['footer_note']"/>
+                    <div t-else="" class="o_cw_lf_note">This is a computer-generated document.</div>
+                </td>
+                <td class="o_cw_lf_page">
+                    <div t-if="cw_doc_ref" class="o_cw_lf_ref" t-esc="cw_doc_ref"/>
+                    <div t-if="report_type == 'pdf' and cw_page_letterhead">Page <span class="page"/> of <span class="topage"/></div>
+                    <div class="o_cw_lf_printed">Printed <t t-esc="brand['printed_at']"/></div>
+                </td>
+            </tr>
+        </table>
+    </template>
+
+    <!-- Car Wash letterhead: branch logo, name, address and contacts in the header;
+         contacts, document reference and page numbers in the footer.
+         Works without Odoo's "Configure your document layout". Use it like web.external_layout
+         (the printed record is `o`; set `cw_doc_ref` to change the reference shown in the footer). -->
+    <template id="carwash_external_layout">
+        <t t-if="not o" t-set="o" t-value="doc"/>
+        <t t-if="not company">
+            <t t-if="company_id">
+                <t t-set="company" t-value="company_id"/>
+            </t>
+            <t t-elif="o and 'company_id' in o and o.company_id.sudo()">
+                <t t-set="company" t-value="o.company_id.sudo()"/>
+            </t>
+            <t t-else="">
+                <t t-set="company" t-value="res_company"/>
+            </t>
+        </t>
+        <t t-set="brand" t-value="company._carwash_report_details()"/>
+        <t t-if="not cw_doc_ref" t-set="cw_doc_ref" t-value="o and o.display_name"/>
+        <!-- repeat on every page when wkhtmltopdf supports it (always in the HTML preview) -->
+        <t t-set="cw_page_letterhead" t-value="report_type != 'pdf' or env['ir.actions.report']._carwash_page_letterhead()"/>
+
+        <div t-if="cw_page_letterhead" class="header o_cw_letterhead">
+            <t t-call="carwash_base.carwash_letterhead_content"/>
+        </div>
+
+        <div class="article o_report_layout_standard o_cw_article"
+             t-att-data-oe-model="o and o._name"
+             t-att-data-oe-id="o and o.id"
+             t-att-data-oe-lang="o and o.env.context.get('lang')">
+            <div t-if="not cw_page_letterhead" class="o_cw_letterhead o_cw_letterhead_inline">
+                <t t-call="carwash_base.carwash_letterhead_content"/>
+            </div>
+            <t t-out="0"/>
+        </div>
+
+        <div t-if="cw_page_letterhead" class="footer o_cw_letterfoot">
+            <t t-call="carwash_base.carwash_letterfoot_content"/>
+        </div>
+    </template>
+</odoo>

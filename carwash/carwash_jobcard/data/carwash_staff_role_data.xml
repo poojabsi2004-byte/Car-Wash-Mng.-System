@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Default staff roles - edit names, staff payables and add your own under
+         Configuration > Staff Roles. Staff Payable % is of the booking's service value,
+         shared between the staff on the job card. -->
+    <record id="staff_role_washer" model="carwash.staff.role">
+        <field name="name">Washer</field>
+        <field name="sequence">10</field>
+        <field name="color">4</field>
+        <field name="can_do_jobs" eval="True"/>
+        <field name="commission_type">percent</field>
+        <field name="commission_rate">5</field>
+        <field name="description">Exterior and interior washing.</field>
+    </record>
+    <record id="staff_role_detailer" model="carwash.staff.role">
+        <field name="name">Detailer</field>
+        <field name="sequence">20</field>
+        <field name="color">10</field>
+        <field name="can_do_jobs" eval="True"/>
+        <field name="commission_type">percent</field>
+        <field name="commission_rate">10</field>
+        <field name="description">Polishing, waxing, ceramic coating and full detailing.</field>
+    </record>
+    <record id="staff_role_qc" model="carwash.staff.role">
+        <field name="name">QC Inspector</field>
+        <field name="sequence">30</field>
+        <field name="color">2</field>
+        <field name="can_do_qc" eval="True"/>
+        <field name="description">Checks finished jobs before the vehicle is handed back.</field>
+    </record>
+    <record id="staff_role_front_desk" model="carwash.staff.role">
+        <field name="name">Front Desk</field>
+        <field name="sequence">40</field>
+        <field name="color">6</field>
+        <field name="description">Bookings, vehicle check-in and handover.</field>
+    </record>
+    <record id="staff_role_supervisor" model="carwash.staff.role">
+        <field name="name">Supervisor</field>
+        <field name="sequence">50</field>
+        <field name="color">1</field>
+        <field name="can_do_jobs" eval="True"/>
+        <field name="can_do_qc" eval="True"/>
+        <field name="description">Runs the floor - can work on jobs and do quality checks.</field>
+    </record>
+</odoo>

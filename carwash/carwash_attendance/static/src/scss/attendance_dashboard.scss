@@ -1,0 +1,294 @@
+// "Staff Attendance" section of the Car Wash dashboard - uses the dashboard's theme tokens
+.o_cwd .o_cwa {
+    $gap: 14px;
+    $visible: 5; // keep in sync with ATTENDANCE_VISIBLE in attendance_dashboard.js
+
+    .o_cwa_actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .o_cwa_nav {
+        display: flex;
+        gap: 6px;
+    }
+
+    .o_cwa_arrow {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1px solid var(--cw-border);
+        background: var(--cw-surface-solid);
+        color: var(--cw-ink);
+        display: inline-grid;
+        place-items: center;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+
+        &:hover {
+            background: var(--cw-aqua);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+    }
+
+    .o_cwa_link {
+        border: 0;
+        background: transparent;
+        color: var(--cw-aqua);
+        font-weight: 600;
+        padding: 4px 0;
+    }
+
+    .o_cwa_stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin: 4px 0 16px;
+    }
+
+    .o_cwa_stat {
+        border: 1px solid var(--cw-border);
+        border-radius: 12px;
+        background: var(--cw-surface-2);
+        padding: 10px 14px;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        color: var(--cw-ink);
+
+        strong {
+            font-size: 1.35rem;
+            line-height: 1.2;
+        }
+
+        span {
+            color: var(--cw-muted);
+            font-size: 0.8rem;
+        }
+    }
+
+    button.o_cwa_stat:hover {
+        box-shadow: var(--cw-shadow-hover);
+    }
+
+    .o_cwa_stat_in strong { color: var(--cw-teal); }
+    .o_cwa_stat_absent strong { color: var(--cw-amber); }
+
+    .o_cwa_track {
+        display: flex;
+        gap: $gap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        padding: 2px 2px 6px;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    // more than five people in: fade the right edge as a hint there is more to slide to
+    .o_cwa_track_more {
+        mask-image: linear-gradient(90deg, #000 92%, transparent);
+    }
+
+    .o_cwa_card {
+        flex: 0 0 calc((100% - #{($visible - 1)} * #{$gap}) / #{$visible});
+        scroll-snap-align: start;
+        border: 1px solid var(--cw-border);
+        border-radius: 14px;
+        background: var(--cw-surface-solid);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+        min-width: 0;
+        transition: box-shadow 0.25s ease, transform 0.25s ease;
+        animation: cwd-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        animation-delay: calc(var(--cw-i, 0) * 45ms + 150ms);
+
+        &:hover {
+            box-shadow: var(--cw-shadow-hover);
+            transform: translateY(-2px);
+        }
+    }
+
+    .o_cwa_card_top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    .o_cwa_avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: inline-grid;
+        place-items: center;
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--cw-teal), var(--cw-aqua));
+    }
+
+    .o_cwa_live {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--cw-teal);
+        box-shadow: 0 0 0 4px var(--cw-teal-soft);
+    }
+
+    .o_cwa_name {
+        color: var(--cw-ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .o_cwa_role {
+        color: var(--cw-muted);
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .o_cwa_time {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--cw-ink);
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+
+    .o_cwa_dur {
+        margin-left: auto;
+        font-weight: 700;
+        color: var(--cw-teal);
+    }
+
+    .o_cwa_branch {
+        color: var(--cw-faint);
+        font-size: 0.75rem;
+    }
+
+    @media (max-width: 1199.98px) {
+        .o_cwa_card { flex-basis: calc((100% - 2 * #{$gap}) / 3); }
+    }
+
+    @media (max-width: 767.98px) {
+        .o_cwa_stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .o_cwa_card { flex-basis: 70%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .o_cwa_card { animation: none; }
+    }
+}
+
+// "My Attendance" - the logged-in staff member's check in / out card (staff, QC, front desk...)
+.o_cwd .o_cwa_me {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 18px;
+    border-left: 4px solid var(--cw-faint);
+
+    &.o_cwa_me_on {
+        border-left-color: var(--cw-teal);
+    }
+
+    .o_cwa_me_icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 1.5rem;
+        background: var(--cw-aqua-soft);
+        color: var(--cw-aqua);
+        flex: 0 0 auto;
+    }
+
+    &.o_cwa_me_on .o_cwa_me_icon {
+        background: var(--cw-teal-soft);
+        color: var(--cw-teal);
+    }
+
+    .o_cwa_me_text {
+        flex: 1 1 200px;
+        min-width: 0;
+
+        h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--cw-ink);
+        }
+
+        p {
+            margin: 2px 0 0;
+            color: var(--cw-muted);
+            font-size: 0.88rem;
+        }
+    }
+
+    .o_cwa_me_recent {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        flex: 2 1 320px;
+    }
+
+    .o_cwa_me_shift {
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--cw-aqua-soft);
+        color: var(--cw-ink);
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .o_cwa_link {
+        border: 0;
+        background: transparent;
+        color: var(--cw-aqua);
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .o_cwa_me_btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 12px;
+        border: 0;
+        font-weight: 700;
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--cw-aqua), var(--cw-teal));
+        box-shadow: 0 10px 24px -12px rgba(0, 150, 199, 0.9);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+
+        &.o_cwa_me_btn_out {
+            background: linear-gradient(135deg, var(--cw-coral), var(--cw-amber));
+            box-shadow: 0 10px 24px -12px rgba(229, 72, 77, 0.8);
+        }
+
+        &:hover {
+            transform: translateY(-1px);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            transform: none;
+        }
+    }
+}

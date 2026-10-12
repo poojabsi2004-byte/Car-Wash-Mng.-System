@@ -4,11 +4,23 @@ from odoo.http import request
 
 class CarwashMembershipController(http.Controller):
 
+    @staticmethod
+    def _memberships_enabled():
+        return request.env["carwash.feature"].sudo()._enabled("carwash_membership.group_carwash_membership")
+
     def _published_plans(self):
         return request.env["carwash.membership.plan"].sudo().search([("website_published", "=", True)])
 
+    @staticmethod
+    def _chosen_cycle(plan, billing_period):
+        """The Monthly / Yearly billing the customer picked, if the plan offers it (else the plan's first one)."""
+        cycles = [cycle for cycle, _label, _amount in plan._carwash_cycles()]
+        return billing_period if billing_period in cycles else (cycles[0] if cycles else "monthly")
+
     @http.route("/car-wash/membership", type="http", auth="public", website=True, sitemap=True)
     def membership_plans(self, **kwargs):
+        if not self._memberships_enabled():
+            return request.redirect("/car-wash/book")
         partner = request.env.user.partner_id
         is_public = request.env.user._is_public()
         memberships = request.env["carwash.membership"].sudo()
@@ -25,13 +37,16 @@ class CarwashMembershipController(http.Controller):
         )
 
     @http.route("/car-wash/membership/join", type="http", auth="user", website=True, methods=["POST"], sitemap=False)
-    def membership_join(self, plan_id=None, **kwargs):
+    def membership_join(self, plan_id=None, billing_period=None, **kwargs):
+        if not self._memberships_enabled():
+            return request.redirect("/car-wash/book")
         try:
             plan = self._published_plans().filtered(lambda p: p.id == int(plan_id))
         except (TypeError, ValueError):
             plan = None
         if not plan:
             return request.redirect("/car-wash/membership")
+        billing_period = self._chosen_cycle(plan, billing_period)
         partner = request.env.user.partner_id
         Membership = request.env["carwash.membership"].sudo()
         if Membership.search_count([("partner_id", "=", partner.id), ("state", "=", "active")]):
@@ -46,8 +61,10 @@ class CarwashMembershipController(http.Controller):
                 order="id desc", limit=1,
             )
         if not membership:
-            membership = Membership.create({"partner_id": partner.id, "plan_id": plan.id})
+            membership = Membership.create({"partner_id": partner.id, "plan_id": plan.id, "billing_period": billing_period})
             membership.message_post(body=request.env._("Requested online - waiting for the customer's payment."))
+        elif membership.billing_period != billing_period:
+            membership.billing_period = billing_period  # its unpaid order follows
         order = membership._get_or_create_billing_order()
         if order.state == "draft":
             order.with_context(tracking_disable=True).action_quotation_sent()
@@ -60,16 +77,18 @@ class CarwashMembershipController(http.Controller):
 
     @http.route("/my/membership/<int:membership_id>/renew", type="http", auth="user", website=True,
                 methods=["POST"], sitemap=False)
-    def membership_renew(self, membership_id, **kwargs):
+    def membership_renew(self, membership_id, billing_period=None, **kwargs):
         """Pay the next period now (active) or reactivate (expired): open the billing order to pay it."""
         membership = self._own_membership(membership_id)
         if not membership or membership.state not in ("active", "expired", "pending"):
             return request.redirect("/my/membership")
+        if billing_period:
+            billing_period = self._chosen_cycle(membership.plan_id, billing_period)
+            if membership.billing_period != billing_period:
+                membership.billing_period = billing_period  # switch monthly <-> yearly from this payment
         order = membership._get_or_create_billing_order()
         if order.state == "draft":
             order.with_context(tracking_disable=True).action_quotation_sent()
-        if membership.state == "expired" and not membership.auto_renew:
-            membership.auto_renew = True
         membership.message_post(body=request.env._("Customer started a renewal payment online (%s).", order.name))
         return request.redirect(order.get_portal_url())
 

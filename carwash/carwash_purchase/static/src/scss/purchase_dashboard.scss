@@ -1,0 +1,51 @@
+// "Purchases" card of the Car Wash dashboard
+.o_cwd {
+    .o_cwp_tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .o_cwp_tile {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 14px 16px;
+        border-radius: 15px;
+        border: 1px solid var(--cw-border);
+        background: var(--cw-surface-solid);
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+        strong {
+            font-size: 1.35rem;
+            line-height: 1.1;
+        }
+
+        span {
+            font-size: 0.78rem;
+            color: var(--cw-muted);
+        }
+
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--cw-shadow-hover);
+        }
+
+        &.o_cwp_hot {
+            border-color: var(--cw-coral-soft);
+            box-shadow: inset 3px 0 0 var(--cw-coral);
+
+            strong {
+                color: var(--cw-coral);
+            }
+        }
+    }
+
+    .o_cwp_order_btn {
+        font-weight: 600;
+    }
+}
